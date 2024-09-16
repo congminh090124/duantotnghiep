@@ -1,109 +1,112 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TextInput, Image, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 const DangBaiScreen = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [budget, setBudget] = useState('');
 
-
-    const [find] = useState('');
     const handleBack = () => {
         navigation.goBack();
     };
 
-
     return (
-        <ScrollView style={{backgroundColor:'#fff'}}>
-             <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container}>
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} // Điều chỉnh offset phù hợp
+            >
+                <ScrollView contentContainerStyle={{ flexGrow: 1 }} style={{ backgroundColor: '#fff' }}>
+                    <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+                        <Image
+                            source={require('../assets/buttonback.png')}
+                            style={styles.backIcon}
+                        />
+                    </TouchableOpacity>
 
-            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-                <Image
-                    source={require('../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
-                    style={styles.backIcon}
-                />
-            </TouchableOpacity>
+                    <View style={styles.header}>
+                        <Text style={styles.headerText}>Tạo bài đăng tìm bạn đồng hành</Text>
+                    </View>
 
-            <View style={styles.header}>
-                <Text style={styles.headerText}>Tạo bài đăng tìm bạn đồng hành</Text>
-            </View>
+                    <View style={styles.rowAnh}>
+                        <Image
+                            source={{ uri: "https://cdn-icons-png.flaticon.com/128/2951/2951086.png" }}
+                            style={styles.image}
+                        />
+                        <Text style={styles.cab}>Chọn ảnh bìa</Text>
 
-            <View style={styles.rowAnh}>
+                        <TouchableOpacity style={styles.btnThem}>
+                            <Text style={styles.btnThemText}>Thêm</Text>
+                        </TouchableOpacity>
+                    </View>
 
-                <Image
-                    // icon kính lúp
-                    source={{ uri: "https://cdn-icons-png.flaticon.com/128/2951/2951086.png" }}
-                    style={styles.image}
-                />
-                <Text style={styles.cab}>Chọn ảnh bìa</Text>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.titleLabel}>Tiêu đề chuyến đi</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder=""
+                              onChangeText={setBudget}
+                            multiline={true} // Cho phép nhập nhiều dòng
+                            numberOfLines={1} // Giới hạn số dòng hiển thị
+                            blurOnSubmit={true}
+                             // Chỉ cho phép nhập số
+                        />
+                    </View>
 
-                <TouchableOpacity style={styles.btnThem} onPress={handleBack}>
-                    <Text style={{ textAlign: 'center', color: '#000', marginTop: '4%' }}>Thêm</Text>
-                </TouchableOpacity>
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Chi tiết chuyến đi</Text>
+                        <TouchableOpacity style={styles.button}>
+                            <Image
+                                source={{ uri: "https://cdn-icons-png.flaticon.com/128/2838/2838779.png" }}
+                                style={styles.image2}
+                            />
+                            <Text style={styles.buttonText}>Ngày bắt đầu</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.button}>
+                            <Image
+                                source={{ uri: "https://cdn-icons-png.flaticon.com/128/2838/2838779.png" }}
+                                style={styles.image2}
+                            />
+                            <Text style={styles.buttonText}>Ngày kết thúc</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.button}>
+                            <Image
+                                source={{ uri: "https://cdn-icons-png.flaticon.com/128/819/819865.png" }}
+                                style={styles.image2}
+                            />
+                            <Text style={styles.buttonText}>Điểm đến</Text>
+                        </TouchableOpacity>
+                    </View>
 
+                    <View style={styles.textAreaContainer}>
+                        <Text style={styles.label}>Mô tả chuyến đi</Text>
+                        <TextInput
+                            style={styles.textArea}
+                            placeholder="Mô tả kế hoạch du lịch của bạn"
+                            multiline={true} // Cho phép nhập nhiều dòng
+                            numberOfLines={1} // Giới hạn số dòng hiển thị
+                            blurOnSubmit={true}
+                        />
+                    </View>
 
-            </View>
-            <View style={styles.inputContainer}>
-                <Text style={{fontSize:17, fontWeight: 'bold'}}>Tiêu đề chuyến đi</Text>
-                <Text style={{ fontWeight: 'normal', fontSize: 15, marginBottom: '1%', marginTop: '5%' }}>Nhập tiêu đề của chuyến đi, ví dụ: 'Du lịch hạ long'</Text>
-            </View>
-            <View style={styles.inputContainer}>
-                <Text style={styles.label}>Chi tiết chuyến đi</Text>
-                <TouchableOpacity style={styles.button}>
-                    <Image
-                        // icon lich
-                        source={{ uri: "https://cdn-icons-png.flaticon.com/128/2838/2838779.png" }}
-                        style={styles.image2}
-                    />
-                    <Text style={styles.buttonText}>Ngày bắt đầu</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
-                <Image
-                        // icon lich
-                        source={{ uri: "https://cdn-icons-png.flaticon.com/128/2838/2838779.png" }}
-                        style={styles.image2}
-                    />
-                    <Text style={styles.buttonText}>Ngày kết thúc</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.button}>
-                <Image
-                        // icon lich
-                        source={{ uri: "https://cdn-icons-png.flaticon.com/128/819/819865.png" }}
-                        style={styles.image2}
-                    />
-                    <Text style={styles.buttonText}>Điểm đến</Text>
-                </TouchableOpacity>
-            </View>
-            <View style={styles.mtcdv}>
-                <Text style={styles.label}>Mô tả chuyến đi</Text>
-                <TextInput
-                    style={styles.textArea}
-                    placeholder="Mô tả kế hoạch du lịch của bạn"
-                    multiline={true}
-                    numberOfLines={4}
-                    value={description}
-                    onChangeText={setDescription}
-                />
-            </View>
-            <View style={styles.nsv}>
-                <Text style={{marginTop:'-4%', fontWeight:'bold',fontSize:18, marginBottom:'3%'}}>Ngân sách</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="$1000 - $2000"
-                    value={budget}
-                    onChangeText={setBudget}
-                />
-                 <TouchableOpacity style={styles.submitButton}>
-                <Text style={styles.submitButtonText}>Tạo bài đăng</Text>
-            </TouchableOpacity>
-            </View>
-           
+                    <View style={styles.budgetContainer}>
+                        <Text style={styles.budgetLabel}>Ngân sách</Text>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="$1000 - $2000"
+                            value={budget}
+                            onChangeText={setBudget}
+                            keyboardType="numeric" // Chỉ cho phép nhập số
+                        />
+                        <TouchableOpacity style={styles.submitButton}>
+                            <Text style={styles.submitButtonText}>Tạo bài đăng</Text>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
-        </ScrollView>
-       
-        
     );
 };
 
@@ -112,8 +115,6 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 20,
         backgroundColor: '#F6F8F9',
-        marginTop: "5%",
-        height:'100%'
     },
     header: {
         marginBottom: 20,
@@ -121,108 +122,106 @@ const styles = StyleSheet.create({
     headerText: {
         fontSize: 20,
         fontWeight: 'bold',
-        marginTop: "5%",
     },
     inputContainer: {
         marginBottom: 20,
     },
     label: {
         fontSize: 18,
-        marginBottom: "5%",
+        marginBottom: 10,
         fontWeight: 'bold',
     },
+    titleLabel: {
+        marginBottom:"5%",
+        fontSize: 17,
+        fontWeight: 'bold',
+    },
+    subText: {
+        fontSize: 15,
+        marginBottom: 5,
+        marginTop: 5,
+    },
     input: {
-        height: 40,
+        height: 66,
         borderColor: 'gray',
         borderWidth: 1,
-        borderRadius:10,
+        borderRadius: 10,
         padding: 10,
-        marginBottom: "5%",
+        marginBottom: 10,
     },
     textArea: {
-        height: "30%",
+        height: 120,
         borderColor: 'gray',
         borderWidth: 1,
         padding: 10,
-        borderRadius:10,
+        borderRadius: 10,
         textAlignVertical: 'top',
     },
     button: {
         backgroundColor: '#fff',
-        padding: 3,
-        height:'15%',
-        marginBottom: 5,
-        borderTopLeftRadius: 10,
-        borderTopRightRadius: 15,
+        padding: 10,
+        marginBottom: 10,
+        borderRadius: 10,
         flexDirection: 'row',
+        alignItems: 'center',
     },
     buttonText: {
         fontSize: 16,
-        marginLeft: '6%',
-        marginTop: '3%',
-        
-
+        marginLeft: 10,
     },
     submitButton: {
         backgroundColor: 'blue',
         alignItems: 'center',
-        height:'18%',
-        justifyContent:'center',
-        borderRadius : 10
-        
+        paddingVertical: 12,
+        borderRadius: 10,
     },
     submitButtonText: {
         color: 'white',
         fontSize: 16,
     },
-
     backButton: {
-        marginRight: "20%",
-
-        width: "10%",
+        marginBottom: 20,
+        width: 30,
     },
     rowAnh: {
-        width: '95%',
-        height: '6%',
-        backgroundColor: '#fff',
-        borderRadius: 10,
-        marginBottom: '4%'
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
     },
     cab: {
-        marginLeft: '15%',
-        marginTop: '-6%',
+        marginLeft: 15,
+        flex: 1,
     },
     image: {
         width: 25,
         height: 25,
-        marginTop: '3%',
-        // marginRight: 33,
-        marginLeft: "5%"
+        marginLeft: 10,
     },
     btnThem: {
-        marginLeft: "70%",
-        marginTop: '-6%',
         backgroundColor: '#EBEDED',
         borderRadius: 10,
-        width: '20%',
-        height: '60%',
-        // marginBottom:
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+    },
+    btnThemText: {
+        textAlign: 'center',
+        color: '#000',
     },
     image2: {
-        height: 22,
         width: 22,
-        marginLeft: '3%',
-        marginTop: '3%',
-        // backgroundColor: 'red',
+        height: 22,
     },
-    mtcdv:{
-     bottom:150
+    textAreaContainer: {
+        marginBottom: 20,
     },
-    nsv:{
-        bottom:300,
-        // backgroundColor:'red',
-        marginTop: '10%',
-    }
+    budgetContainer: {
+        marginBottom: 40,
+    },
+    budgetLabel: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
 });
 
 export default DangBaiScreen;
