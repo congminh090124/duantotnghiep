@@ -5,7 +5,7 @@ import QuenMatKhauScreen from './screens/QuenMatKhauScreen'; // Import your Quen
 import XacMinhOtpScreen from './screens/XacMinhOtpScreen'; // Import your QuenMatKhauScreen component
 import DangKiDulichScreen from './screens/DangKiDuLichScreen'; // Import your QuenMatKhauScreen component
 import DangBaiScreen from './screens/DangBaiScreen'; // Import your QuenMatKhauScreen component
-import NhanTinScreen from './screens/NhanTinScreen';
+
 import DangKy from './screens/Dangky';
 import DangNhap from './screens/DangNhap';
 import DoiMk from './screens/DoiMk';
@@ -14,6 +14,8 @@ import ThongTinCaNhan from './screens/ThongTinCaNhan';
 import TimKiem from './screens/TimKiem';
 import Blog from './screens/Blog';
 import ThongBao from './screens/ThongBao';
+import DKTinhNguyenVien from './screens/DKTinhNguyenVien';
+import NhanTin from './screens/NhanTin';
 
 const Stack = createStackNavigator();
 
@@ -21,7 +23,7 @@ const App = () => {
   return (
     <NavigationContainer>
       
-      <Stack.Navigator initialRouteName="DangBai">
+      <Stack.Navigator initialRouteName="NhanTin">
 
 
         <Stack.Screen name="QuenMatKhau"
@@ -44,11 +46,7 @@ const App = () => {
           component={DangBaiScreen}
           options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
         />    
-         <Stack.Screen
-          name="NhanTin"
-          component={NhanTinScreen}
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />  
+         
          <Stack.Screen 
           name="DangKy" 
           component={DangKy} 
@@ -87,6 +85,16 @@ const App = () => {
          <Stack.Screen 
           name="ThongBao" 
           component={ThongBao} 
+          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
+        />
+         <Stack.Screen 
+          name="DKTinhNguyenVien" 
+          component={DKTinhNguyenVien} 
+          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
+        />
+         <Stack.Screen 
+          name="NhanTin" 
+          component={NhanTin} 
           options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
         />
 

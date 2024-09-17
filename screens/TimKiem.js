@@ -16,7 +16,7 @@ const data = [
     title: 'Khám phá hà nội',
     price: '$300',
     duration: '4 ngày',
-    image: 'https://example.com/hanoi.png', // Replace with your image
+    image: 'https://i.pinimg.com/236x/98/4d/00/984d005fc7938b1bcf5c25211b2b1966.jpg', // Replace with your image
     rating: '4.5',
   },
   {
@@ -24,7 +24,7 @@ const data = [
     title: 'Du lịch đà nẵng',
     price: '$450',
     duration: '5 ngày',
-    image: 'https://example.com/danang.png', // Replace with your image
+    image: 'https://i.pinimg.com/236x/56/9f/43/569f43aa91c4aafb4acc833480fbfcf6.jpg', // Replace with your image
     rating: '4.7',
   },
   {
@@ -32,7 +32,23 @@ const data = [
     title: 'Tham quan Sapa',
     price: '$400',
     duration: '3 ngày',
-    image: 'https://example.com/sapa.png', // Replace with your image
+    image: 'https://i.pinimg.com/236x/b1/ca/f8/b1caf85ea7e70f44121dc7201c4cee98.jpg', // Replace with your image
+    rating: '4.6',
+  },
+  {
+    id: '3',
+    title: 'Tham quan Sapa',
+    price: '$400',
+    duration: '3 ngày',
+    image: 'https://i.pinimg.com/236x/d7/3a/7f/d73a7f4225944538b3a7868c7bdc1b81.jpg', // Replace with your image
+    rating: '4.6',
+  },
+  {
+    id: '3',
+    title: 'Tham quan Sapa',
+    price: '$400',
+    duration: '3 ngày',
+    image: 'https://i.pinimg.com/236x/bf/ac/84/bfac848519ecb6fe2778d99f5ee2ba9f.jpg', // Replace with your image
     rating: '4.6',
   },
 ];
@@ -159,6 +175,7 @@ const App = () => {
       </View>
 
       {/* List of Items */}
+      <ScrollView>
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}
@@ -166,12 +183,14 @@ const App = () => {
         contentContainerStyle={styles.list}
         scrollEnabled={false} // Disable internal scroll of FlatList as ScrollView is wrapping it
       />
+      </ScrollView>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    marginTop:"10%",
     flex: 1,
     backgroundColor: '#f5f5f5',
     paddingHorizontal: 10,

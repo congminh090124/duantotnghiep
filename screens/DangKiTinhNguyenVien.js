@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import BottomNavigator from '../screens/BottomNavigationScreen'
-import NhanTinScreen from '../screens/NhanTinScreen';
-import DangBaiScreen from '../screens/DangBaiScreen';
+
+
+
 
 
 const Tab = createBottomTabNavigator(); // tạo tab navigator
