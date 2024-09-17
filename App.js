@@ -2,18 +2,13 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Image } from 'react-native'; // Thêm import Image
+import { Image } from 'react-native';
+
 // Import các màn hình
 import QuenMatKhauScreen from './screens/QuenMatKhauScreen';
 import XacMinhOtpScreen from './screens/XacMinhOtpScreen';
 import DangKiDulichScreen from './screens/DangKiDuLichScreen';
 import DangBaiScreen from './screens/DangBaiScreen';
-import NhanTinScreen from './screens/NhanTinScreen';
-import QuenMatKhauScreen from './screens/QuenMatKhauScreen'; // Import your QuenMatKhauScreen component
-import XacMinhOtpScreen from './screens/XacMinhOtpScreen'; // Import your QuenMatKhauScreen component
-import DangKiDulichScreen from './screens/DangKiDuLichScreen'; // Import your QuenMatKhauScreen component
-import DangBaiScreen from './screens/DangBaiScreen'; // Import your QuenMatKhauScreen component
-
 import DangKy from './screens/Dangky';
 import DangNhap from './screens/DangNhap';
 import DoiMk from './screens/DoiMk';
@@ -56,35 +51,21 @@ const BottomTabs = () => {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="Home" component={DangKiDulichScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name="Search" component={TimKiem}  />
-      <Tab.Screen name="Notifications" component={ThongBao} options={{ headerShown: false }}/>
-      <Tab.Screen name="Messages" component={NhanTinScreen} options={{ headerShown: false }}/>
+      <Tab.Screen name="Home" component={DangKiDulichScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Search" component={TimKiem} />
+      <Tab.Screen name="Notifications" component={ThongBao} options={{ headerShown: false }} />
+      <Tab.Screen name="Messages" component={NhanTin} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 };
-
-
 
 // Tích hợp Stack Navigator và Bottom Tab Navigator
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="DangKiTinhNguyenVienScreen">
-      
-      <Stack.Navigator initialRouteName="NhanTin">
-
-</Stack.Navigator>
-        <Stack.Screen name="QuenMatKhau"
-          component={QuenMatKhauScreen} 
-          options={{ headerShown: false }}
-           />
-        <Stack.Screen
-          name="BottomTabs"
-          component={BottomTabs}
-          options={{ headerShown: false }} // Ẩn tiêu đề khi sử dụng Bottom Tabs
-        />
+      <Stack.Navigator initialRouteName="DangNhap">
         <Stack.Screen name="QuenMatKhau" component={QuenMatKhauScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="BottomTabs" component={BottomTabs} options={{ headerShown: false }} />
         <Stack.Screen name="XacMinhOTP" component={XacMinhOtpScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangBai" component={DangBaiScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangKy" component={DangKy} options={{ headerShown: false }} />
@@ -94,75 +75,9 @@ const App = () => {
         <Stack.Screen name="ThongTinCaNhan" component={ThongTinCaNhan} options={{ headerShown: false }} />
         <Stack.Screen name="Blog" component={Blog} options={{ headerShown: false }} />
         <Stack.Screen name="DangKiTinhNguyenVienScreen" component={DangKiTinhNguyenVienScreen} options={{ headerShown: false }} />
-         <Stack.Screen
-          name="XacMinhOTP"
-          component={XacMinhOtpScreen}
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        /> 
-         <Stack.Screen
-          name="DangKiDulich"
-          component={DangKiDulichScreen}
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-        
-         <Stack.Screen
-          name="DangBai"
-          component={DangBaiScreen}
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />    
-         
-         <Stack.Screen 
-          name="DangKy" 
-          component={DangKy} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header.
-        />
-        <Stack.Screen 
-          name="DangNhap" 
-          component={DangNhap} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-         <Stack.Screen 
-          name="DoiMK" 
-          component={DoiMk} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-         <Stack.Screen 
-          name="TimKiemBanDuLich" 
-          component={TimKiemBanDuLich} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-        <Stack.Screen 
-          name="ThongTinCaNhan" 
-          component={ThongTinCaNhan} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-        <Stack.Screen 
-          name="TimKiem" 
-          component={TimKiem} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-        <Stack.Screen 
-          name="Blog" 
-          component={Blog} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-         <Stack.Screen 
-          name="ThongBao" 
-          component={ThongBao} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-         <Stack.Screen 
-          name="DKTinhNguyenVien" 
-          component={DKTinhNguyenVien} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-         <Stack.Screen 
-          name="NhanTin" 
-          component={NhanTin} 
-          options={{ headerShown: false }} // You can set headerShown to true if you want to show the header
-        />
-
-
+        <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />
+        <Stack.Screen name="NhanTin" component={NhanTin} options={{ headerShown: false }} />
+        <Stack.Screen name="DangKiDulichScreen" component={DangKiDulichScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

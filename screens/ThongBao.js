@@ -38,7 +38,8 @@ export default function NotificationsScreen() {
         <Text style={styles.time}>{item.time}</Text>
       </View>
       <TouchableOpacity>
-        <Ionicons name="ios-arrow-forward" size={20} color="gray" />
+       
+<Image source={require('../assets/delete.png')} style={{ width: 24, height: 24 }} />
       </TouchableOpacity>
     </View>
   );
@@ -48,12 +49,14 @@ export default function NotificationsScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerText}>Thông báo</Text>
-        <Ionicons name="ios-notifications-outline" size={24} color="gray" />
+
+    
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Ionicons name="ios-search" size={20} color="gray" />
+      
+<Image source={require('../assets/search.png')} style={{ width: 24, height: 24 }} />
         <TextInput
           style={styles.searchInput}
           placeholder="Tìm kiếm thông báo"
@@ -62,18 +65,18 @@ export default function NotificationsScreen() {
 
       {/* Tabs */}
       <View style={styles.tabsContainer}>
-      <TouchableOpacity>
-      <Text style={styles.tab}>Tất cả</Text>
-      </TouchableOpacity>
-      <TouchableOpacity>
-      <Text style={styles.tab}>Chưa đọc</Text>
-      </TouchableOpacity>
-      <TouchableOpacity>
-      <Text style={styles.tab}>Đề cập</Text>
-      </TouchableOpacity>
-      <TouchableOpacity>
-      <Text style={styles.tab}>Yêu cầu</Text>
-      </TouchableOpacity>
+        <TouchableOpacity>
+          <Text style={styles.tab}>Tất cả</Text>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Text style={styles.tab}>Chưa đọc</Text>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Text style={styles.tab}>Đề cập</Text>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Text style={styles.tab}>Yêu cầu</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Notification List */}
@@ -89,7 +92,7 @@ export default function NotificationsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop:"10%",
+    marginTop: "10%",
     flex: 1,
     backgroundColor: '#fff',
     padding: 15,
