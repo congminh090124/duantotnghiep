@@ -29,6 +29,13 @@ const DangKiDulichScreen = () => {
                         />
                     </TouchableOpacity>
 
+
+ 
+                    <Image
+                        // icon kính lúp
+                        source={{ uri: "https://cdn-icons-png.flaticon.com/128/622/622669.png" }}
+                        style={styles.image}
+                    />
                     <TextInput
                         style={styles.inputSearch}
                         placeholder="Tìm kiếm địa điểm, bạn đồng hành..."
@@ -38,22 +45,11 @@ const DangKiDulichScreen = () => {
 
                     >
 
+ 
+
 
                     </TextInput>
-                    <Image
-                        // icon kính lúp
-                        source={{ uri: "https://cdn-icons-png.flaticon.com/128/622/622669.png" }}
-                        style={styles.image}
-                    />
-                    <TouchableOpacity style={styles.ic}>
-
-                         <Image
-                        // icon chuông
-                        source={{ uri: "https://cdn-icons-png.flaticon.com/128/2529/2529521.png" }}
-                        style={styles.image2}
-                    />
-                    </TouchableOpacity>
-                   
+                 
                 </View>
 
 
@@ -90,7 +86,7 @@ const DangKiDulichScreen = () => {
             </View>
 
            
-                    {/* <BottomNavigator></BottomNavigator> */}
+                    
                
                 
             
@@ -122,23 +118,20 @@ const styles = StyleSheet.create({
     inner: {
         padding: 16,
         flex: 1,
-        alignItems: 'center'
+        alignItems: 'center',
     },
     headerRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-around',
         marginBottom: 20,
-        // height: '8%',
-        // backgroundColor:'red',
         marginTop: '4%',
+        marginRight: '50%',
     },
     backButton: {
-        marginRight: 16,
+        marginLeft: '10%',
     },
     backIcon: {
-        // //   width: 24, // Kích thước hình ảnh
-        //   height: 24,
+        marginLeft: '2%',
+        marginTop: '100%',
     },
     title: {
         fontSize: 24,
@@ -152,16 +145,18 @@ const styles = StyleSheet.create({
     },
     inputSearch: {
         height: 40,
-        width: '80%',
+        width: '190%',
         borderColor: 'gray',
         borderWidth: 1,
         borderRadius: 19,
-        marginBottom: '5%',
-        marginLeft: '3%',
+        marginBottom: '20%',
+        // marginLeft: '10%',
         backgroundColor: '#EBEDED',
         paddingHorizontal: 10,
         marginTop: '5%',
+        marginRight: '-100%',
         paddingLeft: '11%',
+        
 
     },
     button: {
@@ -198,13 +193,13 @@ const styles = StyleSheet.create({
     image: {
         width: 18,
         height: 18,
-        // marginRight: 33,
-        marginLeft: "-76%"
+        marginRight:'2%',
+        marginTop:'13%',
+        marginLeft:'10%',
     },
     image2: {
         width: 25,
         height: 25,
-        // marginRight: 33,
         marginLeft: "77%"
     }, image3: {
         width: '105%',
@@ -220,7 +215,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         fontSize: 20,
         marginLeft: '-40%',
-        // marginBottom: '5%',
 
     },
     td: {
@@ -238,16 +232,11 @@ const styles = StyleSheet.create({
         paddingBottom: '3%',
     }, tht: {
         marginTop: '5%',
-        // backgroundColor:'red',
         width: '100%',
         height: '4%',
         alignItems: 'center',
     },
-    ic:{
-        // backgroundColor:'red',
-        right:-30
-
-    }
+    
 
 });
 
