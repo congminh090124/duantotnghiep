@@ -22,7 +22,7 @@ import DKTinhNguyenVien from './screens/DKTinhNguyenVien';
 import NhanTin from './screens/NhanTin';
 import TrangChuScreen from './screens/TrangChuScreen';
 import TrangHomeDangTus from './screens/TrangHomeDangTus';
-
+import TrangTimBanDuLich from './screens/TrangTimBanDuLich';
 // Tạo Stack Navigator
 const Stack = createStackNavigator();
 
@@ -65,7 +65,7 @@ const BottomTabs = () => {
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="TrangChu">
+      <Stack.Navigator initialRouteName="TrangTimBanDuLich">
         <Stack.Screen name="QuenMatKhau" component={QuenMatKhauScreen} options={{ headerShown: false }} />
         <Stack.Screen name="BottomTabs" component={BottomTabs} options={{ headerShown: false }} />
         <Stack.Screen name="XacMinhOTP" component={XacMinhOtpScreen} options={{ headerShown: false }} />
@@ -82,7 +82,7 @@ const App = () => {
         <Stack.Screen name="DangKiDulichScreen" component={DangKiDulichScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TrangChu" component={TrangChuScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TrangHomeDangTus" component={TrangHomeDangTus} options={{ headerShown: false }} />
-        
+        <Stack.Screen name="TrangTimBanDuLich" component={TrangTimBanDuLich} options={{ headerShown: false }} />
 
       </Stack.Navigator>
     </NavigationContainer>
