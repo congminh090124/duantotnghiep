@@ -21,6 +21,7 @@ import DangKiTinhNguyenVienScreen from './screens/DangKiTinhNguyenVienScreen';
 import DKTinhNguyenVien from './screens/DKTinhNguyenVien';
 import NhanTin from './screens/NhanTin';
 import TrangChuScreen from './screens/TrangChuScreen';
+import TrangHomeDangTus from './screens/TrangHomeDangTus';
 
 // Tạo Stack Navigator
 const Stack = createStackNavigator();
@@ -80,6 +81,7 @@ const App = () => {
         <Stack.Screen name="NhanTin" component={NhanTin} options={{ headerShown: false }} />
         <Stack.Screen name="DangKiDulichScreen" component={DangKiDulichScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TrangChu" component={TrangChuScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="TrangHomeDangTus" component={TrangHomeDangTus} options={{ headerShown: false }} />
         
 
       </Stack.Navigator>

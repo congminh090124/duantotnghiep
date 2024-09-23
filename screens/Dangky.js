@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground, StyleSheet, Dimensions, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 const { width, height } = Dimensions.get('window');
 
@@ -9,117 +9,119 @@ const SignUpScreen = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreeToTerms, setAgreeToTerms] = useState(false);
     const navigation = useNavigation();
+
     return (
         <ScrollView>
-        <View style={styles.container}>
-            <Text style={styles.title}>Đăng ký</Text>
-            <Image
-                source={require('../assets/traveler.png')}
-                style={styles.headerImage}
-            />
-            
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-            />
-
-            <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Mật khẩu"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-            />
-
-            <Text style={styles.label}>Xác nhận mật khẩu</Text>
-            <TextInput
-                style={styles.input}
-                placeholder="Xác nhận mật khẩu"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-            />
-
-            <TouchableOpacity 
-                style={styles.checkboxContainer}
-                onPress={() => setAgreeToTerms(!agreeToTerms)}
+            <ImageBackground
+                source={require('../assets/ccc.png')} // Add your background image here
+                style={styles.background}
             >
-                <View style={[styles.checkbox, agreeToTerms && styles.checkboxChecked]} />
-                <Text style={styles.checkboxLabel}>Đồng ý với điều khoản</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-                style={[styles.signupButton, { backgroundColor: agreeToTerms ? '#00c3ff' : '#ccc' }]}
-                disabled={!agreeToTerms}
-            >
-                <Text style={styles.signupButtonText}>Đăng ký</Text>
-            </TouchableOpacity>
-
-            <Text style={styles.orText}>Hoặc</Text>
-
-            <TouchableOpacity style={styles.socialButton}>
-                <View style={styles.viewButtonLogo}>
+                <View style={styles.container}>
+                    <Text style={styles.title}>Đăng ký</Text>
                     <Image
-                        source={require('../assets/logo.png')}
-                        style={styles.logo}
+                        source={require('../assets/vvv.png')}
+                        style={styles.headerImage}
                     />
-                    <Text style={styles.socialButtonText}>Đăng ký với Apple ID</Text>
-                </View>
-            </TouchableOpacity>
+                    <View style={styles.viewinput}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Email"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Mật khẩu"
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Xác nhận mật khẩu"
+                            value={confirmPassword}
+                            onChangeText={setConfirmPassword}
+                            secureTextEntry
+                        />
+                    </View>
+                    <TouchableOpacity
+                        style={styles.checkboxContainer}
+                        onPress={() => setAgreeToTerms(!agreeToTerms)}
+                    >
+                        <View style={[styles.checkbox, agreeToTerms && styles.checkboxChecked]} />
+                        <Text style={styles.checkboxLabel}>Đồng ý với điều khoản</Text>
+                    </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialButton}>
-                <View style={styles.viewButtonLogo}>
-                    <Image
-                        source={require('../assets/gg.png')}
-                        style={styles.logo}
-                    />
-                    <Text style={styles.socialButtonText}>  Đăng ký với Google</Text>
-                </View>
-            </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.signupButton, { backgroundColor: agreeToTerms ? '#00c3ff' : '#ccc' }]}
+                        disabled={!agreeToTerms}
+                    >
+                        <Text style={styles.signupButtonText}>Đăng ký</Text>
+                    </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialButton}>
-                <View style={styles.viewButtonLogo}>
-                    <Image
-                        source={require('../assets/fb.png')}
-                        style={styles.logo}
-                    />
-                    <Text style={styles.socialButtonText}>Đăng ký với Facebook</Text>
+                    <TouchableOpacity style={styles.quenmk}>
+                        <Text style={{ color: 'blue' }}>Quên mật khẩu</Text>
+                    </TouchableOpacity>
+
+                    {/* <Text style={styles.orText}>Hoặc</Text>
+
+                    <View style={styles.socialButtonsContainer}>
+                        <TouchableOpacity style={styles.socialButton}>
+                            <Image
+                                source={require('../assets/logo.png')} // Apple logo
+                                style={styles.logo}
+                            />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.socialButton}>
+                            <Image
+                                source={require('../assets/gg.png')} // Google logo
+                                style={styles.logo}
+                            />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.socialButton}>
+                            <Image
+                                source={require('../assets/fb.png')} // Facebook logo
+                                style={styles.logo}
+                            />
+                        </TouchableOpacity>
+                    </View> */}
+
                 </View>
-            </TouchableOpacity>
-        </View>
+            </ImageBackground>
         </ScrollView>
     );
 };
 
 const styles = StyleSheet.create({
+    background: {
+        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+        flex: 1,
+        width: '100%',
+        height: '150%',
+    },
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        height: "60%", // Add transparency to make the background visible
         paddingHorizontal: width * 0.05,
-        paddingVertical: height * 0.03,
+        paddingVertical: height * 0.08,
     },
     headerImage: {
         width: '100%',
         height: height * 0.25,
         resizeMode: 'cover',
+
         borderRadius: 20,
         marginBottom: height * 0.02,
     },
     title: {
-        marginTop:'10%',
+        marginTop: '10%',
         fontSize: width * 0.06,
         fontWeight: 'bold',
         textAlign: 'center',
         marginBottom: height * 0.02,
-    },
-    label: {
-        fontSize: width * 0.04,
-        marginBottom: 5,
     },
     input: {
         backgroundColor: '#f2f2f2',
@@ -128,38 +130,46 @@ const styles = StyleSheet.create({
         marginBottom: height * 0.02,
         borderColor: '#ccc',
         borderWidth: 1,
+        marginBottom: "5%"
     },
     signupButton: {
         paddingVertical: height * 0.02,
         borderRadius: 10,
+        width: "60%",
+        marginLeft: "20%",
         marginBottom: height * 0.02,
     },
     signupButtonText: {
         color: '#fff',
         textAlign: 'center',
         fontWeight: 'bold',
-        fontSize: width * 0.04,
+        fontSize: width * 0.03,
     },
     orText: {
         textAlign: 'center',
         marginBottom: height * 0.02,
         fontSize: width * 0.04,
     },
+
+
+    socialButtonsContainer: {
+        flexDirection: 'row',       // Aligns buttons in a row
+        justifyContent: 'center',   // Centers the buttons
+        alignItems: 'center',       // Vertically centers the buttons
+        marginBottom: height * 0.02,
+    },
     socialButton: {
         backgroundColor: '#f2f2f2',
-        paddingVertical: height * 0.02,
+        padding: width * 0.02,      // Reduces the padding for less space around logos
         borderRadius: 10,
-        marginBottom: height * 0.01,
-    },
-    socialButtonText: {
-        textAlign: 'center',
-        fontSize: width * 0.04,
+        marginHorizontal: width * 0.05,  // Small horizontal margin to keep buttons close
     },
     logo: {
-        width: width * 0.07,
+        width: width * 0.07,        // Size of the logos (adjust as needed)
         height: width * 0.07,
-        marginRight: 10,
     },
+
+
     viewButtonLogo: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -183,6 +193,10 @@ const styles = StyleSheet.create({
     },
     checkboxLabel: {
         fontSize: width * 0.04,
+    },
+    viewinput: {
+        marginBottom: "5%",
+        marginTop: "-9%"
     }
 });
 
