@@ -47,7 +47,7 @@ const XacMinhOtpScreen = () => {
           value={email}
           onChangeText={setEmail}
         />
-        <Text style={styles.textValidate}>mã không hợp lệ vui lòng thử lại!</Text>
+        <Text style={styles.textValidate}>Mã không hợp lệ vui lòng thử lại!</Text>
 
         <TouchableOpacity style={styles.button} onPress={handleGetOTP} disabled={loading}>
           <Text style={styles.buttonText}>{loading ? 'Đang gửi...' : 'Nhận OTP'}</Text>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, Image, TextInput, TouchableOpacity, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const { width, height } = Dimensions.get('window');
@@ -12,9 +12,11 @@ const LoginScreen = () => {
   const handleLogin = () => {
     navigation.navigate('BottomTabs');
   };
+
   const handleRegister = () => {
     navigation.navigate('DangKy');
   };
+
   const SocialButton = ({ icon, text }) => (
     <TouchableOpacity style={styles.socialButton}>
       <Image source={icon} style={styles.logo} />
@@ -23,61 +25,90 @@ const LoginScreen = () => {
   );
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+    <ImageBackground
+      source={require('../assets/ccc.png')} // Đường dẫn tới ảnh nền của bạn
+      style={styles.background}
+      resizeMode="cover" // Để đảm bảo ảnh phủ đầy màn hình
     >
-      <View style={styles.contentContainer}>
-        <Text style={styles.textdn}>Đăng Nhập</Text>
-        <Image
-          source={require('../assets/logodn.webp')}
-          style={styles.headerImage}
-        />
-        <Text style={styles.title}>Du lịch và kết bạn</Text>
-        <Text style={styles.description}>
-          Cảnh đẹp bên ngoài phản chiếu tâm hồn thanh tịnh bên trong.
-        </Text>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <View style={styles.contentContainer}>
+          <Text style={styles.textdn}>Đăng Nhập</Text>
+          <Image
+            source={require('../assets/vvv.png')}
+            style={styles.headerImage}
+          />
+          <Text style={styles.title}>Du lịch và kết bạn</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Mật khẩu"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Mật khẩu"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>Đăng nhập</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleLogin}>
+            <Text style={styles.buttonText}>Đăng nhập</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.button, styles.registerButton]} onPress={handleRegister}>
-          <Text style={styles.buttonText}>Đăng ký</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={[styles.button, styles.registerButton]} onPress={handleRegister}>
+            <Text style={styles.buttonText}>Đăng ký</Text>
+          </TouchableOpacity>
 
-        <Text style={styles.orText}>Hoặc</Text>
+          <Text style={styles.orText}>Hoặc</Text>
+          <View style={styles.socialButtonsContainer}>
+            <TouchableOpacity style={styles.socialButton}>
+                            <Image
+                                source={require('../assets/logo.png')} // Apple logo
+                                style={styles.logo}
+                            />
+                        </TouchableOpacity>
 
-        <SocialButton icon={require('../assets/logo.png')} text="Đăng ký với Apple ID" />
-        <SocialButton icon={require('../assets/gg.png')} text="Đăng ký với Google" />
-        <SocialButton icon={require('../assets/fb.png')} text="Đăng ký với Facebook" />
-      </View>
-    </KeyboardAvoidingView>
+                        <TouchableOpacity style={styles.socialButton}>
+                            <Image
+                                source={require('../assets/gg.png')} // Google logo
+                                style={styles.logo}
+                            />
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.socialButton}>
+                            <Image
+                                source={require('../assets/fb.png')} // Facebook logo
+                                style={styles.logo}
+                            />
+                        </TouchableOpacity>
+                        </View>
+        </View>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     flex: 1,
-    backgroundColor: '#f8f8f8',
-  },
+    width: '100%',
+    height: '150%',
+},
+container: {
+  flex: 1,
+  height: "60%", // Add transparency to make the background visible
+  paddingHorizontal: width * 0.05,
+  paddingVertical: height * 0.08,
+},
   contentContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -85,8 +116,8 @@ const styles = StyleSheet.create({
     padding: width * 0.04,
   },
   headerImage: {
-    width: width * 0.8,
-    height: height * 0.15,
+    width: width * 2,
+    height: height * 0.2,
     resizeMode: 'contain',
     marginBottom: height * 0.02,
   },
@@ -95,12 +126,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: height * 0.01,
     textAlign: 'center',
-  },
-  description: {
-    fontSize: width * 0.04,
-    textAlign: 'center',
-    color: '#707070',
-    marginBottom: height * 0.02,
+    color: '#fff', // Màu trắng để hiển thị tốt trên nền tối
   },
   input: {
     width: '100%',
@@ -130,7 +156,7 @@ const styles = StyleSheet.create({
   textdn: {
     fontSize: width * 0.07,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#fff',
     textAlign: 'center',
     marginBottom: height * 0.02,
     textTransform: 'uppercase',
@@ -140,27 +166,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: height * 0.02,
     fontSize: width * 0.04,
+    color: '#fff',
   },
-  socialButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  socialButtonsContainer: {
+    flexDirection: 'row',       // Aligns buttons in a row
+    justifyContent: 'center',   // Centers the buttons
+    alignItems: 'center',       // Vertically centers the buttons
+    marginBottom: height * 0.02,
+},
+socialButton: {
     backgroundColor: '#f2f2f2',
-    paddingVertical: height * 0.015,
-    paddingHorizontal: width * 0.04,
+    padding: width * 0.02,      // Reduces the padding for less space around logos
     borderRadius: 10,
-    marginBottom: height * 0.01,
-    width: '100%',
-  },
-  socialButtonText: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: width * 0.04,
-  },
-  logo: {
-    width: width * 0.06,
-    height: width * 0.06,
-    marginRight: width * 0.02,
-  },
+    marginHorizontal: width * 0.05,  // Small horizontal margin to keep buttons close
+},
+logo: {
+    width: width * 0.07,        // Size of the logos (adjust as needed)
+    height: width * 0.07,
+},
 });
 
 export default LoginScreen;
