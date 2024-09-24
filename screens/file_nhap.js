@@ -1,167 +1,185 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Image, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import Swiper from 'react-native-swiper';
 
-// Tạo Bottom Tab Navigator
-const Tab = createBottomTabNavigator();
+const DangKiDulichScreen = () => {
+    const [find, setFind] = useState('');
+    const handleBack = () => {
+        // Navigation back logic (you need to add the navigation context if necessary)
+    };
 
-const DangKiDulichScreen = ({ navigation }) => {
-  const [find] = useState('');
+    return (
+        // Sử dụng KeyboardAvoidingView bao quanh toàn bộ giao diện
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}  // Điều chỉnh hành vi cho iOS và Android
+            keyboardVerticalOffset={80}  // Điều chỉnh khoảng cách cho Android
+        >
+            <SafeAreaView style={styles.container}>
+                <View style={styles.inner}>
+                    <View style={styles.headerRow}>
+                        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+                            <Image
+                                source={require('../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
+                                style={styles.backIcon}
+                            />
+                        </TouchableOpacity>
 
-  const handleBack = () => {
-    navigation.goBack();
-  };
+                        <Image
+                            source={{ uri: "https://cdn-icons-png.flaticon.com/128/622/622669.png" }}  // icon kính lúp
+                            style={styles.image}
+                        />
+                        <TextInput
+                            style={styles.inputSearch}
+                            placeholder="Tìm kiếm"
+                            keyboardType="email-address"
+                            value={find}
+                            onChangeText={(text) => setFind(text)}
+                        />
+                    </View>
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.inner}>
-        {/* Row container for Back button and Title */}
-        <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Image
-              source={require('../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
-              style={styles.backIcon}
-            />
-          </TouchableOpacity>
+                    <Swiper
+                        style={styles.wrapper}
+                        loop={true}
+                        autoplay={true}
+                        autoplayTimeout={3}
+                        showsPagination={true}
+                        paginationStyle={{ top: 90 }}  // Di chuyển pagination lên trên
+                    >
+                        <View style={styles.slide}>
+                            <Image source={require('../assets/coupleTravel.jpg')} style={styles.image3} />
+                        </View>
+                        <View style={styles.slide}>
+                            <Image source={require('../assets/couple2.jpg')} style={styles.image3} />
+                        </View>
+                        <View style={styles.slide}>
+                            <Image source={require('../assets/couple3.jpg')} style={styles.image3} />
+                        </View>
+                    </Swiper>
 
-          <TextInput
-            style={styles.inputSearch}
-            placeholder="Tìm kiếm địa điểm, bạn đồng hành..."
-            keyboardType="email-address"
-            value={find}
-            numberOfLines={1}
-          />
+                    <View style={{ alignItems: 'flex-start' }}>
+                        <Text style={styles.ttal}>
+                            Du lịch cùng bạn bè.
+                        </Text>
+                        <Text style={styles.ttal2}>
+                            khám phá thế giới
+                        </Text>
+                    </View>
 
-          <Image
-            source={{ uri: "https://cdn-icons-png.flaticon.com/128/622/622669.png" }}
-            style={styles.image}
-          />
-          <Image
-            source={{ uri: "https://cdn-icons-png.flaticon.com/128/2529/2529521.png" }}
-            style={styles.image2}
-          />
-        </View>
+                    <Text style={styles.td}>
+                        Du lịch cùng bạn bè không chỉ giúp bạn khám phá những địa điểm mới
+                        mà còn tạo ra những kỷ niệm đáng nhớ. Hãy cùng nhau lên kế hoạch cho chuyến đi tiếp theo.
+                    </Text>
 
-        <Image
-          source={require('../assets/coupleTravel.jpg')}
-          style={styles.image3}
-        />
-        <Text style={styles.ttal}>Du lịch cùng bạn.</Text>
-        <Text style={{ color: '#fff', marginTop: '2%', marginRight: '55%' }}>Khám phá thế giới</Text>
-        <Text style={styles.td}>
-          Du lịch cùng bạn bè không chỉ giúp bạn khám phá những địa điểm mới
-          mà còn tạo ra những kỷ niệm đáng nhớ. Hãy cùng nhau lên kế hoạch cho chuyến đi tiếp theo,
-          từ việc chọn địa điểm, đặt vé...
-        </Text>
+                    <TouchableOpacity style={styles.dkn} onPress={handleBack}>
+                        <Text style={{ color: "#fff" }}>Đăng kí ngay</Text>
+                    </TouchableOpacity>
 
-        <TouchableOpacity style={styles.dkn} onPress={handleBack}>
-          <Text style={{ color: "#fff" }}>Đăng kí ngay</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.tht} onPress={handleBack}>
-          <Text style={{ color: "#000" }}>Tìm hiểu thêm</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
-  );
+                    <TouchableOpacity style={styles.tht} onPress={handleBack}>
+                        <Text style={{ color: "#000" }}>Tìm hiểu thêm</Text>
+                    </TouchableOpacity>
+                </View>
+            </SafeAreaView>
+        </KeyboardAvoidingView>
+    );
 };
 
-// Tạo thành phần chính chứa các Tab
-const MainTabScreen = () => {
-  return (
-    <Tab.Navigator>
-      <Tab.Screen name="Du Lịch" component={DangKiDulichScreen} />
-      <Tab.Screen name="Nhắn Tin" component={NhanTinScreen} />
-      <Tab.Screen name="Đăng Bài" component={DangBaiScreen} />
-    </Tab.Navigator>
-  );
-};
-
-// Đặt MainTabScreen vào NavigationContainer để sử dụng Navigation
-const App = () => {
-  return (
-    <NavigationContainer>
-      <MainTabScreen />
-    </NavigationContainer>
-  );
-};
-
-// Các style cho các thành phần
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  inner: {
-    padding: 16,
-    flex: 1,
-    alignItems: 'center',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    marginBottom: 20,
-    height: '8%',
-    marginTop: '4%',
-  },
-  backButton: {
-    marginRight: 16,
-  },
-  backIcon: {},
-  inputSearch: {
-    height: 40,
-    width: '80%',
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 19,
-    backgroundColor: '#EBEDED',
-    paddingHorizontal: 10,
-    marginTop: '5%',
-    paddingLeft: '11%',
-  },
-  image: {
-    width: 18,
-    height: 18,
-    marginLeft: "-76%",
-  },
-  image2: {
-    width: 25,
-    height: 25,
-    marginLeft: "77%",
-  },
-  image3: {
-    width: '105%',
-    marginTop: '-4%',
-    height: '30%',
-    borderRadius: 20,
-  },
-  ttal: {
-    marginTop: '-25%',
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 20,
-    marginLeft: '-40%',
-  },
-  td: {
-    marginTop: '15%',
-  },
-  dkn: {
-    backgroundColor: '#17C6ED',
-    marginTop: '5%',
-    width: '100%',
-    borderRadius: 10,
-    alignItems: 'center',
-    paddingTop: '3%',
-    paddingBottom: '3%',
-  },
-  tht: {
-    marginTop: '5%',
-    width: '100%',
-    height: '4%',
-    alignItems: 'center',
-  },
+    container: {
+        flex: 1,
+        padding: 16,
+        backgroundColor: '#fff',
+    },
+    inner: {
+        padding: 16,
+        flex: 1,
+        alignItems: 'center',
+    },
+    headerRow: {
+        flexDirection: 'row',
+        marginBottom: 20,
+        marginTop: '1%',
+        marginRight: '50%',
+        width: '50%',
+        marginLeft: '10%',
+        left: 20
+    },
+    backButton: {
+        height: '40%',
+        paddingTop: '10%',
+        marginTop: '8%',
+        left: '-40%',
+    },
+    backIcon: {
+        marginLeft: '1%',
+        marginTop: '-70%',
+    },
+    inputSearch: {
+        height: 40,
+        width: '170%',
+        borderColor: 'gray',
+        borderWidth: 1,
+        borderRadius: 19,
+        marginBottom: '20%',
+        paddingHorizontal: '50%',
+        marginTop: '5%',
+        paddingLeft: '20%',
+    },
+    image: {
+        width: 18,
+        height: 18,
+        marginRight: '6%',
+        marginTop: '12%',
+        marginLeft: '14%',
+        position: 'absolute',
+    },
+    image3: {
+        width: '100%',  // Chiều rộng ảnh
+        height: 200,    // Chiều cao cố định
+        borderRadius: 10,
+    },
+    ttal: {
+        top: -240,
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 20,
+        marginLeft: '-30%',
+    },
+    ttal2: {
+        top: -240,
+        color: '#fff',
+        fontWeight: 'normal',
+        fontSize: 15,
+        marginLeft: '-30%',
+    },
+    td: {
+        top: -190,
+        fontStyle: 'italic',
+    },
+    dkn: {
+        backgroundColor: '#17C6ED',
+        marginTop: '5%',
+        width: '100%',
+        borderRadius: 10,
+        alignItems: 'center',
+        paddingTop: '3%',
+        paddingBottom: '3%',
+    },
+    tht: {
+        marginTop: '5%',
+        width: '100%',
+        height: '4%',
+        alignItems: 'center',
+    },
+    wrapper: {
+        height: '60%',
+        borderRadius: 40,
+    },
+    slide: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
 });
 
-export default App;
+export default DangKiDulichScreen;

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image ,KeyboardAvoidingView ,Platform} from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
+import Swiper from 'react-native-swiper';
 // import NhanTinScreen from '../screens/NhanTinScreen';
 // import DangBaiScreen from '../screens/DangBaiScreen';
 
@@ -11,16 +11,21 @@ const Tab = createBottomTabNavigator(); // tạo tab navigator
 
 
 const DangKiDulichScreen = () => {
-    const [find] = useState('');
+    const [find, setFind] = useState('');
     const handleBack = () => {
         navigation.goBack();
     };
 
-    return (
 
+
+
+    return (
+        
         <SafeAreaView style={styles.container}>
-            <View style={styles.inner}>
-                {/* Row container for Back button and Title */}
+
+            
+ 
+<View style={styles.inner}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity style={styles.backButton} onPress={handleBack}>
                         <Image
@@ -30,40 +35,56 @@ const DangKiDulichScreen = () => {
                     </TouchableOpacity>
 
 
- 
-                    <Image
-                        // icon kính lúp
-                        source={{ uri: "https://cdn-icons-png.flaticon.com/128/622/622669.png" }}
-                        style={styles.image}
-                    />
-                    <TextInput
-                        style={styles.inputSearch}
-                        placeholder="Tìm kiếm địa điểm, bạn đồng hành..."
-                        keyboardType="email-address"
-                        value={find}
-                        numberOfLines={1}
-
-                    >
-
- 
-
-
-                    </TextInput>
-                 
+                
                 </View>
 
 
-                <Image
+                {/* <Image
                     //ảnh to
                     source={require('../assets/coupleTravel.jpg')}
                     style={styles.image3}
-                />
-                <Text style={styles.ttal}>
-                    Du lịch cùng bạn.
-                </Text>
-                <Text style={{ color: '#fff', marginTop: '2%', marginRight: '55%' }}>
-                    Khám phá thế giới
-                </Text>
+                /> */}
+
+
+                <Swiper
+                    style={styles.wrapper}
+                    loop={true}               // Lặp lại khi đến ảnh cuối
+                    autoplay={true}           // Tự động lướt
+                    autoplayTimeout={3}       // Thời gian giữa các lần lướt (giây)
+                    showsPagination={true}    // Hiển thị dấu chấm nhỏ chỉ số ảnh
+                    paginationStyle={{ top: 90 }}  // Di chuyển pagination lên phía trên
+                >
+                    <View style={styles.slide}>
+                        <Image
+                            source={require('../assets/coupleTravel.jpg')}  // Ảnh 1
+                            style={styles.image3}
+                        />
+                    </View>
+                    <View style={styles.slide}>
+                        <Image
+                            source={require('../assets/couple2.jpg')}           // Ảnh 2
+                            style={styles.image3}
+                        />
+                    </View>
+                    <View style={styles.slide}>
+                        <Image
+                            source={require('../assets/couple3.jpg')} // Ảnh 3 (bạn có thể thêm ảnh khác)
+                            style={styles.image3}
+                        />
+                    </View>
+                </Swiper>
+
+
+                <View style={{ alignItems: 'flex-start' }}>
+                    <Text style={styles.ttal}>
+                        Du lịch cùng bạn bè.
+                    </Text>
+                    <Text style={styles.ttal2} >
+                        khám phá thế giới
+                    </Text>
+
+                </View>
+
 
                 <Text style={styles.td}>
                     Du lịch cùng bạn bè không chỉ giúp bạn khám phá những địa điểm mới
@@ -78,87 +99,65 @@ const DangKiDulichScreen = () => {
 
 
                 <TouchableOpacity style={styles.tht} onPress={handleBack}>
-                    <Text style={{ color: "#000" }}>Tìm hiểu thêm</Text>
+                    <Text style={{ color: "#000" }}>Tìm hiểu </Text>
                 </TouchableOpacity>
-              
-          
-                 
+
+
+
             </View>
-
-           
-                    
-               
-                
             
 
-
-
-         </SafeAreaView>
-         
-
-            
-
-
+        </SafeAreaView>
 
     );
-
 
 };
 
 
 
- 
- 
+
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 16,
+        backgroundColor: '#fff',
     },
-    
+
     inner: {
         padding: 16,
         flex: 1,
         alignItems: 'center',
+        justifyContent: 'space-between', // Thêm dòng này
     },
     headerRow: {
         flexDirection: 'row',
         marginBottom: 20,
-        marginTop: '4%',
+        marginTop: '1%',
         marginRight: '50%',
+        width: '50%',
+        marginLeft: '10%',
+        left:20
     },
     backButton: {
-        marginLeft: '10%',
+        height: '40%',
+        paddingTop: '10%',
+        marginTop: '8%',
+        left: '-80%',
+
     },
     backIcon: {
-        marginLeft: '2%',
-        marginTop: '100%',
+        marginLeft: '1%',
+        marginTop: '-70%',
+        paddingLeft: '0%',
     },
     title: {
         fontSize: 24,
         fontWeight: 'bold',
         marginLeft: '15%',
     },
-    description: {
-        fontSize: 14,
-        marginVertical: 10,
-        marginBottom: '10%'
-    },
-    inputSearch: {
-        height: 40,
-        width: '190%',
-        borderColor: 'gray',
-        borderWidth: 1,
-        borderRadius: 19,
-        marginBottom: '20%',
-        // marginLeft: '10%',
-        backgroundColor: '#EBEDED',
-        paddingHorizontal: 10,
-        marginTop: '5%',
-        marginRight: '-100%',
-        paddingLeft: '11%',
-        
 
-    },
+    
     button: {
         backgroundColor: 'blue',
         padding: 10,
@@ -190,36 +189,46 @@ const styles = StyleSheet.create({
         color: '#5B6D72',
         marginTop: '5%',
     },
-    image: {
-        width: 18,
-        height: 18,
-        marginRight:'2%',
-        marginTop:'13%',
-        marginLeft:'10%',
-    },
+    
     image2: {
         width: 25,
         height: 25,
         marginLeft: "77%"
     }, image3: {
-        width: '105%',
-        marginTop: '-4%',
-        height: '30%',
-        borderRadius: 20,
+        width: '100%',  // Chiều rộng 100% của khung chứa
+        height: 200,    // Chiều cao cố định, bạn có thể điều chỉnh cho phù hợp
+        borderRadius: 10, // Nếu muốn bo tròn góc
     },
 
     ttal: {
 
-        marginTop: '-25%',
+        // marginTop: '-20%',
         color: '#fff',
+        top:-240,
         fontWeight: 'bold',
         fontSize: 20,
-        marginLeft: '-40%',
+        marginLeft: '-30%',
+
+    },
+    ttal2: {
+
+        // marginTop: '-15%',
+        color: '#fff',
+        fontWeight: 'normal',
+        fontSize: 15,
+        top: -240,
+        marginLeft: '-30%',
 
     },
     td: {
-        marginTop: '15%'
-
+        // marginTop: '5%'
+        top:-40,
+        fontStyle: 'italic',
+        // backgroundColor: 'gray',
+        borderTopLeftRadius: 10, //
+        borderTopRightRadius:10,
+        padding:10,
+        height:'auto',
     },
 
     dkn: {
@@ -236,7 +245,23 @@ const styles = StyleSheet.create({
         height: '4%',
         alignItems: 'center',
     },
-    
+    wrapper: {
+        height: '60%',  // Đảm bảo chiều cao cho Swiper
+        borderRadius:40
+    },
+    slide: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
+    image3: {
+        width: '100%',  // Đảm bảo ảnh to chiếm toàn bộ chiều rộng
+        height: 200,    // Chiều cao cố định, điều chỉnh nếu cần
+        borderRadius: 10,
+    },
+
+
+
 
 });
 
