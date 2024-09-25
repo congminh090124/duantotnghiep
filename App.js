@@ -39,12 +39,18 @@ const BottomTabs = () => {
 
           if (route.name === 'Home') {
             iconPath = require('./assets/home.png');
-          } else if (route.name === 'Search') {
+          } 
+          else if (route.name === 'Search') {
             iconPath = require('./assets/search.png');
-          } else if (route.name === 'Notifications') {
+          } 
+          else if (route.name === 'Add') {
+            iconPath = require('./assets/add.png');
+          } 
+          else if (route.name === 'Notifications') {
             iconPath = require('./assets/notifications.png');
-          } else if (route.name === 'Messages') {
-            iconPath = require('./assets/messages.png');
+          }
+           else if (route.name === 'Profile') {
+            iconPath = require('./assets/profile.png');
           }
 
           return <Image source={iconPath} style={{ width: size, height: size }} />;
@@ -53,10 +59,12 @@ const BottomTabs = () => {
         tabBarInactiveTintColor: 'gray',
       })}
     >
-      <Tab.Screen name="Home" component={DangKiDulichScreen} options={{ headerShown: false }} />
+      {/* Thêm TrangChuScreen vào Bottom Tab */}
+      <Tab.Screen name="Home" component={TrangChuScreen} options={{ headerShown: false }} />
       <Tab.Screen name="Search" component={TimKiem} />
+      <Tab.Screen name="Add" component={DangBaiScreen} />
       <Tab.Screen name="Notifications" component={ThongBao} options={{ headerShown: false }} />
-      <Tab.Screen name="Messages" component={NhanTin} options={{ headerShown: false }} />
+      <Tab.Screen name="Profile" component={NhanTin} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 };
@@ -65,9 +73,9 @@ const BottomTabs = () => {
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="TrangTimBanDuLich">
+      <Stack.Navigator initialRouteName="DangKiTinhNguyenVienScreen">
+        {/* Các màn hình trong Stack Navigator */}
         <Stack.Screen name="QuenMatKhau" component={QuenMatKhauScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="BottomTabs" component={BottomTabs} options={{ headerShown: false }} />
         <Stack.Screen name="XacMinhOTP" component={XacMinhOtpScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangBai" component={DangBaiScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangKy" component={DangKy} options={{ headerShown: false }} />
@@ -80,10 +88,12 @@ const App = () => {
         <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />
         <Stack.Screen name="NhanTin" component={NhanTin} options={{ headerShown: false }} />
         <Stack.Screen name="DangKiDulichScreen" component={DangKiDulichScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="TrangChu" component={TrangChuScreen} options={{ headerShown: false }} />
+
+        {/* Thay thế TrangChu bằng BottomTabs */}
+        <Stack.Screen name="TrangChu" component={BottomTabs} options={{ headerShown: false }} />
+        
         <Stack.Screen name="TrangHomeDangTus" component={TrangHomeDangTus} options={{ headerShown: false }} />
         <Stack.Screen name="TrangTimBanDuLich" component={TrangTimBanDuLich} options={{ headerShown: false }} />
-
       </Stack.Navigator>
     </NavigationContainer>
   );
