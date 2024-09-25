@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image ,KeyboardAvoidingView ,Platform} from 'react-native';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Swiper from 'react-native-swiper';
@@ -20,12 +20,12 @@ const DangKiDulichScreen = () => {
 
 
     return (
-        
+
         <SafeAreaView style={styles.container}>
 
-            
- 
-<View style={styles.inner}>
+
+
+            <View style={styles.inner}>
                 <View style={styles.headerRow}>
                     <TouchableOpacity style={styles.backButton} onPress={handleBack}>
                         <Image
@@ -35,7 +35,7 @@ const DangKiDulichScreen = () => {
                     </TouchableOpacity>
 
 
-                
+
                 </View>
 
 
@@ -105,7 +105,7 @@ const DangKiDulichScreen = () => {
 
 
             </View>
-            
+
 
         </SafeAreaView>
 
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
         marginRight: '50%',
         width: '50%',
         marginLeft: '10%',
-        left:20
+        left: 20
     },
     backButton: {
         height: '40%',
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
         marginLeft: '15%',
     },
 
-    
+
     button: {
         backgroundColor: 'blue',
         padding: 10,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
         color: '#5B6D72',
         marginTop: '5%',
     },
-    
+
     image2: {
         width: 25,
         height: 25,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
 
         // marginTop: '-20%',
         color: '#fff',
-        top:-240,
+        top: -240,
         fontWeight: 'bold',
         fontSize: 20,
         marginLeft: '-30%',
@@ -222,13 +222,13 @@ const styles = StyleSheet.create({
     },
     td: {
         // marginTop: '5%'
-        top:-40,
+        top: -40,
         fontStyle: 'italic',
         // backgroundColor: 'gray',
         borderTopLeftRadius: 10, //
-        borderTopRightRadius:10,
-        padding:10,
-        height:'auto',
+        borderTopRightRadius: 10,
+        padding: 10,
+        height: 'auto',
     },
 
     dkn: {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     },
     wrapper: {
         height: '60%',  // Đảm bảo chiều cao cho Swiper
-        borderRadius:40
+        borderRadius: 40
     },
     slide: {
         justifyContent: 'center',

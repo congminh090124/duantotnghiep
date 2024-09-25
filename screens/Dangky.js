@@ -1,14 +1,52 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground, StyleSheet, Dimensions, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 const { width, height } = Dimensions.get('window');
-
+import API_ENDPOINTS from '../apiConfig';
 const SignUpScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreeToTerms, setAgreeToTerms] = useState(false);
     const navigation = useNavigation();
+
+    const handleSignUp = async () => {
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
+            return;
+        }
+
+        if (!agreeToTerms) {
+            Alert.alert('Error', 'Please agree to the terms');
+            return;
+        }
+
+        try {
+            const response = await fetch(API_ENDPOINTS.register, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email,
+                    password,
+                }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                Alert.alert('Success', 'Registration successful');
+                // Navigate to login screen or home screen
+                navigation.navigate('TrangChu');
+            } else {
+                Alert.alert('Error', data.message || 'Registration failed');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            Alert.alert('Error', 'An error occurred. Please try again.');
+        }
+    };
 
     return (
         <ScrollView>
@@ -56,6 +94,7 @@ const SignUpScreen = () => {
                     <TouchableOpacity
                         style={[styles.signupButton, { backgroundColor: agreeToTerms ? '#00c3ff' : '#ccc' }]}
                         disabled={!agreeToTerms}
+                        onPress={handleSignUp}
                     >
                         <Text style={styles.signupButtonText}>Đăng ký</Text>
                     </TouchableOpacity>
