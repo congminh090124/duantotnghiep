@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground, StyleSheet, Dimensions, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { register ,saveToken} from '../../apiConfig';
 const { width, height } = Dimensions.get('window');
-import API_ENDPOINTS from '../apiConfig';
 const SignUpScreen = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -12,52 +13,44 @@ const SignUpScreen = () => {
 
     const handleSignUp = async () => {
         if (password !== confirmPassword) {
-            Alert.alert('Error', 'Passwords do not match');
+            Alert.alert('Lỗi', 'Mật khẩu không khớp');
             return;
         }
-
+    
         if (!agreeToTerms) {
-            Alert.alert('Error', 'Please agree to the terms');
+            Alert.alert('Lỗi', 'Vui lòng đồng ý với điều khoản');
             return;
         }
-
+    
         try {
-            const response = await fetch(API_ENDPOINTS.register, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email,
-                    password,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                Alert.alert('Success', 'Registration successful');
-                // Navigate to login screen or home screen
-                navigation.navigate('TrangChu');
+            const userData = { email, password };
+            const response = await register(userData);
+           
+            if (response.token) {
+                await saveToken(response.token);
+                await AsyncStorage.setItem('userData', JSON.stringify(response.user));
+                console.log('register successful, token saved');
+                Alert.alert('Thành công', 'Đăng ký thành công!');
+                navigation.navigate('IdentityVerification');
+                console.log(response);
             } else {
-                Alert.alert('Error', data.message || 'Registration failed');
+                Alert.alert('Lỗi', 'Đăng ký không thành công. Vui lòng thử lại.');
             }
         } catch (error) {
-            console.error('Error:', error);
-            Alert.alert('Error', 'An error occurred. Please try again.');
+            console.error('Lỗi:', error);
+            Alert.alert('Lỗi', error.message || 'Đã xảy ra lỗi. Vui lòng thử lại.');
         }
     };
-
     return (
         <ScrollView>
             <ImageBackground
-                source={require('../assets/ccc.png')} // Add your background image here
+                source={require('../../assets/ccc.png')} // Add your background image here
                 style={styles.background}
             >
                 <View style={styles.container}>
                     <Text style={styles.title}>Đăng ký</Text>
                     <Image
-                        source={require('../assets/vvv.png')}
+                        source={require('../../assets/vvv.png')}
                         style={styles.headerImage}
                     />
                     <View style={styles.viewinput}>
@@ -67,6 +60,7 @@ const SignUpScreen = () => {
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
+                            autoCapitalize="none"
                         />
                         <TextInput
                             style={styles.input}

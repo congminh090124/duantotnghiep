@@ -5,13 +5,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Image } from 'react-native';
 
 // Import các màn hình
-import QuenMatKhauScreen from './screens/QuenMatKhauScreen';
-import XacMinhOtpScreen from './screens/XacMinhOtpScreen';
+import QuenMatKhauScreen from './screens/auth/QuenMatKhauScreen';
+import XacMinhOtpScreen from './screens/auth/XacMinhOtpScreen';
 import DangKiDulichScreen from './screens/DangKiDuLichScreen';
 import DangBaiScreen from './screens/DangBaiScreen';
-import DangKy from './screens/Dangky';
-import DangNhap from './screens/DangNhap';
-import DoiMk from './screens/DoiMk';
+import DangKy from './screens/auth/Dangky';
+import DangNhap from './screens/auth/DangNhap';
+import DoiMk from './screens/auth/DoiMk';
 import TimKiemBanDuLich from './screens/TimKiemBanDuLich';
 import ThongTinCaNhan from './screens/ThongTinCaNhan';
 import TimKiem from './screens/TimKiem';
@@ -23,6 +23,15 @@ import NhanTin from './screens/NhanTin';
 import TrangChuScreen from './screens/TrangChuScreen';
 import TrangHomeDangTus from './screens/TrangHomeDangTus';
 import TrangTimBanDuLich from './screens/TrangTimBanDuLich';
+import IdentityVerification from './screens/auth/xacMinhDanhTinh';
+import VerifyIDScreen from './screens/auth/quetCCCD';
+import ConfirmCCCDScreen from './screens/auth/ConfirmCCCDScreen';
+import MapScreen from './screens/map';
+import CreatePost from './screens/createPostMap';
+import LocationSearch from './screens/LocationSearch';
+import UserProfileScreen from './screens/ThongTinCaNhan';
+import MyProfile from './screens/profile/MyProfile';
+import Follower from './screens/profile/Follower';
 // Tạo Stack Navigator
 const Stack = createStackNavigator();
 
@@ -64,7 +73,7 @@ const BottomTabs = () => {
       <Tab.Screen name="Search" component={TimKiem} />
       <Tab.Screen name="Add" component={DangBaiScreen} />
       <Tab.Screen name="Notifications" component={ThongBao} options={{ headerShown: false }} />
-      <Tab.Screen name="Profile" component={NhanTin} options={{ headerShown: false }} />
+      <Tab.Screen name="Profile" component={MyProfile} options={{ headerShown: false }} />
     </Tab.Navigator>
   );
 };
@@ -73,8 +82,17 @@ const BottomTabs = () => {
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="DangKiTinhNguyenVienScreen">
+      <Stack.Navigator initialRouteName="DangNhap">
         {/* Các màn hình trong Stack Navigator */}
+        <Stack.Screen name="Follower" component={Follower} options={{ headerShown: false }} />
+        <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
+        <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="IdentityVerification" component={IdentityVerification} options={{ headerShown: false }} />
+        <Stack.Screen name="MapScreen" component={MapScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="LocationSearch" component={LocationSearch} options={{ headerShown: false }} />
+        <Stack.Screen name="CreatePost" component={CreatePost} options={{ headerShown: false }} />
+        <Stack.Screen name="ConfirmCCCDScreen" component={ConfirmCCCDScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="VerifyIDScreen" component={VerifyIDScreen} options={{ headerShown: false }} />
         <Stack.Screen name="QuenMatKhau" component={QuenMatKhauScreen} options={{ headerShown: false }} />
         <Stack.Screen name="XacMinhOTP" component={XacMinhOtpScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangBai" component={DangBaiScreen} options={{ headerShown: false }} />

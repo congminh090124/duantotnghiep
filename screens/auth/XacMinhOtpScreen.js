@@ -29,7 +29,7 @@ const XacMinhOtpScreen = () => {
         <View style={styles.headerRow}>
           <TouchableOpacity style={styles.backButton} onPress={handleBack}>
             <Image
-              source={require('../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
+              source={require('../../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
               style={styles.backIcon}
             />
           </TouchableOpacity>

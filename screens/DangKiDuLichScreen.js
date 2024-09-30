@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, KeyboardAvoidingView, Platform } from 'react-native';
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Swiper from 'react-native-swiper';
-// import NhanTinScreen from '../screens/NhanTinScreen';
-// import DangBaiScreen from '../screens/DangBaiScreen';
-
 
 const Tab = createBottomTabNavigator(); // tạo tab navigator
 
 
 const DangKiDulichScreen = () => {
     const [find, setFind] = useState('');
+    const navigation = useNavigation(); // Add this line
+
+    const handleBack = () => {
+        navigation.goBack(); // Add this function
+    };
     return (
 
 
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
         width: '50%',
         marginLeft: '10%',
         left: 20
-        left: 20
+      
     },
     backButton: {
         height: '40%',
@@ -254,7 +255,7 @@ const styles = StyleSheet.create({
     wrapper: {
         height: '60%',  // Đảm bảo chiều cao cho Swiper
         borderRadius: 40
-        borderRadius: 40
+        
     },
     slide: {
         justifyContent: 'center',
