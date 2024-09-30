@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import BlogPage from './Blog';
+import BlogPage from './blog/Blog';
 
 const TopTab = createMaterialTopTabNavigator();
 const { width } = Dimensions.get('window');
