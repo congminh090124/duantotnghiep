@@ -15,12 +15,12 @@ import DoiMk from './screens/auth/DoiMk';
 import TimKiemBanDuLich from './screens/TimKiemBanDuLich';
 import ThongTinCaNhan from './screens/ThongTinCaNhan';
 import TimKiem from './screens/TimKiem';
-import Blog from './screens/Blog';
+import Blog from './screens/blog/Blog';
 import ThongBao from './screens/ThongBao';
 import DangKiTinhNguyenVienScreen from './screens/DangKiTinhNguyenVienScreen';
 import DKTinhNguyenVien from './screens/DKTinhNguyenVien';
 import NhanTin from './screens/NhanTin';
-import TrangChuScreen from './screens/TrangChuScreen';
+
 import TrangHomeDangTus from './screens/TrangHomeDangTus';
 import TrangTimBanDuLich from './screens/TrangTimBanDuLich';
 import IdentityVerification from './screens/auth/xacMinhDanhTinh';
@@ -72,5 +72,4 @@ const App = () => {
     </NavigationContainer>
   );
 };
-
 export default App;

@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
   posts: `${API_BASE_URL}/api/posts`,
   chats: `${API_BASE_URL}/api/chats`,
   users: `${API_BASE_URL}/api/users/users`,
+  updateProfile: `${API_BASE_URL}/api/users/update-profile`,
   // Thêm các endpoint khác ở đây
 };
 
@@ -161,6 +162,29 @@ export const updateAvatar = async (imageUri) => {
     return data;
   } catch (error) {
     console.error('Error updating avatar:', error);
+    throw error;
+  }
+};
+export const updateProfile = async (profileData) => {
+  try {
+    const token = await getToken();
+    const response = await fetch(API_ENDPOINTS.updateProfile, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(profileData)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating profile:', error);
     throw error;
   }
 };

@@ -46,31 +46,6 @@ export default function TravelloApp() {
     }
   };
 
-  // Tạo post mới
-  const handleCreatePost = async () => {
-    if (!newPost.title || !newPost.content || !newPost.image) {
-      alert('Please fill all fields and select an image');
-      return;
-    }
-
-    const postData = {
-      title: newPost.title,
-      content: newPost.content,
-      latitude: region.latitude.toString(),
-      longitude: region.longitude.toString(),
-      image: newPost.image,
-    };
-
-    try {
-      const data = await createPost(postData);
-      console.log('New post created:', data);
-      setShowNewPostForm(false);
-      setNewPost({ title: '', content: '', image: null });
-      loadPosts(); // Refresh posts after creating a new one
-    } catch (error) {
-      console.error('Error creating post:', error);
-    }
-  };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
