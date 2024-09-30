@@ -65,7 +65,7 @@ export default function CreatePost() {
     }
 
     try {
-      const response = await fetch('https://lacewing-evolving-generally.ngrok-free.app/api/posts', {
+      const response = await fetch('https://enhanced-remotely-bobcat.ngrok-free.app/api/posts', {
         method: 'POST',
         body: formData,
       });

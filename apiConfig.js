@@ -1,12 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
+
+const apiClient = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
   login: `${API_BASE_URL}/api/users/login`,
   showProfile: `${API_BASE_URL}/api/users/thong-tin-ca-nhan`,
   updateAvatar: `${API_BASE_URL}/api/users/update-avatar`,
+  posts: `${API_BASE_URL}/api/posts`,
+  chats: `${API_BASE_URL}/api/chats`,
+  users: `${API_BASE_URL}/api/users/users`,
   // Thêm các endpoint khác ở đây
 };
 
@@ -154,4 +164,68 @@ export const updateAvatar = async (imageUri) => {
     throw error;
   }
 };
+// Hàm lấy danh sách các post
+export const fetchPosts = async () => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.posts);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    throw error;
+  }
+};
+
+// Hàm tạo post mới
+export const createPost = async (postData) => {
+  try {
+    const formData = new FormData();
+    formData.append('title', postData.title);
+    formData.append('content', postData.content);
+    formData.append('latitude', postData.latitude);
+    formData.append('longitude', postData.longitude);
+    formData.append('image', {
+      uri: postData.image,
+      type: 'image/jpeg',
+      name: 'post_image.jpg',
+    });
+
+    const response = await apiClient.post(API_ENDPOINTS.posts, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error creating post:', error);
+    throw error;
+  }
+};
+export const fetchChatData = async () => {
+  try {
+    const response = await apiClient.get(API_ENDPOINTS.chats);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching chat data:', error);
+    throw error;
+  }
+};
+
+export const fetchUsersData = async () => {
+  try {
+    const token = await getToken(); // Giả sử bạn có hàm getToken
+    if (!token) {
+      throw new Error('No token found');
+    }
+    const response = await apiClient.get(API_ENDPOINTS.users, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching users data:', error);
+    throw error;
+  }
+};
+
 export default API_ENDPOINTS;

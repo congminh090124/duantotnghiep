@@ -3,8 +3,7 @@ import { View, Text, Image, StyleSheet, TextInput, Button, ScrollView, Touchable
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
-
-const API_URL = 'https://lacewing-evolving-generally.ngrok-free.app'; // Thay thế bằng URL API của bạn
+import { fetchPosts, createPost, API_BASE_URL } from '../apiConfig'; // Import từ apiConfig.js
 
 export default function TravelloApp() {
   const [region, setRegion] = useState({
@@ -34,49 +33,40 @@ export default function TravelloApp() {
       });
     })();
 
-    fetchPosts();
+    loadPosts();
   }, []);
 
-  const fetchPosts = async () => {
+  // Gọi API để lấy danh sách posts
+  const loadPosts = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/posts`);
-      const data = await response.json();
+      const data = await fetchPosts();
       setPosts(data);
     } catch (error) {
       console.error('Error fetching posts:', error);
     }
   };
 
+  // Tạo post mới
   const handleCreatePost = async () => {
     if (!newPost.title || !newPost.content || !newPost.image) {
       alert('Please fill all fields and select an image');
       return;
     }
 
-    const formData = new FormData();
-    formData.append('title', newPost.title);
-    formData.append('content', newPost.content);
-    formData.append('latitude', region.latitude.toString());
-    formData.append('longitude', region.longitude.toString());
-    formData.append('image', {
-      uri: newPost.image,
-      type: 'image/jpeg',
-      name: 'post_image.jpg',
-    });
+    const postData = {
+      title: newPost.title,
+      content: newPost.content,
+      latitude: region.latitude.toString(),
+      longitude: region.longitude.toString(),
+      image: newPost.image,
+    };
 
     try {
-      const response = await fetch(`${API_URL}/api/posts`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      const data = await response.json();
+      const data = await createPost(postData);
       console.log('New post created:', data);
       setShowNewPostForm(false);
       setNewPost({ title: '', content: '', image: null });
-      fetchPosts(); // Refresh posts after creating a new one
+      loadPosts(); // Refresh posts after creating a new one
     } catch (error) {
       console.error('Error creating post:', error);
     }
@@ -113,7 +103,7 @@ export default function TravelloApp() {
           >
             <View style={styles.markerContainer}>
               <Image
-                source={{ uri: `${API_URL}${post.image}` }}
+              source={{ uri: `${API_BASE_URL}${post.image}` }}
                 style={styles.markerImage}
               />
               <View style={styles.markerBadge}>
@@ -123,7 +113,7 @@ export default function TravelloApp() {
           </Marker>
         ))}
       </MapView>
-      
+
       <TouchableOpacity
         style={styles.newPostButton}
         onPress={() => setShowNewPostForm(!showNewPostForm)}

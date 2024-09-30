@@ -1,10 +1,10 @@
+// App.js
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Image } from 'react-native';
+import BottomTabs from './navigation/BottomTabs'; // Import BottomTabs
 
-// Import các màn hình
+// Import các màn hình khác
 import QuenMatKhauScreen from './screens/auth/QuenMatKhauScreen';
 import XacMinhOtpScreen from './screens/auth/XacMinhOtpScreen';
 import DangKiDulichScreen from './screens/DangKiDuLichScreen';
@@ -24,7 +24,7 @@ import TrangChuScreen from './screens/TrangChuScreen';
 import TrangHomeDangTus from './screens/TrangHomeDangTus';
 import TrangTimBanDuLich from './screens/TrangTimBanDuLich';
 import IdentityVerification from './screens/auth/xacMinhDanhTinh';
-import VerifyIDScreen from './screens/auth/quetCCCD';
+import VerifyIDScreen from './screens/auth/VerifyIDScreen';
 import ConfirmCCCDScreen from './screens/auth/ConfirmCCCDScreen';
 import MapScreen from './screens/map';
 import CreatePost from './screens/createPostMap';
@@ -32,58 +32,16 @@ import LocationSearch from './screens/LocationSearch';
 import UserProfileScreen from './screens/ThongTinCaNhan';
 import MyProfile from './screens/profile/MyProfile';
 import Follower from './screens/profile/Follower';
-// Tạo Stack Navigator
+import UserListScreen from './screens/chat/UserListScreen';
+import Chat from './screens/chat/Chat';
 const Stack = createStackNavigator();
 
-// Tạo Bottom Tab Navigator
-const Tab = createBottomTabNavigator();
-
-// Tạo các màn hình trong Bottom Tab
-const BottomTabs = () => {
-  return (
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ size }) => {
-          let iconPath;
-
-          if (route.name === 'Home') {
-            iconPath = require('./assets/home.png');
-          } 
-          else if (route.name === 'Search') {
-            iconPath = require('./assets/search.png');
-          } 
-          else if (route.name === 'Add') {
-            iconPath = require('./assets/add.png');
-          } 
-          else if (route.name === 'Notifications') {
-            iconPath = require('./assets/notifications.png');
-          }
-           else if (route.name === 'Profile') {
-            iconPath = require('./assets/profile.png');
-          }
-
-          return <Image source={iconPath} style={{ width: size, height: size }} />;
-        },
-        tabBarActiveTintColor: 'tomato',
-        tabBarInactiveTintColor: 'gray',
-      })}
-    >
-      {/* Thêm TrangChuScreen vào Bottom Tab */}
-      <Tab.Screen name="Home" component={TrangChuScreen} options={{ headerShown: false }} />
-      <Tab.Screen name="Search" component={TimKiem} />
-      <Tab.Screen name="Add" component={DangBaiScreen} />
-      <Tab.Screen name="Notifications" component={ThongBao} options={{ headerShown: false }} />
-      <Tab.Screen name="Profile" component={MyProfile} options={{ headerShown: false }} />
-    </Tab.Navigator>
-  );
-};
-
-// Tích hợp Stack Navigator và Bottom Tab Navigator
 const App = () => {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="DangNhap">
-        {/* Các màn hình trong Stack Navigator */}
+        {/* Khai báo các màn hình trong Stack Navigator */}   
+        <Stack.Screen name="ThongBao" component={ThongBao} options={{ headerShown: false }} />
         <Stack.Screen name="Follower" component={Follower} options={{ headerShown: false }} />
         <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
         <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />
@@ -106,12 +64,10 @@ const App = () => {
         <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />
         <Stack.Screen name="NhanTin" component={NhanTin} options={{ headerShown: false }} />
         <Stack.Screen name="DangKiDulichScreen" component={DangKiDulichScreen} options={{ headerShown: false }} />
-
-        {/* Thay thế TrangChu bằng BottomTabs */}
+        <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false }} />
+        {/* Sử dụng BottomTabs làm màn hình chính của TrangChu */}
         <Stack.Screen name="TrangChu" component={BottomTabs} options={{ headerShown: false }} />
-        
-        <Stack.Screen name="TrangHomeDangTus" component={TrangHomeDangTus} options={{ headerShown: false }} />
-        <Stack.Screen name="TrangTimBanDuLich" component={TrangTimBanDuLich} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
