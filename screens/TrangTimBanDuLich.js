@@ -1,143 +1,162 @@
-import React, { useState } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
+import React, { useRef, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import BlogPage from './Blog';
 
-const { width, height } = Dimensions.get('window'); // Lấy kích thước màn hình
-
-const ProfileScreen = () => {
+const TopTab = createMaterialTopTabNavigator();
+const { width } = Dimensions.get('window');
+const imageUrls = [
+  'https://sb.tinhte.vn/2020/01/4875839_united_arab_emirates_skyscrapers_dubai_megapolis-wallpaper-1920x1080.jpg',
+  'https://d1hjkbq40fs2x4.cloudfront.net/2016-01-31/files/1045.jpg' 
+];
+const PlaceholderScreen = () => {
+  const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  const images = [
-    'https://i.pinimg.com/564x/35/32/a0/3532a09f083ef3e512b3f5c412a369ea.jpg',
-    'https://i.pinimg.com/564x/cb/66/54/cb6654c65688ad61a40c132a471b2b2a.jpg',
-    'https://i.pinimg.com/564x/35/fa/22/35fa22795204c0748f7e099adb7b6e64.jpg',
-  ];
+  const onScroll = (event) => {
+    const slideSize = event.nativeEvent.layoutMeasurement.width;
+    const index = event.nativeEvent.contentOffset.x / slideSize;
+    const roundIndex = Math.round(index);
+    setCurrentIndex(roundIndex);
+  };
 
-  const handleScroll = (event) => {
-    const slideIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-    setCurrentIndex(slideIndex);
+  const scrollToIndex = (index) => {
+    if (index >= 0 && index < imageUrls.length) {
+      flatListRef.current.scrollToIndex({ index, animated: true });
+    }
   };
 
   return (
-    <View style={styles.container}>
-      {/* Horizontal Scrollable Images */}
-      <ScrollView
+    <View style={styles.mainContent}>
+      <FlatList
+        ref={flatListRef}
+        data={imageUrls}
+        renderItem={({ item }) => (
+          <Image
+            source={{ uri: item }}
+            style={styles.mainVideo}
+          />
+        )}
+        keyExtractor={(item, index) => index.toString()}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
-      >
-        {images.map((image, index) => (
-          <Image key={index} source={{ uri: image }} style={styles.profileImage} />
-        ))}
-      </ScrollView>
-
-      {/* Text Information on Image */}
-      <View style={styles.textOverlay}>
-        <Text style={styles.userName}>Bo, 22</Text>
-        <Text style={styles.tagline}>Bún đậu nước mắm</Text>
-
-        <View style={styles.infoRow}>
-          <Icon name="map-marker" size={20} color="#fff" />
-          <Text style={styles.infoText}>Đang ở Buôn Ma Thuột</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Icon name="male" size={20} color="#fff" />
-          <Text style={styles.infoText}>190 cm</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Icon name="glass" size={20} color="#fff" />
-          <Text style={styles.infoText}>Không bao giờ</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Icon name="plane" size={20} color="#fff" />
-          <Text style={styles.infoText}>Muốn tìm 2 người bạn nam đi du lịch tại Động Phong Nha</Text>
-        </View>
-
-        <View style={styles.infoRow}>
-          <Icon name="clock-o" size={20} color="#fff" />
-          <Text style={styles.infoText}>Thời gian : 2 ngày 1 đêm</Text>
-        </View>
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.actionButtonx}>
-          <Icon name="times" size={30} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Icon name="heart" size={30} color="#fff" />
-        </TouchableOpacity>
-      </View>
+        onScroll={onScroll}
+        onScrollEndDrag={() => {
+          if (currentIndex === 0) {
+            scrollToIndex(0);
+          } else if (currentIndex === imageUrls.length - 1) {
+            scrollToIndex(imageUrls.length - 1);
+          }
+        }}
+      />
+      <RightSidebar />
+      <BottomInfo />
     </View>
   );
 };
 
+const RightSidebar = () => (
+  <View style={styles.rightSidebar}>
+    <Image
+      source={{ uri: '/api/placeholder/40/40' }}
+      style={styles.avatar}
+    />
+    <TouchableOpacity style={styles.iconContainer}>
+      <Text style={styles.icon}>♥</Text>
+      <Text style={styles.iconText}>4,379</Text>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.iconContainer}>
+      <Text style={styles.icon}>💬</Text>
+      <Text style={styles.iconText}>85</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const BottomInfo = () => (
+  <View style={styles.bottomInfo}>
+    <Text style={styles.username}>Dinhtkitt Shop</Text>
+    <Text style={styles.description}>Cần Thơ Hôm Nay Có Biến Căng Quá </Text>
+  </View>
+);
+
+
+const TrangTimBanDuLich = () => {
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <TopTab.Navigator
+        screenOptions={{
+          tabBarStyle: styles.topNav,
+          tabBarIndicatorStyle: styles.tabBarIndicator,
+          tabBarLabelStyle: styles.tabBarLabel,
+        }}
+      >
+        <TopTab.Screen name="Trang chủ" component={PlaceholderScreen} />
+        <TopTab.Screen name="Blogs" component={BlogPage} />
+      </TopTab.Navigator>
+    </SafeAreaView>
+  );
+};
+
+
 const styles = StyleSheet.create({
-  container: {
+  mainContent: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: 'white',
   },
-  profileImage: {
-    width,
-    height: height * 0.75, // Chiều cao ảnh bằng 75% chiều cao màn hình
-    resizeMode: 'cover',
+  mainVideo: {
+    width: width,
+    height: '100%',
   },
-  textOverlay: {
+  topNav: {
+    backgroundColor: 'white',
+  },
+  tabBarIndicator: {
+    backgroundColor: 'white',
+  },
+  tabBarLabel: {
+    color: 'black',
+    fontSize: 14,
+  },
+  rightSidebar: {
     position: 'absolute',
-    top: '50%', // Đặt văn bản gần phía trên ảnh
-    left: 20,
-    right: 20,
-    alignItems: 'flex-start',
+    right: 10,
+    bottom: 100,
+    alignItems: 'center',
   },
-  userName: {
-    fontSize: 32,
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginBottom: 20,
+  },
+  iconContainer: {
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  icon: {
+    color: 'black',
+    fontSize: 24,
+  },
+  iconText: {
+    color: 'black',
+    marginTop: 5,
+  },
+  bottomInfo: {
+    position: 'absolute',
+    bottom: 80,
+    left: 10,
+  },
+  username: {
+    color: 'black',
     fontWeight: 'bold',
-    color: '#fff',
-  },
-  tagline: {
-    fontSize: 18,
-    color: '#fff',
-    marginVertical: 10,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 5,
-  },
-  infoText: {
-    marginLeft: 10,
     fontSize: 16,
-    color: '#fff',
   },
-  actionButtons: {
-    position: 'absolute',
-    bottom: 30, // Đặt các nút ở dưới cùng màn hình
-    left: 20,
-    right: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    backgroundColor: '#00CC33',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  actionButtonx: {
-    backgroundColor: '#CC0000',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+  description: {
+    color: 'black',
+    fontSize: 14,
   },
 });
 
-export default ProfileScreen;
+export default TrangTimBanDuLich;

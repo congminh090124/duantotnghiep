@@ -32,6 +32,7 @@ import LocationSearch from './screens/LocationSearch';
 import UserProfileScreen from './screens/ThongTinCaNhan';
 import MyProfile from './screens/profile/MyProfile';
 import Follower from './screens/profile/Follower';
+import UpdateProfile from './screens/profile/udateProfile';
 // Tạo Stack Navigator
 const Stack = createStackNavigator();
 
@@ -69,7 +70,7 @@ const BottomTabs = () => {
       })}
     >
       {/* Thêm TrangChuScreen vào Bottom Tab */}
-      <Tab.Screen name="Home" component={TrangChuScreen} options={{ headerShown: false }} />
+      <Tab.Screen name="Home" component={TrangTimBanDuLich} options={{ headerShown: false }} />
       <Tab.Screen name="Search" component={TimKiem} />
       <Tab.Screen name="Add" component={DangBaiScreen} />
       <Tab.Screen name="Notifications" component={ThongBao} options={{ headerShown: false }} />
@@ -82,8 +83,9 @@ const BottomTabs = () => {
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="DangNhap">
+      <Stack.Navigator initialRouteName="TrangChu">
         {/* Các màn hình trong Stack Navigator */}
+        <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ headerShown: false }} />
         <Stack.Screen name="Follower" component={Follower} options={{ headerShown: false }} />
         <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
         <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />

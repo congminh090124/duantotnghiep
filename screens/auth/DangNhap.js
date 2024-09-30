@@ -18,19 +18,19 @@ const LoginScreen = () => {
       console.log('Attempting login with:', { email, password });
       const userData = { email, password };
       const response = await login(userData);
-      console.log('Login response:', response);
+     
       
       if (response.token && response.user) {
         await saveToken(response.token);
         await AsyncStorage.setItem('userData', JSON.stringify(response.user));
         console.log('Login successful, token saved');
-        console.log('User data:', response.user);
+        
   
         if (response.user.xacMinhDanhTinh) {
           console.log('Identity verified, navigating to TrangChu');
           navigation.navigate('TrangChu');
         } else {
-          console.log('xacMinhDanhTinh status:', response.user.xacMinhDanhTinh);
+          
           console.log('Identity not verified, showing alert');
           Alert.alert(
             'Xác minh danh tính',

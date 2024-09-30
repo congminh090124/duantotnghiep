@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground, StyleSheet, Dimensions, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { register ,saveToken} from '../../apiConfig';
+import { register, saveToken } from '../../apiConfig';
 const { width, height } = Dimensions.get('window');
 const SignUpScreen = () => {
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [agreeToTerms, setAgreeToTerms] = useState(false);
@@ -16,16 +17,16 @@ const SignUpScreen = () => {
             Alert.alert('Lỗi', 'Mật khẩu không khớp');
             return;
         }
-    
+
         if (!agreeToTerms) {
             Alert.alert('Lỗi', 'Vui lòng đồng ý với điều khoản');
             return;
         }
-    
+
         try {
-            const userData = { email, password };
+            const userData = { email, password, username };
             const response = await register(userData);
-           
+
             if (response.token) {
                 await saveToken(response.token);
                 await AsyncStorage.setItem('userData', JSON.stringify(response.user));
@@ -64,6 +65,12 @@ const SignUpScreen = () => {
                         />
                         <TextInput
                             style={styles.input}
+                            placeholder="Tên người dùng"
+                            value={username}
+                            onChangeText={setUsername}
+                        />
+                        <TextInput
+                            style={styles.input}
                             placeholder="Mật khẩu"
                             value={password}
                             onChangeText={setPassword}
@@ -96,32 +103,6 @@ const SignUpScreen = () => {
                     <TouchableOpacity style={styles.quenmk}>
                         <Text style={{ color: 'blue' }}>Quên mật khẩu</Text>
                     </TouchableOpacity>
-
-                    {/* <Text style={styles.orText}>Hoặc</Text>
-
-                    <View style={styles.socialButtonsContainer}>
-                        <TouchableOpacity style={styles.socialButton}>
-                            <Image
-                                source={require('../assets/logo.png')} // Apple logo
-                                style={styles.logo}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.socialButton}>
-                            <Image
-                                source={require('../assets/gg.png')} // Google logo
-                                style={styles.logo}
-                            />
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.socialButton}>
-                            <Image
-                                source={require('../assets/fb.png')} // Facebook logo
-                                style={styles.logo}
-                            />
-                        </TouchableOpacity>
-                    </View> */}
-
                 </View>
             </ImageBackground>
         </ScrollView>

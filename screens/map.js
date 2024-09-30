@@ -47,40 +47,6 @@ export default function TravelloApp() {
     }
   };
 
-  const handleCreatePost = async () => {
-    if (!newPost.title || !newPost.content || !newPost.image) {
-      alert('Please fill all fields and select an image');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('title', newPost.title);
-    formData.append('content', newPost.content);
-    formData.append('latitude', region.latitude.toString());
-    formData.append('longitude', region.longitude.toString());
-    formData.append('image', {
-      uri: newPost.image,
-      type: 'image/jpeg',
-      name: 'post_image.jpg',
-    });
-
-    try {
-      const response = await fetch(`${API_URL}/api/posts`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      const data = await response.json();
-      console.log('New post created:', data);
-      setShowNewPostForm(false);
-      setNewPost({ title: '', content: '', image: null });
-      fetchPosts(); // Refresh posts after creating a new one
-    } catch (error) {
-      console.error('Error creating post:', error);
-    }
-  };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
