@@ -36,7 +36,7 @@ import Follower from './screens/profile/Follower';
 import UpdateProfile from './screens/profile/udateProfile';
 import PostDetailScreen from './screens/profile//PostDetailScreen';
 import UserListScreen from './screens/chat/UserListScreen';
-// import ChatScreen from './screens/chat/ChatScreen';
+import ChatScreen from './screens/chat/ChatScreen';
 
 
 // Tạo Stack Navigator
@@ -77,7 +77,7 @@ const BottomTabs = () => {
         })}
       >
         <Tab.Screen name="Home" component={TrangTimBanDuLich} options={{ headerShown: false }} />
-        <Tab.Screen name="Search" component={UserListScreen} />
+        <Tab.Screen name="Search" component={UserListScreen} options={{ headerShown: false }} />
         <Tab.Screen 
           name="Add" 
           component={EmptyComponent}
@@ -107,7 +107,7 @@ const App = () => {
       <Stack.Navigator initialRouteName="DangNhap">
         {/* Các màn hình trong Stack Navigator */}
         <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }} />
-        {/* <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} /> */}
+        <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
         <Stack.Screen name="PostDetailScreen" component={PostDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ headerShown: false }} />
         <Stack.Screen name="Follower" component={Follower} options={{ headerShown: false }} />
