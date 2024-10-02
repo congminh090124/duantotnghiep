@@ -81,6 +81,20 @@ const PostCreationScreen = () => {
       ? `${API_BASE_URL}${profileData.anh_dai_dien}`
       : null;
   }, [profileData?.anh_dai_dien]);
+  const optimizeImage = async (uri) => {
+    try {
+      const manipulatedImage = await manipulateAsync(
+        uri,
+        [{ resize: { width: 1080 } }], // Resize to 1080px width
+        { compress: 0.7, format: SaveFormat.JPEG } // Compress to 70% quality
+      );
+      return manipulatedImage.uri;
+    } catch (error) {
+      console.error('Error optimizing image:', error);
+      return uri; // Return original URI if optimization fails
+    }
+  };
+
 
   const handleAddImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -89,12 +103,14 @@ const PostCreationScreen = () => {
       aspect: [4, 3],
       quality: 1,
     });
-
+  
     if (!result.canceled && result.assets) {
-      setImages([...image, ...result.assets.map(asset => asset.uri)]);
+      const optimizedImages = await Promise.all(
+        result.assets.map(async (asset) => await optimizeImage(asset.uri))
+      );
+      setImages([...image, ...optimizedImages]);
     }
   };
-
   const handleRemoveImage = (index) => {
     setImages(image.filter((_, i) => i !== index));
   };
@@ -104,28 +120,35 @@ const PostCreationScreen = () => {
       Alert.alert('Lỗi', 'Vui lòng nhập tiêu đề bài viết.');
       return;
     }
-
+  
     if (!location) {
       Alert.alert('Lỗi', 'Không thể lấy vị trí. Vui lòng thử lại.');
       return;
     }
-
+  
     try {
+      const optimizedImages = await Promise.all(
+        image.map(async (img) => {
+          const optimizedUri = await optimizeImage(img);
+          return {
+            uri: optimizedUri,
+            type: 'image/jpeg',
+            name: `image_${Date.now()}.jpg`,
+          };
+        })
+      );
+  
       const postData = {
         title: title.trim(),
         location: {
           type: "Point",
           coordinates: [location.longitude, location.latitude]
         },
-        image: image.map((img, index) => ({
-          uri: img,
-          type: 'image/jpeg',
-          name: `image_${index}.jpg`,
-        })),
+        image: optimizedImages,
       };
-
+  
       console.log('Sending post data:', postData);
-
+  
       const result = await createPost(postData);
       console.log('Post created successfully:', result);
       Alert.alert('Thành công', 'Bài viết đã được tạo.');

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { showPostWithID, getUserProfile } from '../../apiConfig';
 
-const { width } = Dimensions.get('window');
+const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const { width, height } = Dimensions.get('window');
 
 const PostDetailScreen = ({ route, navigation }) => {
   const { postId } = route.params;
@@ -11,7 +12,7 @@ const PostDetailScreen = ({ route, navigation }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   useEffect(() => {
     fetchPostDetails();
   }, []);
@@ -33,6 +34,15 @@ const PostDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  const avatarUri = useMemo(() => {
+    return user?.anh_dai_dien
+      ? `${API_BASE_URL}${user.anh_dai_dien}`
+      : null;
+  }, [user?.anh_dai_dien]);
+
+
+
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -49,6 +59,15 @@ const PostDetailScreen = ({ route, navigation }) => {
     );
   }
  
+
+  const renderImageItem = ({ item }) => (
+    <Image
+      source={{ uri: item }}
+      style={styles.postImage}
+      resizeMode="cover"
+    />
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -64,10 +83,16 @@ const PostDetailScreen = ({ route, navigation }) => {
       <View style={styles.postContainer}>
         {/* User Info */}
         <View style={styles.userInfo}>
-          <Image
-            source={{ uri: user.anh_dai_dien || 'https://via.placeholder.com/150' }}
-            style={styles.avatar}
-          />
+          {avatarUri ? (
+            <Image
+              source={{ uri: avatarUri }}
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={[styles.avatar, styles.placeholderImage]}>
+              <Text style={styles.placeholderText}>No Image</Text>
+            </View>
+          )}
           <Text style={styles.username}>{user.username || 'Unknown User'}</Text>
           <TouchableOpacity style={styles.moreButton}>
             <Ionicons name="ellipsis-horizontal" size={24} color="white" />
@@ -76,12 +101,35 @@ const PostDetailScreen = ({ route, navigation }) => {
 
         {/* Post Image */}
         {post.images && post.images.length > 0 && (
-          <Image
-            source={{ uri: post.images[0] }}
-            style={styles.postImage}
-            resizeMode="cover"
+          <FlatList
+            data={post.images}
+            renderItem={renderImageItem}
+            keyExtractor={(item, index) => index.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              const newIndex = Math.floor(event.nativeEvent.contentOffset.x / width);
+              setCurrentImageIndex(newIndex);
+            }}
           />
         )}
+
+         {/* Image Indicator */}
+         {post.images && post.images.length > 1 && (
+          <View style={styles.imageIndicatorContainer}>
+            {post.images.map((_, index) => (
+              <View
+                key={index}
+                style={[
+                  styles.imageIndicatorDot,
+                  index === currentImageIndex && styles.imageIndicatorDotActive
+                ]}
+              />
+            ))}
+          </View>
+        )}
+
 
         {/* Interaction Buttons */}
         <View style={styles.interactionButtons}>
@@ -135,9 +183,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
   },
-  placeholder: {
-    width: 24,
-  },
   postContainer: {
     flex: 1,
   },
@@ -161,7 +206,27 @@ const styles = StyleSheet.create({
   },
   postImage: {
     width: width,
-    height: width,
+    height: height - 200, // Adjust this value as needed
+    resizeMode: 'cover',
+  },
+  imageIndicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 20,
+    left: 0,
+    right: 0,
+  },
+  imageIndicatorDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    marginHorizontal: 4,
+  },
+  imageIndicatorDotActive: {
+    backgroundColor: 'white',
   },
   interactionButtons: {
     flexDirection: 'row',
@@ -189,6 +254,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 10,
     marginTop: 5,
+  },
+  placeholderImage: {
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#fff',
+    fontSize: 10,
   },
 });
 

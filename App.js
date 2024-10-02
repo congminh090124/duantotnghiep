@@ -34,7 +34,7 @@ import UserProfileScreen from './screens/ThongTinCaNhan';
 import MyProfile from './screens/profile/MyProfile';
 import Follower from './screens/profile/Follower';
 import UpdateProfile from './screens/profile/udateProfile';
-import PostDetailScreen from './screens/profile//PostDetailScreen';
+import PostDetailScreen from './screens/blog//PostDetailScreen';
 import UserListScreen from './screens/chat/UserListScreen';
 // import ChatScreen from './screens/chat/ChatScreen';
 

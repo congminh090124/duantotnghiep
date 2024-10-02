@@ -9,10 +9,10 @@ export const API_ENDPOINTS = {
   updateAvatar: `${API_BASE_URL}/api/users/update-avatar`,
   updateProfile: `${API_BASE_URL}/api/users/update-profile`,
   createPost: `${API_BASE_URL}/api/posts/create-post`,
-  showPostsMap:`${API_BASE_URL}/api/posts/showPostsMap`,
   showPostWithID:`${API_BASE_URL}/api/posts/post/:id`,
   getUserPosts: `${API_BASE_URL}/api/posts/my-posts`, // Thêm endpoint mới này
-  
+  showAllPosts: `${API_BASE_URL}/api/posts/all-posts`,
+   likePost: `${API_BASE_URL}/api/posts/:postId/like`
  
   // Thêm các endpoint khác ở đây
 };
@@ -272,20 +272,19 @@ export const updateProfile = async (profileData) => {
     throw error;
   }
 };
-export const getPosts = async () => {
+export const getAllPosts = async () => {
   try {
     const token = await getToken();
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(API_ENDPOINTS.showPostsMap, {
+    const response = await fetch(API_ENDPOINTS.showAllPosts, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
-
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Network response was not ok');
@@ -293,36 +292,36 @@ export const getPosts = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in getPosts:', error);
+    console.error('Error in getAllPosts:', error);
     throw error;
   }
 };
-
-export const showPostsMap = async () => {
+export const toggleLikePost = async (postId) => {
   try {
     const token = await getToken();
     if (!token) {
       throw new Error('No authentication token found');
     }
 
-    const response = await fetch(`${API_ENDPOINTS.showPostsMap}`, {
-      method: 'GET',
+    const response = await fetch(API_ENDPOINTS.likePost.replace(':postId', postId), {
+      method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
       },
     });
-
+    
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Network response was not ok');
+      throw new Error(errorData.message || `Failed to toggle like. Status: ${response.status}`);
     }
-
-    return await response.json();
+    
+    const data = await response.json();
+    console.log('Toggle like response:', data);
+    return data;
   } catch (error) {
-    console.error('Error in getPost:', error);
+    console.error('Error toggling like:', error);
     throw error;
   }
 };
-
-
 export default API_ENDPOINTS;
