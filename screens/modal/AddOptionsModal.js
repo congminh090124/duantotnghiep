@@ -6,7 +6,7 @@ const AddOptionsModal = ({ isVisible, onClose }) => {
   const navigation = useNavigation();
 
   const options = [
-    { title: 'Đăng bài', screen: 'DangBaiScreen' },
+    { title: 'Đăng bài', screen: 'CreatePost' },
     { title: 'Tạo blog', screen: 'CreatePostScreen' },
     { title: 'Đăng ký du lịch', screen: 'DangKiDulichScreen' },
     { title: 'Đăng ký TNV', screen: 'DangKiTinhNguyenVienScreen' },

@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
+import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { getUserProfile, updateAvatar } from '../../apiConfig';
+import { getUserProfile, updateAvatar, getUserPosts } from '../../apiConfig';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
@@ -13,12 +13,25 @@ const MyProfile = () => {
   const [profileData, setProfileData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
+  const [posts, setPosts] = useState([]);
+
+  const fetchPosts = async () => {
+    try {
+      const fetchedPosts = await getUserPosts();
+      setPosts(fetchedPosts);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      Alert.alert('Error', 'Unable to fetch posts. Please try again later.');
+    }
+  };
+
 
   const fetchProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getUserProfile();
       setProfileData(data);
+
     } catch (error) {
       Alert.alert('Error', 'Unable to fetch profile. Please try again later.');
     } finally {
@@ -26,12 +39,39 @@ const MyProfile = () => {
     }
   }, []);
 
-  useFocusEffect(useCallback(() => {
-    fetchProfile();
-  }, [fetchProfile]));
-
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+  
+      const fetchData = async () => {
+        try {
+          const [profileData, postsData] = await Promise.all([
+            getUserProfile(),
+            getUserPosts()
+          ]);
+          if (isActive) {
+            setProfileData(profileData);
+            setPosts(postsData);
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          Alert.alert('Error', 'Unable to fetch data. Please try again later.');
+        } finally {
+          if (isActive) {
+            setIsLoading(false);
+          }
+        }
+      };
+  
+      fetchData();
+  
+      return () => {
+        isActive = false;
+      };
+    }, [])
+  );
   const handleEditProfile = () => {
-    navigation.navigate('UpdateProfile', { 
+    navigation.navigate('UpdateProfile', {
       profileData,
       onProfileUpdate: fetchProfile
     });
@@ -64,7 +104,7 @@ const MyProfile = () => {
         );
 
         const updatedProfile = await updateAvatar(manipulatedImage.uri);
-        
+
         setProfileData(prevState => ({
           ...prevState,
           avatar: updatedProfile.avatar
@@ -96,7 +136,11 @@ const MyProfile = () => {
   if (!profileData) {
     return <Text style={styles.errorText}>No profile data available</Text>;
   }
-
+  const handlePostPress = (post) => {
+    navigation.navigate('PostDetailScreen', {
+      postId: post._id
+    });
+  };
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -130,8 +174,8 @@ const MyProfile = () => {
                 <Text style={styles.placeholderText}>No Image</Text>
               </View>
             )}
-            <TouchableOpacity 
-              style={styles.updateAvatarIcon} 
+            <TouchableOpacity
+              style={styles.updateAvatarIcon}
               onPress={handleUpdateAvatar}
               disabled={isUpdatingAvatar}
             >
@@ -141,9 +185,9 @@ const MyProfile = () => {
                 <Ionicons name="add-circle" size={24} color="#0095F6" />
               )}
             </TouchableOpacity>
-            
+
           </View>
-          
+
           <View style={styles.statsContainer}>
             {/* {renderStatItem('bài viết', profileData.thong_ke.bai_viet)} */}
             {renderStatItem('người theo dõi', profileData.thong_ke.nguoi_theo_doi, () => navigation.navigate('Follower', { initialTab: 1 }))}
@@ -193,19 +237,40 @@ const MyProfile = () => {
         </View>
 
         <View style={styles.postsContainer}>
-          {/* Add your posts here */}
+          <Text style={styles.sectionTitle}>My Posts</Text>
+          <View style={styles.postGrid}>
+            {posts.map((post, index) => (
+              <TouchableOpacity
+                key={post._id || index}
+                style={styles.postItem}
+                onPress={() => handlePostPress(post)}
+              >
+                {post.images && post.images.length > 0 && (
+                  <Image
+                    source={{ uri: post.images[0] }}  // Thay đổi này
+                    style={styles.postImage}
+                    resizeMode="cover"
+                  />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
+
+const windowWidth = Dimensions.get('window').width;
+const imageSize = (windowWidth - 40) / 3;
 const renderStatItem = (label, value, onPress) => (
   <TouchableOpacity style={styles.statItem} onPress={onPress} disabled={!onPress}>
     <Text style={styles.statNumber}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </TouchableOpacity>
 );
+
 const styles = StyleSheet.create({
   sectionTitle: {
     color: 'black',
@@ -215,11 +280,36 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     marginTop: 10,
   },
+  postsContainer: {
+    marginTop: 20,
+    paddingHorizontal: 10,
+  },
+  postGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  postItem: {
+    width: imageSize,
+    height: imageSize,
+    marginBottom: 5,
+  },
+  postImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 5,
+  },
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
     marginLeft: 10,
+  },
+  postImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 5,
   },
   infoText: {
     color: 'black',
@@ -383,8 +473,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   postsContainer: {
-    flexDirection: 'row',
     flexWrap: 'wrap',
+    marginTop: 20,
+    paddingHorizontal: 15,
   },
   loadingText: {
     color: 'black',
@@ -397,6 +488,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 20,
+  },
+
+
+  postTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  postImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 5,
+  },
+  postLocation: {
+    fontSize: 14,
+    color: '#666',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    marginTop: 20,
+  },
+  tab: {
+    paddingVertical: 10,
+    flex: 1,
+    alignItems: 'center',
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: 'black',
+  },
+  tabContent: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  tabContentText: {
+    fontSize: 16,
+    color: 'black',
   },
 });
 

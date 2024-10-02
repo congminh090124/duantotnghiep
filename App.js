@@ -28,13 +28,15 @@ import IdentityVerification from './screens/auth/xacMinhDanhTinh';
 import VerifyIDScreen from './screens/auth/quetCCCD';
 import ConfirmCCCDScreen from './screens/auth/ConfirmCCCDScreen';
 import MapScreen from './screens/map';
-import CreatePost from './screens/createPostMap';
+import CreatePost from './screens/blog/createPostMap';
 import LocationSearch from './screens/LocationSearch';
 import UserProfileScreen from './screens/ThongTinCaNhan';
 import MyProfile from './screens/profile/MyProfile';
 import Follower from './screens/profile/Follower';
 import UpdateProfile from './screens/profile/udateProfile';
-import CreatePostScreen from './screens/blog/CreatePostScreen';
+import PostDetailScreen from './screens/profile//PostDetailScreen';
+
+
 
 // Tạo Stack Navigator
 const Stack = createStackNavigator();
@@ -101,9 +103,10 @@ const EmptyComponent = () => null;
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="TrangChu">
+      <Stack.Navigator initialRouteName="DangNhap">
         {/* Các màn hình trong Stack Navigator */}
-        <Stack.Screen name="CreatePostScreen" component={CreatePostScreen} options={{ headerShown: false }} />
+        
+        <Stack.Screen name="PostDetailScreen" component={PostDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ headerShown: false }} />
         <Stack.Screen name="Follower" component={Follower} options={{ headerShown: false }} />
         <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
