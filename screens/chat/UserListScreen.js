@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
+import Icon from 'react-native-vector-icons/Ionicons';
 
-const socket = io('https://lacewing-evolving-generally.ngrok-free.app');
+const socket = io('https://enhanced-remotely-bobcat.ngrok-free.app');
 
 export default function ListScreen({ navigation }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [chatHistory, setChatHistory] = useState([]);
     const [userId, setUserId] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         const loadUserData = async () => {
@@ -28,7 +30,7 @@ export default function ListScreen({ navigation }) {
         socket.on('updateOnlineUsers', async (users) => {
             const filteredUsers = users.filter(user => user.id !== userId);
             const token = await AsyncStorage.getItem('userToken');
-            const response = await fetch('https://lacewing-evolving-generally.ngrok-free.app/api/online-users', {
+            const response = await fetch('https://enhanced-remotely-bobcat.ngrok-free.app/api/online-users', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const onlineUsersDetails = await response.json();
@@ -44,7 +46,7 @@ export default function ListScreen({ navigation }) {
         const fetchChatHistory = async () => {
             try {
                 const token = await AsyncStorage.getItem('userToken');
-                const response = await fetch(`https://lacewing-evolving-generally.ngrok-free.app/api/chat-history/${userId}`, {
+                const response = await fetch(`https://enhanced-remotely-bobcat.ngrok-free.app/api/chat-history/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -53,7 +55,15 @@ export default function ListScreen({ navigation }) {
                 }
 
                 const data = await response.json();
-                setChatHistory(data);
+                // Xử lý dữ liệu chat history
+                const processedChatHistory = data.map(chat => ({
+                    _id: chat._id,
+                    username: chat.receiverId, // Tạm thời sử dụng receiverId làm username
+                    avatar: 'https://via.placeholder.com/50', // Placeholder avatar
+                    lastMessage: chat.text,
+                    lastMessageTime: new Date(chat.createdAt).toLocaleTimeString()
+                }));
+                setChatHistory(processedChatHistory);
             } catch (error) {
                 console.error('Error fetching chat history:', error);
             }
@@ -64,69 +74,160 @@ export default function ListScreen({ navigation }) {
         }
     }, [userId]);
 
-    const renderUserItem = ({ item, type }) => (
+    const renderOnlineUser = ({ item }) => (
         <TouchableOpacity
-            style={styles.userItem}
-            onPress={() => navigation.navigate('Chat', { receiverId: item._id, receiverName: item.username })}
+            style={styles.onlineUserItem}
+            onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
+        >
+            <Image source={{ uri: item.avatar }} style={styles.onlineAvatar} />
+            <Text style={styles.onlineUserName}>{item.username}</Text>
+            <View style={styles.onlineIndicator} />
+        </TouchableOpacity>
+    );
+
+    const renderChatItem = ({ item }) => (
+        <TouchableOpacity
+            style={styles.chatItem}
+            onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
         >
             <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            <Text style={styles.userName}>{item.username}</Text>
-            {type === 'online' && <View style={styles.onlineIndicator} />}
+            <View style={styles.chatInfo}>
+                <Text style={styles.userName}>{item.username}</Text>
+                <Text style={styles.lastMessage} numberOfLines={1}>
+                    {item.lastMessage || 'No messages'}
+                </Text>
+            </View>
+            <Text style={styles.timeStamp}>{item.lastMessageTime || ''}</Text>
         </TouchableOpacity>
     );
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.sectionTitle}>Online Users</Text>
+        <SafeAreaView style={styles.container}>
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Đoạn chat</Text>
+                <TouchableOpacity>
+                    <Icon name="create-outline" size={24} color="#007AFF" />
+                </TouchableOpacity>
+            </View>
+            <View style={styles.searchContainer}>
+                <Icon name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
+                <TextInput
+                    style={styles.searchInput}
+                    placeholder="Tìm kiếm"
+                    placeholderTextColor="#8E8E93"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                />
+            </View>
             <FlatList
-                data={onlineUsers}
-                renderItem={({ item }) => renderUserItem({ item, type: 'online' })}
-                keyExtractor={(item) => item.id}
-                ListEmptyComponent={<Text>No online users</Text>}
-            />
-
-            <Text style={styles.sectionTitle}>Chat History</Text>
-            <FlatList
+                ListHeaderComponent={
+                    <FlatList
+                        horizontal
+                        data={onlineUsers}
+                        renderItem={renderOnlineUser}
+                        keyExtractor={(item) => item._id}
+                        style={styles.onlineList}
+                        showsHorizontalScrollIndicator={false}
+                    />
+                }
                 data={chatHistory}
-                renderItem={({ item }) => renderUserItem({ item, type: 'history' })}
-                keyExtractor={(item) => item.id}
-                ListEmptyComponent={<Text>No chat history</Text>}
+                renderItem={renderChatItem}
+                keyExtractor={(item) => item._id}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 10,
+        backgroundColor: '#FFFFFF',
     },
-    sectionTitle: {
-        fontSize: 18,
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E5E5',
+    },
+    headerTitle: {
+        fontSize: 28,
         fontWeight: 'bold',
-        marginVertical: 10,
+        color: '#000000',
     },
-    userItem: {
+    searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 10,
-        borderBottomWidth: 1,
-        borderBottomColor: '#ccc',
+        backgroundColor: '#F2F2F7',
+        borderRadius: 10,
+        margin: 16,
+        paddingHorizontal: 8,
     },
-    userName: {
-        fontSize: 16,
+    searchIcon: {
+        marginRight: 8,
+    },
+    searchInput: {
+        flex: 1,
+        height: 36,
+        color: '#000000',
+    },
+    onlineList: {
+        paddingLeft: 16,
+        marginBottom: 16,
+    },
+    onlineUserItem: {
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    onlineAvatar: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        marginBottom: 4,
+    },
+    onlineUserName: {
+        color: '#000000',
+        fontSize: 12,
     },
     onlineIndicator: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: 'green',
-        marginLeft: 10,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#4CD964',
+        position: 'absolute',
+        bottom: 22,
+        right: 0,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+    },
+    chatItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E5E5',
     },
     avatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        marginRight: 10,
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        marginRight: 12,
+    },
+    chatInfo: {
+        flex: 1,
+    },
+    userName: {
+        color: '#000000',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    lastMessage: {
+        color: '#8E8E93',
+        fontSize: 14,
+    },
+    timeStamp: {
+        color: '#8E8E93',
+        fontSize: 12,
     },
 });

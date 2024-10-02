@@ -42,7 +42,7 @@ const LoginScreen = () => {
                 text: 'Xác minh ngay',
                 onPress: () => {
                   console.log('Navigating to IdentityVerification');
-                  navigation.navigate('IdentityVerification');
+                  navigation.navigate('TrangChu');
                 },
               },
               {
