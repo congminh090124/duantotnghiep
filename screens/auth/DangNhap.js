@@ -24,8 +24,9 @@ const LoginScreen = () => {
         await saveToken(response.token);
         await AsyncStorage.setItem('userData', JSON.stringify(response.user));
         console.log('Login successful, token saved');
-        
-  
+         const userID = response.user.id;
+        await AsyncStorage.setItem('userID', response.user.id);
+        console.log('UserID:', userID); 
         if (response.user.xacMinhDanhTinh) {
           console.log('Identity verified, navigating to TrangChu');
           navigation.navigate('TrangChu');
@@ -40,7 +41,7 @@ const LoginScreen = () => {
                 text: 'Xác minh ngay',
                 onPress: () => {
                   console.log('Navigating to IdentityVerification');
-                  navigation.navigate('IdentityVerification');
+                  navigation.navigate('TrangChu');
                 },
               },
               {

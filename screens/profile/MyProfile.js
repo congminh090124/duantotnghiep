@@ -118,12 +118,14 @@ const MyProfile = () => {
           </View>
         </View>
 
+      
         <View style={styles.profileContainer}>
           <View style={styles.avatarContainer}>
             {avatarUri ? (
               <Image
                 source={{ uri: avatarUri }}
                 style={styles.profileImage}
+                onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
               />
             ) : (
               <View style={[styles.profileImage, styles.placeholderImage]}>

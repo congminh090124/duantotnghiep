@@ -33,7 +33,7 @@ import UserProfileScreen from './screens/ThongTinCaNhan';
 import MyProfile from './screens/profile/MyProfile';
 import Follower from './screens/profile/Follower';
 import UserListScreen from './screens/chat/UserListScreen';
-import Chat from './screens/chat/Chat';
+import ChatScreen from './screens/chat/ChatScreen';
 const Stack = createStackNavigator();
 
 const App = () => {
@@ -65,7 +65,7 @@ const App = () => {
         <Stack.Screen name="NhanTin" component={NhanTin} options={{ headerShown: false }} />
         <Stack.Screen name="DangKiDulichScreen" component={DangKiDulichScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Chat" component={Chat} options={{ headerShown: false }} />
+        <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
         {/* Sử dụng BottomTabs làm màn hình chính của TrangChu */}
         <Stack.Screen name="TrangChu" component={BottomTabs} options={{ headerShown: false }} />
       </Stack.Navigator>

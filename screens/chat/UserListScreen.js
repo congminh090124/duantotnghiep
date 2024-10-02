@@ -1,100 +1,132 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, FlatList, TouchableOpacity } from 'react-native';
-import { fetchUsersData } from '../../apiConfig';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import io from 'socket.io-client';
 
-const UserListScreen = ({ navigation }) => {
-    const [usersData, setUsersData] = useState([]);
-    const [searchText, setSearchText] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
+const socket = io('https://enhanced-remotely-bobcat.ngrok-free.app');
 
-    const loadData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const users = await fetchUsersData();
-            setUsersData(users);
-        } catch (error) {
-            console.error('Error loading data:', error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+export default function ListScreen({ navigation }) {
+    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [chatHistory, setChatHistory] = useState([]);
+    const [userId, setUserId] = useState('');
 
     useEffect(() => {
-        loadData();
-    }, [loadData]);
+        const loadUserData = async () => {
+            try {
+                const storedUserId = await AsyncStorage.getItem('userID');
+                if (storedUserId) {
+                    setUserId(storedUserId);
+                    socket.emit('userConnected', storedUserId);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        };
 
-    const renderUser = ({ item }) => (
-        <TouchableOpacity 
-            style={styles.userContainer} 
-            onPress={() => navigation.navigate('Chat', { userId: item._id, username: item.username })}
-            //, { userId: item._id, username: item.username }
+        loadUserData();
+
+        socket.on('updateOnlineUsers', async (users) => {
+            const filteredUsers = users.filter(user => user.id !== userId);
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await fetch('https://enhanced-remotely-bobcat.ngrok-free.app/api/online-users', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const onlineUsersDetails = await response.json();
+            setOnlineUsers(onlineUsersDetails.filter(user => user._id !== userId));
+        });
+
+        return () => {
+            socket.off('updateOnlineUsers');
+        };
+    }, [userId]);
+
+    useEffect(() => {
+        const fetchChatHistory = async () => {
+            try {
+                const token = await AsyncStorage.getItem('userToken');
+                const response = await fetch(`https://enhanced-remotely-bobcat.ngrok-free.app/api/chat-history/${userId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                setChatHistory(data);
+            } catch (error) {
+                console.error('Error fetching chat history:', error);
+            }
+        };
+
+        if (userId) {
+            fetchChatHistory();
+        }
+    }, [userId]);
+
+    const renderUserItem = ({ item, type }) => (
+        <TouchableOpacity
+            style={styles.userItem}
+            onPress={() => navigation.navigate('Chat', { receiverId: item._id, receiverName: item.username })}
         >
-            <Image source={{ uri: item.anhdaidien || 'https://via.placeholder.com/50' }} style={styles.userAvatar} />
-            <Text style={styles.userName}>{item.username || 'User'}</Text>
+            <Image source={{ uri: item.avatar }} style={styles.avatar} />
+            <Text style={styles.userName}>{item.username}</Text>
+            {type === 'online' && <View style={styles.onlineIndicator} />}
         </TouchableOpacity>
     );
 
-    const filteredUsersData = usersData.filter(user => 
-        user && user.username && user.username.toLowerCase().includes(searchText.toLowerCase())
-    );
-
-    if (isLoading) {
-        return <View style={styles.loadingContainer}><Text>Loading...</Text></View>;
-    }
-
     return (
         <View style={styles.container}>
-            <TextInput 
-                style={styles.searchBar} 
-                placeholder="Tìm kiếm" 
-                value={searchText}
-                onChangeText={setSearchText}
+            <Text style={styles.sectionTitle}>Online Users</Text>
+            <FlatList
+                data={onlineUsers}
+                renderItem={({ item }) => renderUserItem({ item, type: 'online' })}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={<Text>No online users</Text>}
             />
 
+            <Text style={styles.sectionTitle}>Chat History</Text>
             <FlatList
-                data={filteredUsersData}
-                renderItem={renderUser}
-                keyExtractor={(item) => item._id}
+                data={chatHistory}
+                renderItem={({ item }) => renderUserItem({ item, type: 'history' })}
+                keyExtractor={(item) => item.id}
+                ListEmptyComponent={<Text>No chat history</Text>}
             />
         </View>
     );
-};
+}
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 16,
-        backgroundColor: '#fff',
+        padding: 10,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginVertical: 10,
     },
-    searchBar: {
-        height: 40,
-        borderColor: 'gray',
-        borderWidth: 1,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        marginBottom: 16,
-    },
-    userContainer: {
+    userItem: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#eee',
-    },
-    userAvatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: 10,
+        borderBottomColor: '#ccc',
     },
     userName: {
         fontSize: 16,
     },
+    onlineIndicator: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: 'green',
+        marginLeft: 10,
+    },
+    avatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        marginRight: 10,
+    },
 });
-
-export default UserListScreen;

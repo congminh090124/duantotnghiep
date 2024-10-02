@@ -1,13 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -15,10 +8,12 @@ export const API_ENDPOINTS = {
   showProfile: `${API_BASE_URL}/api/users/thong-tin-ca-nhan`,
   updateAvatar: `${API_BASE_URL}/api/users/update-avatar`,
   posts: `${API_BASE_URL}/api/posts`,
+  userchats: `${API_BASE_URL}/api/chats/partners`,
   chats: `${API_BASE_URL}/api/chats`,
-  users: `${API_BASE_URL}/api/users/users`,
+  users: `${API_BASE_URL}/api/chats/users`,
+  sendMessage: `${API_BASE_URL}/api/chats/send`,
+  chatHistory: (userId) => `${API_BASE_URL}/api/chats/history/${userId}`,
   updateProfile: `${API_BASE_URL}/api/users/update-profile`,
-  // Thêm các endpoint khác ở đây
 };
 
 // Hàm tiện ích để lưu token
@@ -43,7 +38,6 @@ export const getToken = async () => {
 // Hàm đăng nhập
 export const login = async (credentials) => {
   try {
-    console.log('Sending login request to:', API_ENDPOINTS.login);
     const response = await fetch(API_ENDPOINTS.login, {
       method: 'POST',
       headers: {
@@ -51,9 +45,8 @@ export const login = async (credentials) => {
       },
       body: JSON.stringify(credentials),
     });
-    
+
     const data = await response.json();
-    console.log('Login API response:', data);
     
     if (!response.ok) {
       throw new Error(data.message || 'Đăng nhập không thành công');
@@ -76,13 +69,13 @@ export const register = async (userData) => {
       },
       body: JSON.stringify(userData),
     });
-    
+
     const data = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.message || 'Đăng ký không thành công');
     }
-    
+
     if (data.token) {
       await saveToken(data.token);
     }
@@ -92,10 +85,11 @@ export const register = async (userData) => {
     throw error;
   }
 };
+
+// Hàm lấy thông tin người dùng
 export const getUserProfile = async () => {
   try {
     const token = await getToken();
-    console.log('Token for getUserProfile:', token);
 
     if (!token) {
       throw new Error('No token found');
@@ -103,32 +97,28 @@ export const getUserProfile = async () => {
 
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`, // Thay đổi ở đây
+      'Authorization': `Bearer ${token}`,
     };
-    console.log('Request headers:', headers);
 
     const response = await fetch(API_ENDPOINTS.showProfile, {
       method: 'GET',
       headers: headers,
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers.map);
-
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error response body:', errorText);
       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     const data = await response.json();
-    console.log('User profile data:', data);
     return data;
   } catch (error) {
     console.error('Lỗi khi lấy thông tin cá nhân:', error);
     throw error;
   }
 };
+
+// Hàm cập nhật avatar
 export const updateAvatar = async (imageUri) => {
   try {
     const token = await getToken();
@@ -136,11 +126,10 @@ export const updateAvatar = async (imageUri) => {
       throw new Error('No token found');
     }
 
-    // Create form data
     const formData = new FormData();
     formData.append('avatar', {
       uri: imageUri,
-      type: 'image/jpeg', // Adjust this based on your image type
+      type: 'image/jpeg',
       name: 'avatar.jpg',
     });
 
@@ -165,6 +154,8 @@ export const updateAvatar = async (imageUri) => {
     throw error;
   }
 };
+
+// Hàm cập nhật thông tin cá nhân
 export const updateProfile = async (profileData) => {
   try {
     const token = await getToken();
@@ -172,9 +163,9 @@ export const updateProfile = async (profileData) => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(profileData)
+      body: JSON.stringify(profileData),
     });
 
     if (!response.ok) {
@@ -188,11 +179,23 @@ export const updateProfile = async (profileData) => {
     throw error;
   }
 };
+
 // Hàm lấy danh sách các post
 export const fetchPosts = async () => {
   try {
-    const response = await apiClient.get(API_ENDPOINTS.posts);
-    return response.data;
+    const response = await fetch(API_ENDPOINTS.posts, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Error fetching posts');
+    }
+
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error fetching posts:', error);
     throw error;
@@ -213,41 +216,144 @@ export const createPost = async (postData) => {
       name: 'post_image.jpg',
     });
 
-    const response = await apiClient.post(API_ENDPOINTS.posts, formData, {
+    const response = await fetch(API_ENDPOINTS.posts, {
+      method: 'POST',
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      body: formData,
     });
-    return response.data;
+
+    if (!response.ok) {
+      throw new Error('Error creating post');
+    }
+
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error creating post:', error);
     throw error;
   }
 };
-export const fetchChatData = async () => {
+
+// Hàm lấy dữ liệu chat
+export const fetchChatPartners = async () => {
+  const token = await getToken();
+  if (!token) throw new Error('No token found');
+
   try {
-    const response = await apiClient.get(API_ENDPOINTS.chats);
-    return response.data;
+    const response = await fetch(API_ENDPOINTS.userchats, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error('Error fetching chat partners');
+
+    return await response.json();
   } catch (error) {
-    console.error('Error fetching chat data:', error);
+    console.error('Error fetching chat partners:', error);
     throw error;
   }
 };
 
+// Hàm lấy dữ liệu người dùng
 export const fetchUsersData = async () => {
   try {
-    const token = await getToken(); // Giả sử bạn có hàm getToken
+    const token = await getToken();
     if (!token) {
       throw new Error('No token found');
     }
-    const response = await apiClient.get(API_ENDPOINTS.users, {
+
+    const response = await fetch(API_ENDPOINTS.users, {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        'Authorization': `Bearer ${token}`,
+      },
     });
-    return response.data;
+
+    if (!response.ok) {
+      throw new Error('Error fetching users data');
+    }
+
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error fetching users data:', error);
+    throw error;
+  }
+};
+
+// Lấy lịch sử tin nhắn
+export const fetchChatHistory = async (userId) => {
+  const token = await getToken();
+  if (!token) throw new Error('No token found');
+
+  try {
+    const response = await fetch(API_ENDPOINTS.chatHistory(userId), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) throw new Error('Error fetching chat history');
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching chat history:', error);
+    throw error;
+  }
+};
+
+// Gửi tin nhắn
+export const sendMessage = async (receiverId, content) => {
+  const token = await getToken();
+  if (!token) throw new Error('No token found');
+
+  try {
+    const response = await fetch(API_ENDPOINTS.sendMessage, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ receiverId, content }),
+    });
+
+    if (!response.ok) throw new Error('Error sending message');
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+};
+// Hàm lấy danh sách tất cả người dùng
+export const fetchAllUsers = async () => {
+  try {
+    const token = await getToken();  // Lấy token từ AsyncStorage
+    if (!token) {
+      throw new Error('No token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.users, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Error fetching users');
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách người dùng:', error);
     throw error;
   }
 };
