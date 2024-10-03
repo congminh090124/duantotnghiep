@@ -82,7 +82,7 @@ export default function ListScreen({ navigation }) {
         return (
             <TouchableOpacity
                 style={styles.onlineUserItem}
-                onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
+                onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username, receiverAvatar: item.avatar })}
             >
                 <Image source={{ uri: avatarUrl }} style={styles.onlineAvatar} />
                 <Text style={styles.onlineUserName}>{item.username}</Text>
@@ -97,11 +97,14 @@ export default function ListScreen({ navigation }) {
         return (
             <TouchableOpacity
                 style={styles.chatItem}
-                onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
+                onPress={() => {
+                    console.log('Navigating to ChatScreen with:', { receiverId: item.id, receiverName: item.username });
+                    navigation.navigate('ChatScreen', { receiverId: item.id, receiverName: item.username, receiverAvatar: item.avatar });
+                }}
             >
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />
                 <View style={styles.chatInfo}>
-                    <Text style={styles.userName}>{item.username}</Text>
+                    <Text style={styles.userName}>{item.username || 'Unknown User'}</Text>
                     <Text style={styles.lastMessage} numberOfLines={1}>
                         {item.lastMessage || 'No messages'}
                     </Text>
