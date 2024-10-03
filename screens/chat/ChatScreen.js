@@ -33,7 +33,8 @@ export default function ChatScreen({ route, navigation }) {
 
     loadUserData();
 
-    socket.on('receiveMessage', (message) => {
+    // Listen for incoming messages
+    const handleReceiveMessage = (message) => {
       if (message.senderId._id === receiverId || message.receiverId._id === receiverId) {
         setMessages((prevMessages) => [...prevMessages, message]);
         if (message.receiverId._id === userId) {
@@ -41,30 +42,32 @@ export default function ChatScreen({ route, navigation }) {
         }
         scrollToBottom();
       }
-    });
+    };
 
-    socket.on('messageStatusUpdated', ({ messageId, status }) => {
+    // Listen for message status updates
+    const handleMessageStatusUpdated = ({ messageId, status }) => {
       setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg._id === messageId ? { ...msg, status } : msg
-        )
+        prevMessages.map((msg) => (msg._id === messageId ? { ...msg, status } : msg))
       );
-    });
+    };
+
+    socket.on('receiveMessage', handleReceiveMessage);
+    socket.on('messageStatusUpdated', handleMessageStatusUpdated);
 
     return () => {
-      socket.off('receiveMessage');
-      socket.off('messageStatusUpdated');
+      socket.off('receiveMessage', handleReceiveMessage);
+      socket.off('messageStatusUpdated', handleMessageStatusUpdated);
     };
-  }, [receiverId, receiverName, userId]);
+  }, [receiverId, userId]);
 
   const fetchMessages = async (senderId) => {
     try {
       setIsLoading(true);
       const token = await getToken();
       const response = await fetch(`${API_ENDPOINTS.messages}/${senderId}/${receiverId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -88,16 +91,16 @@ export default function ChatScreen({ route, navigation }) {
   };
 
   const sendMessage = useCallback(() => {
-    if (inputMessage.trim() === '') return;
+    if (inputMessage.trim() === '') return; // Prevent sending empty messages
 
     const messageData = {
       senderId: userId,
-      receiverId: receiverId,
+      receiverId,
       text: inputMessage.trim(),
     };
 
     socket.emit('sendMessage', messageData);
-    setInputMessage('');
+    setInputMessage(''); // Clear input field after sending
   }, [inputMessage, userId, receiverId]);
 
   const renderMessage = ({ item }) => {
@@ -105,23 +108,24 @@ export default function ChatScreen({ route, navigation }) {
     const messageDate = new Date(item.createdAt);
     const formattedDate = format(messageDate, 'HH:mm');
 
-    const avatarUrl = isOwnMessage 
-      ? 'https://via.placeholder.com/50' // Replace with user's avatar
-      : receiverAvatar ? `${API_ENDPOINTS.socketURL}${receiverAvatar}` : 'https://via.placeholder.com/50';
+    const avatarUrl = isOwnMessage
+      ? 'https://via.placeholder.com/50'
+      : receiverAvatar
+      ? `${API_ENDPOINTS.socketURL}${receiverAvatar}`
+      : 'https://via.placeholder.com/50';
 
     return (
-      <View style={[
-        styles.messageBubble,
-        isOwnMessage ? styles.sentMessage : styles.receivedMessage
-      ]}>
-        {!isOwnMessage && (
-          <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-        )}
+      <View
+        style={[
+          styles.messageBubble,
+          isOwnMessage ? styles.sentMessage : styles.receivedMessage,
+        ]}
+      >
+        {!isOwnMessage && <Image source={{ uri: avatarUrl }} style={styles.avatar} />}
         <View style={isOwnMessage ? styles.sentMessageContent : styles.receivedMessageContent}>
-          <Text style={[
-            styles.messageText,
-            isOwnMessage ? styles.sentMessageText : styles.receivedMessageText
-          ]}>{item.text}</Text>
+          <Text style={[styles.messageText, isOwnMessage ? styles.sentMessageText : styles.receivedMessageText]}>
+            {item.text}
+          </Text>
           <Text style={styles.messageTime}>{formattedDate}</Text>
         </View>
       </View>
@@ -182,9 +186,9 @@ export default function ChatScreen({ route, navigation }) {
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Image 
-            source={{ uri: receiverAvatar ? `${API_ENDPOINTS.socketURL}${receiverAvatar}` : 'https://via.placeholder.com/50' }} 
-            style={styles.headerAvatar} 
+          <Image
+            source={{ uri: receiverAvatar ? `${API_ENDPOINTS.socketURL}${receiverAvatar}` : 'https://via.placeholder.com/50' }}
+            style={styles.headerAvatar}
           />
           <View>
             <Text style={styles.headerName}>{receiverName}</Text>
@@ -205,7 +209,8 @@ export default function ChatScreen({ route, navigation }) {
         keyExtractor={(item) => item._id.toString()}
         contentContainerStyle={styles.messageList}
         onContentSizeChange={scrollToBottom}
-        onLayout={scrollToBottom}
+        initialNumToRender={10} // Optimize rendering for larger lists
+        removeClippedSubviews={true} // Performance optimization for large lists
       />
       {renderInputBar()}
     </SafeAreaView>

@@ -1,18 +1,33 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput } from 'react-native';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 import Icon from 'react-native-vector-icons/Ionicons';
-import { API_ENDPOINTS, getToken } from '../../apiConfig'; // Import API_ENDPOINTS và getToken
+import { API_ENDPOINTS, getToken } from '../../apiConfig';
+import NetInfo from "@react-native-community/netinfo";
+import { debounce } from 'lodash'; // Import debounce to improve search efficiency
 
-const socket = io(API_ENDPOINTS.socketURL); // Giả sử bạn đã thêm socketURL vào API_ENDPOINTS
+// Initialize socket connection globally
+const socket = io(API_ENDPOINTS.socketURL);
 
 export default function ListScreen({ navigation }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [chatHistory, setChatHistory] = useState([]);
     const [userId, setUserId] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [isConnected, setIsConnected] = useState(true);
 
+    // Handle network connection status
+    useEffect(() => {
+        const unsubscribe = NetInfo.addEventListener(state => {
+            setIsConnected(state.isConnected);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    // Load user data and initialize socket
     useEffect(() => {
         const loadUserData = async () => {
             try {
@@ -28,7 +43,8 @@ export default function ListScreen({ navigation }) {
 
         loadUserData();
 
-        socket.on('updateOnlineUsers', async (users) => {
+        // Update online users when receiving the event from socket
+        const handleUpdateOnlineUsers = async (users) => {
             const filteredUsers = users.filter(user => user.id !== userId);
             const token = await getToken();
             const response = await fetch(API_ENDPOINTS.onlineUsers, {
@@ -36,47 +52,72 @@ export default function ListScreen({ navigation }) {
             });
             const onlineUsersDetails = await response.json();
             setOnlineUsers(onlineUsersDetails.filter(user => user._id !== userId));
-        });
+        };
+
+        // Register socket event listener for online users
+        socket.on('updateOnlineUsers', handleUpdateOnlineUsers);
 
         return () => {
-            socket.off('updateOnlineUsers');
+            // Clean up socket events on unmount
+            socket.off('updateOnlineUsers', handleUpdateOnlineUsers);
         };
     }, [userId]);
 
-    useEffect(() => {
-        const fetchChatHistory = async () => {
-            try {
-                const token = await getToken();
-                const response = await fetch(`${API_ENDPOINTS.chatHistory}/${userId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+    // Fetch chat history from API
+    const fetchChatHistory = useCallback(async () => {
+        if (!userId || !isConnected) return;
 
-                const data = await response.json();
-                // Process chat history data
-                const processedChatHistory = data.map(chat => ({
-                    id: chat.id || chat._id, 
-                    username: chat.username,
-                    avatar: chat.avatar,
-                    lastMessage: chat.lastMessage.text,
-                    lastMessageTime: chat.lastMessage.createdAt ? new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
-                }));
-                console.log('Processed chat history:', processedChatHistory);
-                setChatHistory(processedChatHistory);
-            } catch (error) {
-                console.error('Error fetching chat history:', error);
+        try {
+            const token = await getToken();
+            const response = await fetch(`${API_ENDPOINTS.chatHistory}/${userId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        };
 
-        if (userId) {
-            fetchChatHistory();
+            const data = await response.json();
+            const processedChatHistory = data.map(chat => ({
+                id: chat.id || chat._id, 
+                username: chat.username,
+                avatar: chat.avatar,
+                lastMessage: chat.lastMessage?.text || 'No messages',
+                lastMessageTime: chat.lastMessage?.createdAt 
+                    ? new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                    : ''
+            }));
+            setChatHistory(processedChatHistory);
+        } catch (error) {
+            console.error('Error fetching chat history:', error);
         }
-    }, [userId]);
+    }, [userId, isConnected]);
 
-    const renderOnlineUser = ({ item }) => {
+    // Initial fetch chat history
+    useEffect(() => {
+        fetchChatHistory();
+    }, [fetchChatHistory]);
+
+    // Refresh chat history on pull-down
+    const onRefresh = useCallback(async () => {
+        setIsRefreshing(true);
+        await fetchChatHistory();
+        setIsRefreshing(false);
+    }, [fetchChatHistory]);
+
+    // Debounced search handler
+    const handleSearch = useMemo(() => debounce((query) => setSearchQuery(query), 300), []);
+
+    // Filtered chat history based on search query
+    const filteredChatHistory = useMemo(() => {
+        return chatHistory.filter(chat => 
+            chat.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [chatHistory, searchQuery]);
+
+    // Render online user
+    const renderOnlineUser = useCallback(({ item }) => {
         const avatarUrl = `${API_ENDPOINTS.socketURL}${item.avatar}`;
         
         return (
@@ -89,16 +130,16 @@ export default function ListScreen({ navigation }) {
                 <View style={styles.onlineIndicator} />
             </TouchableOpacity>
         );
-    };
+    }, [navigation]);
 
-    const renderChatItem = ({ item }) => {
+    // Render chat item
+    const renderChatItem = useCallback(({ item }) => {
         const avatarUrl = item.avatar ? `${API_ENDPOINTS.socketURL}${item.avatar}` : 'https://via.placeholder.com/50';
     
         return (
             <TouchableOpacity
                 style={styles.chatItem}
                 onPress={() => {
-                    console.log('Navigating to ChatScreen with:', { receiverId: item.id, receiverName: item.username });
                     navigation.navigate('ChatScreen', { receiverId: item.id, receiverName: item.username, receiverAvatar: item.avatar });
                 }}
             >
@@ -106,13 +147,13 @@ export default function ListScreen({ navigation }) {
                 <View style={styles.chatInfo}>
                     <Text style={styles.userName}>{item.username || 'Unknown User'}</Text>
                     <Text style={styles.lastMessage} numberOfLines={1}>
-                        {item.lastMessage || 'No messages'}
+                        {item.lastMessage}
                     </Text>
                 </View>
-                <Text style={styles.timeStamp}>{item.lastMessageTime || ''}</Text>
+                <Text style={styles.timeStamp}>{item.lastMessageTime}</Text>
             </TouchableOpacity>
         );
-    };
+    }, [navigation]);
 
     return (
         <SafeAreaView style={styles.container}>
@@ -128,10 +169,12 @@ export default function ListScreen({ navigation }) {
                     style={styles.searchInput}
                     placeholder="Tìm kiếm"
                     placeholderTextColor="#8E8E93"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
+                    onChangeText={handleSearch} // Use debounce for search
                 />
             </View>
+            {!isConnected && (
+                <Text style={styles.offlineText}>You are offline. Some features may be unavailable.</Text>
+            )}
             <FlatList
                 ListHeaderComponent={
                     <FlatList
@@ -141,11 +184,21 @@ export default function ListScreen({ navigation }) {
                         keyExtractor={(item) => item._id}
                         style={styles.onlineList}
                         showsHorizontalScrollIndicator={false}
+                        initialNumToRender={5} // Optimized rendering for online users
+                        removeClippedSubviews={true} // Improve performance by removing off-screen components
                     />
                 }
-                data={chatHistory}
+                data={filteredChatHistory}
                 renderItem={renderChatItem}
-                keyExtractor={(item) => item._id}
+                keyExtractor={(item) => item.id}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={isRefreshing}
+                        onRefresh={onRefresh}
+                    />
+                }
+                initialNumToRender={10} // Optimize FlatList initial render
+                removeClippedSubviews={true} // Improve performance for large lists
             />
         </SafeAreaView>
     );
@@ -242,5 +295,11 @@ const styles = StyleSheet.create({
     timeStamp: {
         color: '#8E8E93',
         fontSize: 12,
+    },
+    offlineText: {
+        backgroundColor: '#f8d7da',
+        color: '#721c24',
+        padding: 10,
+        textAlign: 'center',
     },
 });
