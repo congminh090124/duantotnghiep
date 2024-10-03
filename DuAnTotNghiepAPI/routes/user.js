@@ -6,7 +6,47 @@ const bcrypt = require('bcryptjs');
 const auth = require('../middleware/auth');
 const multer = require('multer'); // Để xử lý file upload
 const path = require('path');
-const authMiddleware = require('../middleware/auth');
+const { OAuth2Client } = require('google-auth-library');
+
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+router.post('/auth/google', async (req, res) => {
+    const { idToken } = req.body;
+    try {
+      const ticket = await client.verifyIdToken({
+        idToken: idToken,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      const { email, name, picture } = payload;
+  
+      // Kiểm tra xem user đã tồn tại chưa
+      let user = await User.findOne({ email });
+  
+      if (!user) {
+        // Tạo user mới nếu chưa tồn tại
+        user = new User({
+          email,
+          name,
+          avatar: picture,
+          // Thêm các trường khác nếu cần
+        });
+        await user.save();
+      }
+  
+      // Tạo token JWT cho user
+      const token = user.generateAuthToken();
+  
+      res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
+    } catch (error) {
+      console.error('Google login error:', error);
+      res.status(400).json({ error: 'Invalid Google token' });
+    }
+  });
+
+
+
 router.post('/register', async (req, res) => {
     const { email, password, username } = req.body;
 
@@ -184,7 +224,7 @@ router.put('/update-profile', auth, async (req, res) => {
         res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
 });
-router.get('/users', authMiddleware, async (req, res) => {
+router.get('/users', auth, async (req, res) => {
     try {
         // Lấy tất cả người dùng trừ bản thân và chỉ lấy các trường _id, anhdaidien, trangthai
         const users = await User.find({ _id: { $ne: req.user.id } })

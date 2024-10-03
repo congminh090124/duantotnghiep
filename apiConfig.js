@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
+const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -12,7 +12,9 @@ export const API_ENDPOINTS = {
   showPostWithID:`${API_BASE_URL}/api/posts/post/:id`,
   getUserPosts: `${API_BASE_URL}/api/posts/my-posts`, // Thêm endpoint mới này
   showAllPosts: `${API_BASE_URL}/api/posts/all-posts`,
-   likePost: `${API_BASE_URL}/api/posts/:postId/like`
+   likePost: `${API_BASE_URL}/api/posts/:postId/like`,
+   addComment: `${API_BASE_URL}/api/posts/:postId/comments`,
+   getComments: `${API_BASE_URL}/api/posts/:postId/comments`,
  
   // Thêm các endpoint khác ở đây
 };
@@ -324,4 +326,50 @@ export const toggleLikePost = async (postId) => {
     throw error;
   }
 };
+export const addComment = async (postId, content) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.addComment.replace(':postId', postId), {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ content })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to add comment. Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error adding comment:', error);
+    throw error;
+  }
+};
+
+export const getComments = async (postId) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.getComments.replace(':postId', postId));
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Failed to fetch comments. Status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    throw error;
+  }
+};
+
 export default API_ENDPOINTS;

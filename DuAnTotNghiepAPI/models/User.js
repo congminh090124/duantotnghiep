@@ -82,30 +82,7 @@ const userSchema = new mongoose.Schema({
         default: ''
     },
 
-
-
-    overall_score: {
-        type: Number,
-        default: null
-    },
-    number_of_name_lines: {
-        type: Number,
-        default: null
-    },
-    address_entities: {
-        province: { type: String, default: '' },
-        district: { type: String, default: '' },
-        ward: { type: String, default: '' },
-        street: { type: String, default: '' }
-    },
-    type_new: {
-        type: String,
-        default: ''
-    },
-    type: {
-        type: String,
-        default: ''
-    }
+   
 }, { timestamps: true });
 
 // Mã hóa mật khẩu trước khi lưu

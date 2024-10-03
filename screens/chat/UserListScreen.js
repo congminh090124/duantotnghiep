@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const socket = io('https://enhanced-remotely-bobcat.ngrok-free.app');
+const socket = io('https://lacewing-evolving-generally.ngrok-free.app');
 
 export default function ListScreen({ navigation }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
@@ -30,7 +30,7 @@ export default function ListScreen({ navigation }) {
         socket.on('updateOnlineUsers', async (users) => {
             const filteredUsers = users.filter(user => user.id !== userId);
             const token = await AsyncStorage.getItem('userToken');
-            const response = await fetch('https://enhanced-remotely-bobcat.ngrok-free.app/api/online-users', {
+            const response = await fetch('https://lacewing-evolving-generally.ngrok-free.app/api/online-users', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const onlineUsersDetails = await response.json();
@@ -46,7 +46,7 @@ export default function ListScreen({ navigation }) {
         const fetchChatHistory = async () => {
             try {
                 const token = await AsyncStorage.getItem('userToken');
-                const response = await fetch(`https://enhanced-remotely-bobcat.ngrok-free.app/api/chat-history/${userId}`, {
+                const response = await fetch(`https://lacewing-evolving-generally.ngrok-free.app/api/chat-history/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 

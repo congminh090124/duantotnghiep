@@ -5,7 +5,7 @@ import io from 'socket.io-client';
 import { format } from 'date-fns';
 import Icon from 'react-native-vector-icons/Ionicons';
 
-const socket = io('https://enhanced-remotely-bobcat.ngrok-free.app');
+const socket = io('https://lacewing-evolving-generally.ngrok-free.app');
 
 export default function ChatScreen({ route, navigation }) {
   const { receiverId, receiverName, receiverUsername, receiverAvatar } = route.params;
@@ -60,7 +60,7 @@ export default function ChatScreen({ route, navigation }) {
     try {
       setIsLoading(true);
       const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch(`https://enhanced-remotely-bobcat.ngrok-free.app/api/messages/${senderId}/${receiverId}`, {
+      const response = await fetch(`https://lacewing-evolving-generally.ngrok-free.app/api/messages/${senderId}/${receiverId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     color: '#999',
     marginVertical: 5,
   },
-  buttonMessage: {
+  buttonMessage: { 
     backgroundColor: '#EFEFEF',
     alignSelf: 'center',
     paddingVertical: 8,
