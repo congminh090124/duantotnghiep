@@ -58,12 +58,13 @@ export default function ListScreen({ navigation }) {
                 const data = await response.json();
                 // Process chat history data
                 const processedChatHistory = data.map(chat => ({
-                    _id: chat._id,
-                    username: chat.receiverId,
-                    avatar: 'https://via.placeholder.com/50',
-                    lastMessage: chat.text,
-                    lastMessageTime: new Date(chat.createdAt).toLocaleTimeString()
+                    id: chat.id || chat._id, 
+                    username: chat.username,
+                    avatar: chat.avatar,
+                    lastMessage: chat.lastMessage.text,
+                    lastMessageTime: chat.lastMessage.createdAt ? new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
                 }));
+                console.log('Processed chat history:', processedChatHistory);
                 setChatHistory(processedChatHistory);
             } catch (error) {
                 console.error('Error fetching chat history:', error);
@@ -75,32 +76,40 @@ export default function ListScreen({ navigation }) {
         }
     }, [userId]);
 
-    const renderOnlineUser = ({ item }) => (
-        <TouchableOpacity
-            style={styles.onlineUserItem}
-            onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
-        >
-            <Image source={{ uri: item.avatar }} style={styles.onlineAvatar} />
-            <Text style={styles.onlineUserName}>{item.username}</Text>
-            <View style={styles.onlineIndicator} />
-        </TouchableOpacity>
-    );
+    const renderOnlineUser = ({ item }) => {
+        const avatarUrl = `${API_ENDPOINTS.socketURL}${item.avatar}`;
+        
+        return (
+            <TouchableOpacity
+                style={styles.onlineUserItem}
+                onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
+            >
+                <Image source={{ uri: avatarUrl }} style={styles.onlineAvatar} />
+                <Text style={styles.onlineUserName}>{item.username}</Text>
+                <View style={styles.onlineIndicator} />
+            </TouchableOpacity>
+        );
+    };
 
-    const renderChatItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.chatItem}
-            onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
-        >
-            <Image source={{ uri: item.avatar }} style={styles.avatar} />
-            <View style={styles.chatInfo}>
-                <Text style={styles.userName}>{item.username}</Text>
-                <Text style={styles.lastMessage} numberOfLines={1}>
-                    {item.lastMessage || 'No messages'}
-                </Text>
-            </View>
-            <Text style={styles.timeStamp}>{item.lastMessageTime || ''}</Text>
-        </TouchableOpacity>
-    );
+    const renderChatItem = ({ item }) => {
+        const avatarUrl = item.avatar ? `${API_ENDPOINTS.socketURL}${item.avatar}` : 'https://via.placeholder.com/50';
+    
+        return (
+            <TouchableOpacity
+                style={styles.chatItem}
+                onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username })}
+            >
+                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                <View style={styles.chatInfo}>
+                    <Text style={styles.userName}>{item.username}</Text>
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                        {item.lastMessage || 'No messages'}
+                    </Text>
+                </View>
+                <Text style={styles.timeStamp}>{item.lastMessageTime || ''}</Text>
+            </TouchableOpacity>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container}>
