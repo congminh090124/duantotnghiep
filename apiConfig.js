@@ -12,8 +12,11 @@ export const API_ENDPOINTS = {
   showPostWithID:`${API_BASE_URL}/api/posts/post/:id`,
   getUserPosts: `${API_BASE_URL}/api/posts/my-posts`, // Thêm endpoint mới này
   showAllPosts: `${API_BASE_URL}/api/posts/all-posts`,
-   likePost: `${API_BASE_URL}/api/posts/:postId/like`
- 
+   likePost: `${API_BASE_URL}/api/posts/:postId/like`,
+   socketURL: `${API_BASE_URL}`,
+   onlineUsers: `${API_BASE_URL}/api/online-users`,
+   chatHistory: `${API_BASE_URL}/api/chat-history`,
+   messages: `${API_BASE_URL}/api/messages`,
   // Thêm các endpoint khác ở đây
 };
 export const getUserPosts = async () => {
