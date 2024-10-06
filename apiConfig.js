@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
   showPostWithID:`${API_BASE_URL}/api/posts/post/:id`,
   getUserPosts: `${API_BASE_URL}/api/posts/my-posts`, // Thêm endpoint mới này
   showAllPosts: `${API_BASE_URL}/api/posts/all-posts`,
+  showAllPostsMap: `${API_BASE_URL}/api/posts/map-posts`,
+   likePost: `${API_BASE_URL}/api/posts/:postId/like`,
    socketURL: `${API_BASE_URL}`,
    onlineUsers: `${API_BASE_URL}/api/online-users`,
    chatHistory: `${API_BASE_URL}/api/chat-history`,
@@ -278,6 +280,30 @@ export const updateProfile = async (profileData) => {
     return data;
   } catch (error) {
     console.error('Error updating profile:', error);
+    throw error;
+  }
+};
+export const getAllPostsMap = async () => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.showAllPostsMap, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Network response was not ok');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in getAllPosts:', error);
     throw error;
   }
 };

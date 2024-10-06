@@ -174,103 +174,27 @@ router.post('/:postId/like', auth, async (req, res) => {
     res.status(500).json({ message: 'Error processing like', error: error.message });
   }
 });
-
-// Add a comment
-router.post('/:postId/comments', auth, async (req, res) => {
+router.get('/map-posts', auth, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.postId);
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
-    }
-
-    const newComment = {
-      user: req.user.id,
-      content: req.body.content
-    };
-
-    post.comments.push(newComment);
-    post.commentsCount += 1;
-
-    const savedPost = await post.save();
-
-    // Populate user information for the new comment
-    const populatedComment = await Post.populate(savedPost.comments[savedPost.comments.length - 1], { path: 'user', select: 'username avatar' });
-
-    res.status(201).json({
-      message: 'Comment added successfully',
-      comment: populatedComment,
-      commentsCount: savedPost.commentsCount
-    });
-  } catch (error) {
-    console.error('Error adding comment:', error);
-    res.status(500).json({ message: 'Error adding comment', error: error.message });
-  }
-});
-
-// Get comments for a post
-router.get('/:postId/comments', async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.postId)
-      .populate({
-        path: 'comments.user',
-        select: 'username avatar'
-      });
-
-    if (!post) {
-      return res.status(404).json({ message: 'Post not found' });
-    }
-
-    const formattedComments = post.comments.map(comment => ({
-      _id: comment._id,
-      content: comment.content,
-      createdAt: comment.createdAt,
-      user: {
-        _id: comment.user._id,
-        username: comment.user.username,
-        avatar: comment.user.avatar
-      }
-    }));
-
-    res.json({
-      comments: formattedComments,
-      commentsCount: post.commentsCount
-    });
-  } catch (error) {
-    console.error('Error fetching comments:', error);
-    res.status(500).json({ message: 'Error fetching comments', error: error.message });
-  }
-});
-
-router.get('/feed', auth, async (req, res) => {
-  try {
-    const currentUser = await User.findById(req.user.id);
-    if (!currentUser) {
-      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
-    }
-
-    const followingAndFollowers = [...currentUser.following, ...currentUser.followers, req.user.id];
-
-    const posts = await Post.find({ user: { $in: followingAndFollowers } })
-      .populate('user', 'username avatar')
+    const posts = await Post.find()
+      .select('title location images user')
+      .populate('user', 'username')
       .sort({ createdAt: -1 });
 
-    const postsWithFullInfo = posts.map(post => {
+    const mapPosts = posts.map(post => {
       const postObject = post.toObject();
       return {
-        ...postObject,
-        images: postObject.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
-        user: postObject.user ? {
-          ...postObject.user,
-          avatar: postObject.user.avatar ? `${req.protocol}://${req.get('host')}${postObject.user.avatar}` : null
-        } : null
+        id: postObject._id,
+        title: postObject.title,
+        location: postObject.location,
+        thumbnail: postObject.images.length > 0 ? postObject.images[0] : null,
+        username: postObject.user.username
       };
     });
 
-    res.status(200).json(postsWithFullInfo);
+    res.status(200).json(mapPosts);
   } catch (err) {
-    console.error('Lỗi khi lấy bài viết từ feed:', err);
-    res.status(500).json({ message: 'Lỗi khi lấy bài viết từ feed', error: err.message });
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách bài viết cho bản đồ', error: err.message });
   }
 });
-module.exports = router;
 module.exports = router;
