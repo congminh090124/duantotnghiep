@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { getUserProfile, updateAvatar, getUserPosts } from '../../apiConfig';
+import { getUserProfile, updateAvatar, getUserPosts, getFollowers, getFollowing } from '../../apiConfig';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
@@ -14,26 +14,24 @@ const MyProfile = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [posts, setPosts] = useState([]);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
 
-  const fetchPosts = async () => {
+  const fetchData = useCallback(async () => {
     try {
-      const fetchedPosts = await getUserPosts();
-      setPosts(fetchedPosts);
+      const [profileData, postsData, followersData, followingData] = await Promise.all([
+        getUserProfile(),
+        getUserPosts(),
+        getFollowers(),
+        getFollowing()
+      ]);
+      setProfileData(profileData);
+      setPosts(postsData);
+      setFollowers(followersData);
+      setFollowing(followingData);
     } catch (error) {
-      console.error('Error fetching posts:', error);
-      Alert.alert('Error', 'Unable to fetch posts. Please try again later.');
-    }
-  };
-
-
-  const fetchProfile = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      const data = await getUserProfile();
-      setProfileData(data);
-
-    } catch (error) {
-      Alert.alert('Error', 'Unable to fetch profile. Please try again later.');
+      console.error('Error fetching data:', error);
+      Alert.alert('Error', 'Unable to fetch data. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -41,41 +39,17 @@ const MyProfile = () => {
 
   useFocusEffect(
     useCallback(() => {
-      let isActive = true;
-  
-      const fetchData = async () => {
-        try {
-          const [profileData, postsData] = await Promise.all([
-            getUserProfile(),
-            getUserPosts()
-          ]);
-          if (isActive) {
-            setProfileData(profileData);
-            setPosts(postsData);
-          }
-        } catch (error) {
-          console.error('Error fetching data:', error);
-          Alert.alert('Error', 'Unable to fetch data. Please try again later.');
-        } finally {
-          if (isActive) {
-            setIsLoading(false);
-          }
-        }
-      };
-  
       fetchData();
-  
-      return () => {
-        isActive = false;
-      };
-    }, [])
+      return () => {};
+    }, [fetchData])
   );
-  const handleEditProfile = () => {
+
+  const handleEditProfile = useCallback(() => {
     navigation.navigate('UpdateProfile', {
       profileData,
-      onProfileUpdate: fetchProfile
+      onProfileUpdate: fetchData
     });
-  };
+  }, [navigation, profileData, fetchData]);
 
   const handleUpdateAvatar = useCallback(async () => {
     try {
@@ -96,7 +70,6 @@ const MyProfile = () => {
         setIsUpdatingAvatar(true);
         const imageUri = result.assets[0].uri;
 
-        // Resize and compress the image
         const manipulatedImage = await manipulateAsync(
           imageUri,
           [{ resize: { width: 300 } }],
@@ -125,6 +98,17 @@ const MyProfile = () => {
       : null;
   }, [profileData?.anh_dai_dien]);
 
+  const handlePostPress = useCallback((post) => {
+    navigation.navigate('PostDetailScreen', { postId: post._id });
+  }, [navigation]);
+
+  const renderStatItem = useCallback(({ label, value, onPress }) => (
+    <TouchableOpacity style={styles.statItem} onPress={onPress} disabled={!onPress}>
+      <Text style={styles.statNumber}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </TouchableOpacity>
+  ), []);
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -136,11 +120,7 @@ const MyProfile = () => {
   if (!profileData) {
     return <Text style={styles.errorText}>No profile data available</Text>;
   }
-  const handlePostPress = (post) => {
-    navigation.navigate('PostDetailScreen', {
-      postId: post._id
-    });
-  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -185,16 +165,24 @@ const MyProfile = () => {
                 <Ionicons name="add-circle" size={24} color="#0095F6" />
               )}
             </TouchableOpacity>
-
           </View>
 
           <View style={styles.statsContainer}>
-            {/* {renderStatItem('bài viết', profileData.thong_ke.bai_viet)} */}
-            {renderStatItem('người theo dõi', profileData.thong_ke.nguoi_theo_doi, () => navigation.navigate('Follower', { initialTab: 1 }))}
-            {renderStatItem('đang theo dõi', profileData.thong_ke.dang_theo_doi, () => navigation.navigate('Follower', { initialTab: 0 }))}
+            {renderStatItem({
+              label: 'người theo dõi',
+              value: profileData.thong_ke?.nguoi_theo_doi || 0,
+              onPress: () => navigation.navigate('Follower', { followers })
+            })}
+            {renderStatItem({
+              label: 'đang theo dõi',
+              value: profileData.thong_ke?.dang_theo_doi || 0,
+              onPress: () => navigation.navigate('Following', { following })
+            })}
           </View>
         </View>
-        <Text style={styles.addStoryText}>{profileData.bio}</Text>
+
+        <Text style={styles.bioText}>{profileData.bio || 'No bio available'}</Text>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
             <Text style={styles.editButtonText}>Chỉnh sửa</Text>
@@ -219,21 +207,9 @@ const MyProfile = () => {
             <Text style={styles.infoText}>{profileData.sdt || 'Chưa cập nhật'}</Text>
           </View>
           <View style={styles.infoItem}>
-            <Ionicons name="call-outline" size={20} color="black" />
+            <Ionicons name="heart-outline" size={20} color="black" />
             <Text style={styles.infoText}>{profileData.tinhtranghonnhan || 'Chưa cập nhật'}</Text>
           </View>
-        </View>
-
-        <View style={styles.tabContainer}>
-          <TouchableOpacity style={styles.tab}>
-            <Ionicons name="grid-outline" size={28} color="black" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tab}>
-            <Ionicons name="play-outline" size={28} color="gray" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.tab}>
-            <Ionicons name="person-outline" size={28} color="gray" />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.postsContainer}>
@@ -247,11 +223,17 @@ const MyProfile = () => {
               >
                 {post.images && post.images.length > 0 && (
                   <Image
-                    source={{ uri: post.images[0] }}  // Thay đổi này
+                    source={{ uri: post.images[0] }}
                     style={styles.postImage}
                     resizeMode="cover"
                   />
                 )}
+                <View style={styles.postInfo}>
+                  <Text style={styles.postTitle} numberOfLines={1}>{post.title || 'Untitled'}</Text>
+                  <Text style={styles.postLocation} numberOfLines={1}>
+                    {typeof post.location === 'string' ? post.location : 'No location'}
+                  </Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -261,15 +243,8 @@ const MyProfile = () => {
   );
 };
 
-
 const windowWidth = Dimensions.get('window').width;
-const imageSize = (windowWidth - 40) / 3;
-const renderStatItem = (label, value, onPress) => (
-  <TouchableOpacity style={styles.statItem} onPress={onPress} disabled={!onPress}>
-    <Text style={styles.statNumber}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
-  </TouchableOpacity>
-);
+const imageSize = (windowWidth - 40) / 2;
 
 const styles = StyleSheet.create({
   sectionTitle: {
@@ -280,37 +255,21 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     marginTop: 10,
   },
-  postsContainer: {
-    marginTop: 20,
-    paddingHorizontal: 10,
-  },
+  
   postGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  postItem: {
-    width: imageSize,
-    height: imageSize,
-    marginBottom: 5,
-  },
-  postImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 5,
-  },
+  
+  
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
     marginLeft: 10,
   },
-  postImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 10,
-    marginBottom: 5,
-  },
+  
   infoText: {
     color: 'black',
     fontSize: 16,
@@ -469,14 +428,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#e0e0e0',
     marginTop: 20,
   },
-  tab: {
-    paddingVertical: 10,
-  },
-  postsContainer: {
-    flexWrap: 'wrap',
-    marginTop: 20,
-    paddingHorizontal: 15,
-  },
+  
+  
   loadingText: {
     color: 'black',
     fontSize: 16,
@@ -491,19 +444,51 @@ const styles = StyleSheet.create({
   },
 
 
-  postTitle: {
+  
+  postsContainer: {
+    marginTop: 20,
+    paddingHorizontal: 10,
+  },
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 15,
+    color: '#333',
+  },
+  postGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  postItem: {
+    width: imageSize,
+    marginBottom: 20,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
   },
   postImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 10,
+    height: imageSize,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  postInfo: {
+    padding: 10,
+  },
+  postTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
     marginBottom: 5,
+    color: '#333',
   },
   postLocation: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
   },
   tabContainer: {

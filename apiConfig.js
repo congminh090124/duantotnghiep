@@ -1,5 +1,4 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
 
 export const API_ENDPOINTS = {
@@ -12,12 +11,19 @@ export const API_ENDPOINTS = {
   showPostWithID:`${API_BASE_URL}/api/posts/post/:id`,
   getUserPosts: `${API_BASE_URL}/api/posts/my-posts`, // Thêm endpoint mới này
   showAllPosts: `${API_BASE_URL}/api/posts/all-posts`,
+   socketURL: `${API_BASE_URL}`,
+   onlineUsers: `${API_BASE_URL}/api/online-users`,
+   chatHistory: `${API_BASE_URL}/api/chat-history`,
+   messages: `${API_BASE_URL}/api/messages`,
    likePost: `${API_BASE_URL}/api/posts/:postId/like`,
    addComment: `${API_BASE_URL}/api/posts/:postId/comments`,
    getComments: `${API_BASE_URL}/api/posts/:postId/comments`,
- 
+   followers: `${API_BASE_URL}/api/users/followers`,
+  following: `${API_BASE_URL}/api/users/following`,
+
   // Thêm các endpoint khác ở đây
 };
+
 export const getUserPosts = async () => {
   try {
     const token = await getToken();
@@ -43,6 +49,7 @@ export const getUserPosts = async () => {
     throw error;
   }
 };
+
 // Hàm hiển thị bài viết với ID cụ thể
 export const showPostWithID = async (postId) => {
   try {
@@ -371,5 +378,166 @@ export const getComments = async (postId) => {
     throw error;
   }
 };
+export const getUserProfileById = async (userId) => {
+  try {
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/api/users/profile/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
+    const responseText = await response.text();
+    console.log('Raw response:', responseText); // Log the raw response
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
+    }
+
+    try {
+      return JSON.parse(responseText);
+    } catch (e) {
+      console.error('JSON parse error:', e);
+      throw new Error(`Invalid JSON response: ${responseText}`);
+    }
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+export const getUserPostsWithID = async (userId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/posts/user/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to fetch user posts');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error fetching user posts:', error);
+    throw error;
+  }
+};
+
+export const followUser = async (userId) => {
+  try {
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/api/users/follow/${userId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error following user:', error);
+    throw error;
+  }
+};
+
+export const unfollowUser = async (userId) => {
+  try {
+    const token = await getToken();
+    const response = await fetch(`${API_BASE_URL}/api/users/unfollow/${userId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error unfollowing user:', error);
+    throw error;
+  }
+};
+
+export const getFeedPosts = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/posts/feed`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) {
+    throw new Error('Không thể lấy bài viết từ feed');
+  }
+  return response.json();
+};
+export const getFollowers = async () => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.followers, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch followers');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching followers:', error);
+    throw error;
+  }
+};
+
+export const getFollowing = async () => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.following, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch following users');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching following users:', error);
+    throw error;
+  }
+};
 export default API_ENDPOINTS;

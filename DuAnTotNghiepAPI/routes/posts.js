@@ -54,7 +54,22 @@ router.post('/create-post', auth, upload.array('image', 5), async (req, res) => 
   }
 });
 
+router.get('/user/:userId', auth, async (req, res) => {
+  try {
+    const userId = req.params.userId;
+    
+    // Tìm tất cả bài đăng của người dùng
+    const posts = await Post.find({ user: userId })
+      .sort({ createdAt: -1 }) // Sắp xếp theo thời gian tạo, mới nhất trước
+      .populate('user', 'username avatar') // Populate thông tin người dùng
+      .select('-comments'); // Không lấy comments để giảm kích thước response
 
+    res.json(posts);
+  } catch (error) {
+    console.error('Error fetching user posts:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy bài đăng của người dùng' });
+  }
+});
 
 router.get('/my-posts', auth, async (req, res) => {
   try {
@@ -71,6 +86,7 @@ router.get('/my-posts', auth, async (req, res) => {
   }
 });
 // Route để hiển thị một bài viết cụ thể
+// Route để hiển thị một bài viết cụ thể
 router.get('/post/:id', auth, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate('user', 'username avatar');
@@ -78,14 +94,18 @@ router.get('/post/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy bài viết' });
     }
 
-    // Tạo URL đầy đủ cho hình ảnh
-    const postWithFullImageUrls = {
+    // Tạo URL đầy đủ cho hình ảnh và avatar
+    const postWithFullInfo = {
       ...post.toObject(),
       images: post.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
-      
+      user: post.user ? {
+        _id: post.user._id,
+        username: post.user.username,
+        avatar: post.user.avatar ? `${req.protocol}://${req.get('host')}${post.user.avatar}` : null
+      } : null
     };
 
-    res.status(200).json(postWithFullImageUrls);
+    res.status(200).json(postWithFullInfo);
   } catch (err) {
     res.status(500).json({ message: 'Lỗi khi lấy thông tin bài viết', error: err.message });
   }
@@ -103,15 +123,16 @@ router.get('/all-posts', auth, async (req, res) => {
       return {
         ...postObject,
         images: postObject.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
-        user: {
+        user: postObject.user ? {
           ...postObject.user,
           avatar: postObject.user.avatar ? `${req.protocol}://${req.get('host')}${postObject.user.avatar}` : null
-        }
+        } : null
       };
     });
 
     res.status(200).json(postsWithFullInfo);
   } catch (err) {
+    console.error('Lỗi khi lấy danh sách bài viết:', err);
     res.status(500).json({ message: 'Lỗi khi lấy danh sách bài viết', error: err.message });
   }
 });
@@ -153,8 +174,6 @@ router.post('/:postId/like', auth, async (req, res) => {
     res.status(500).json({ message: 'Error processing like', error: error.message });
   }
 });
-
-// ... other imports and routes ...
 
 // Add a comment
 router.post('/:postId/comments', auth, async (req, res) => {
@@ -222,5 +241,36 @@ router.get('/:postId/comments', async (req, res) => {
   }
 });
 
+router.get('/feed', auth, async (req, res) => {
+  try {
+    const currentUser = await User.findById(req.user.id);
+    if (!currentUser) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    const followingAndFollowers = [...currentUser.following, ...currentUser.followers, req.user.id];
+
+    const posts = await Post.find({ user: { $in: followingAndFollowers } })
+      .populate('user', 'username avatar')
+      .sort({ createdAt: -1 });
+
+    const postsWithFullInfo = posts.map(post => {
+      const postObject = post.toObject();
+      return {
+        ...postObject,
+        images: postObject.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
+        user: postObject.user ? {
+          ...postObject.user,
+          avatar: postObject.user.avatar ? `${req.protocol}://${req.get('host')}${postObject.user.avatar}` : null
+        } : null
+      };
+    });
+
+    res.status(200).json(postsWithFullInfo);
+  } catch (err) {
+    console.error('Lỗi khi lấy bài viết từ feed:', err);
+    res.status(500).json({ message: 'Lỗi khi lấy bài viết từ feed', error: err.message });
+  }
+});
 module.exports = router;
 module.exports = router;

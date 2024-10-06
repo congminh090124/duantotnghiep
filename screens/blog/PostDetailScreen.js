@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator, FlatList } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { showPostWithID, getUserProfile } from '../../apiConfig';
+import { showPostWithID } from '../../apiConfig';
 
 const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
 const { width, height } = Dimensions.get('window');
@@ -9,10 +9,10 @@ const { width, height } = Dimensions.get('window');
 const PostDetailScreen = ({ route, navigation }) => {
   const { postId } = route.params;
   const [post, setPost] = useState(null);
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   useEffect(() => {
     fetchPostDetails();
   }, []);
@@ -20,12 +20,8 @@ const PostDetailScreen = ({ route, navigation }) => {
   const fetchPostDetails = async () => {
     try {
       setLoading(true);
-      const [postData, userData] = await Promise.all([
-        showPostWithID(postId),
-        getUserProfile()
-      ]);
+      const postData = await showPostWithID(postId);
       setPost(postData);
-      setUser(userData);
     } catch (err) {
       setError('Failed to fetch details: ' + err.message);
       console.error(err);
@@ -33,15 +29,6 @@ const PostDetailScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   };
-
-  const avatarUri = useMemo(() => {
-    return user?.anh_dai_dien
-      ? `${API_BASE_URL}${user.anh_dai_dien}`
-      : null;
-  }, [user?.anh_dai_dien]);
-
-
-
 
   if (loading) {
     return (
@@ -51,14 +38,13 @@ const PostDetailScreen = ({ route, navigation }) => {
     );
   }
 
-  if (error || !post || !user) {
+  if (error || !post) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>{error || 'Post or user not found'}</Text>
+        <Text style={styles.errorText}>{error || 'Post not found'}</Text>
       </SafeAreaView>
     );
   }
- 
 
   const renderImageItem = ({ item }) => (
     <Image
@@ -83,9 +69,9 @@ const PostDetailScreen = ({ route, navigation }) => {
       <View style={styles.postContainer}>
         {/* User Info */}
         <View style={styles.userInfo}>
-          {avatarUri ? (
+          {post.user && post.user.avatar ? (
             <Image
-              source={{ uri: avatarUri }}
+              source={{ uri: post.user.avatar }}
               style={styles.avatar}
             />
           ) : (
@@ -93,7 +79,7 @@ const PostDetailScreen = ({ route, navigation }) => {
               <Text style={styles.placeholderText}>No Image</Text>
             </View>
           )}
-          <Text style={styles.username}>{user.username || 'Unknown User'}</Text>
+          <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
           <TouchableOpacity style={styles.moreButton}>
             <Ionicons name="ellipsis-horizontal" size={24} color="white" />
           </TouchableOpacity>
@@ -115,8 +101,8 @@ const PostDetailScreen = ({ route, navigation }) => {
           />
         )}
 
-         {/* Image Indicator */}
-         {post.images && post.images.length > 1 && (
+        {/* Image Indicator */}
+        {post.images && post.images.length > 1 && (
           <View style={styles.imageIndicatorContainer}>
             {post.images.map((_, index) => (
               <View
@@ -129,7 +115,6 @@ const PostDetailScreen = ({ route, navigation }) => {
             ))}
           </View>
         )}
-
 
         {/* Interaction Buttons */}
         <View style={styles.interactionButtons}>
@@ -153,7 +138,7 @@ const PostDetailScreen = ({ route, navigation }) => {
 
         {/* Caption */}
         <View style={styles.captionContainer}>
-          <Text style={styles.username}>{user.username || 'Unknown User'}</Text>
+          <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
           <Text style={styles.caption}>{post.title || 'No caption'}</Text>
         </View>
 

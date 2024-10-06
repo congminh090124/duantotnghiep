@@ -23,7 +23,6 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 
 const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
-
 const PostCreationScreen = () => {
   const [title, setTitle] = useState('');
 
@@ -36,46 +35,56 @@ const PostCreationScreen = () => {
 
   const navigation = useNavigation();
 
+  const getLocation = async () => {
+    setIsLoadingLocation(true);
+    setLocationError(null);
+  
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setLocationError('Permission to access location was denied');
+        return;
+      }
+  
+      const isLocationServicesEnabled = await Location.hasServicesEnabledAsync();
+      if (!isLocationServicesEnabled) {
+        setLocationError('Location services are disabled');
+        return;
+      }
+  
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+        timeout: 15000,
+      });
+  
+      setLocation(location.coords);
+    } catch (error) {
+      console.error('Error getting location:', error);
+      setLocationError('Error getting location. Please try again.');
+    } finally {
+      setIsLoadingLocation(false);
+    }
+  };
+  
   useEffect(() => {
-    const fetchUserProfile = async () => {
+    const fetchUserProfileAndLocation = async () => {
       try {
-        const data = await getUserProfile();
-        setProfileData(data);
+        const [profileData] = await Promise.all([
+          getUserProfile(),
+          getLocation(),
+        ]);
+        setProfileData(profileData);
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('Error fetching user profile or location:', error);
       } finally {
         setLoading(false);
       }
     };
-    const getLocation = async () => {
-      setIsLoadingLocation(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationError('Permission to access location was denied');
-        setIsLoadingLocation(false);
-        return;
-      }
   
-      try {
-        let location = await Location.getCurrentPositionAsync({});
-        setLocation(location.coords);
-      } catch (error) {
-        setLocationError('Error getting location');
-        console.error(error);
-      } finally {
-        setIsLoadingLocation(false);
-      }
-    };
-    fetchUserProfile();
-    getLocation(); // Call getLocation here
-   
-  
-    
+    fetchUserProfileAndLocation();
   }, []);
   
   
-
-
   const avatarUri = useMemo(() => {
     return profileData?.anh_dai_dien
       ? `${API_BASE_URL}${profileData.anh_dai_dien}`

@@ -33,7 +33,7 @@ const SignUpScreen = () => {
                 console.log('register successful, token saved');
                 Alert.alert('Thành công', 'Đăng ký thành công!');
                 navigation.navigate('IdentityVerification');
-                console.log(response);
+              
             } else {
                 Alert.alert('Lỗi', 'Đăng ký không thành công. Vui lòng thử lại.');
             }

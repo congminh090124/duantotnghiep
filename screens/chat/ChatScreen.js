@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Image, SafeAreaView, StatusBar,ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Image, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 import { format } from 'date-fns';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { API_ENDPOINTS, getToken } from '../../apiConfig'; // Import API_ENDPOINTS và getToken
 
-const socket = io('https://lacewing-evolving-generally.ngrok-free.app');
+const socket = io(API_ENDPOINTS.socketURL);
 
 export default function ChatScreen({ route, navigation }) {
   const { receiverId, receiverName, receiverUsername, receiverAvatar } = route.params;
@@ -59,8 +60,8 @@ export default function ChatScreen({ route, navigation }) {
   const fetchMessages = async (senderId) => {
     try {
       setIsLoading(true);
-      const token = await AsyncStorage.getItem('userToken');
-      const response = await fetch(`https://lacewing-evolving-generally.ngrok-free.app/api/messages/${senderId}/${receiverId}`, {
+      const token = await getToken();
+      const response = await fetch(`${API_ENDPOINTS.messages}/${senderId}/${receiverId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       

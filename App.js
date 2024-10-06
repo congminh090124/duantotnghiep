@@ -30,13 +30,16 @@ import ConfirmCCCDScreen from './screens/auth/ConfirmCCCDScreen';
 import MapScreen from './screens/map';
 import CreatePost from './screens/blog/createPostMap';
 import LocationSearch from './screens/LocationSearch';
-import UserProfileScreen from './screens/ThongTinCaNhan';
+
 import MyProfile from './screens/profile/MyProfile';
 import Follower from './screens/profile/Follower';
+import Following from './screens/profile/Following';
 import UpdateProfile from './screens/profile/udateProfile';
-import PostDetailScreen from './screens/blog//PostDetailScreen';
+import PostDetailScreen from './screens/blog/PostDetailScreen';
 import UserListScreen from './screens/chat/UserListScreen';
 import ChatScreen from './screens/chat/ChatScreen';
+import UserProfile from './screens/profile/UserProfile';
+
 
 
 // Tạo Stack Navigator
@@ -106,13 +109,15 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="DangNhap">
         {/* Các màn hình trong Stack Navigator */}
+        
         <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
         <Stack.Screen name="PostDetailScreen" component={PostDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ headerShown: false }} />
         <Stack.Screen name="Follower" component={Follower} options={{ headerShown: false }} />
+        <Stack.Screen name="Following" component={Following} options={{ headerShown: false }} />
         <Stack.Screen name="MyProfile" component={MyProfile} options={{ headerShown: false }} />
-        <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="UserProfile" component={UserProfile} options={{ headerShown: false }} />
         <Stack.Screen name="IdentityVerification" component={IdentityVerification} options={{ headerShown: false }} />
         <Stack.Screen name="MapScreen" component={MapScreen} options={{ headerShown: false }} />
         <Stack.Screen name="LocationSearch" component={LocationSearch} options={{ headerShown: false }} />

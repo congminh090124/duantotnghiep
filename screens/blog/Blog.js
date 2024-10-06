@@ -1,17 +1,20 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { error, Alert, View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput } from 'react-native';
-import { getAllPosts, toggleLikePost, addComment, getComments, getToken } from '../../apiConfig';
+import { error,Alert, View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput } from 'react-native';
+import { getAllPosts, toggleLikePost, addComment, getComments, getToken,getFeedPosts } from '../../apiConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { RefreshControl } from 'react-native';
 const BlogPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [likeStates, setLikeStates] = useState({});
   const [userToken, setUserToken] = useState(null);
   const navigation = useNavigation();
   const [commentText, setCommentText] = useState('');
   const [selectedPostId, setSelectedPostId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -20,31 +23,58 @@ const BlogPage = () => {
     };
     fetchUserToken();
   }, []);
+  const fetchPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      const feedPosts = await getFeedPosts();
+      setPosts(feedPosts);
+      const initialLikeStates = {};
+      feedPosts.forEach(post => {
+        initialLikeStates[post._id] = {
+          isLiked: post.likes.includes(userToken),
+          likesCount: post.likesCount,
+          isLoading: false
+        };
+      });
+      setLikeStates(initialLikeStates);
+    } catch (error) {
+      console.error('Lỗi khi lấy bài viết từ feed:', error);
+      Alert.alert('Lỗi', 'Không thể lấy bài viết từ feed');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [userToken]);
+
 
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        const fetchedPosts = await getAllPosts();
-        setPosts(fetchedPosts);
-        const initialLikeStates = {};
-        fetchedPosts.forEach(post => {
-          initialLikeStates[post._id] = {
-            isLiked: post.likes.includes(userToken),
-            likesCount: post.likesCount,
-            isLoading: false
-          };
-        });
-        setLikeStates(initialLikeStates);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        Alert.alert('Error', 'Failed to fetch posts');
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    getCurrentUserId();
     fetchPosts();
-  }, [userToken]);
+  }, [userToken, fetchPosts]);
+  const getCurrentUserId = async () => {
+    try {
+      const userData = await AsyncStorage.getItem('userData');
+      if (userData) {
+        const { id } = JSON.parse(userData);
+        setCurrentUserId(id);
+      }
+    } catch (error) {
+      console.error('Error fetching current user ID:', error);
+    }
+  };
+  const handleUserPress = useCallback((userId) => {
+    if (userId === currentUserId) {
+      navigation.navigate('Profile'); // Giả sử 'Profile' là tên màn hình profile của người dùng hiện tại
+    } else {
+      navigation.navigate('UserProfile', { userId });
+    }
+  }, [navigation, currentUserId]);
+  
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPosts();
+  }, [fetchPosts]);
 
   const handlePostPress = useCallback((post) => {
     navigation.navigate('PostDetailScreen', { postId: post._id });
@@ -129,7 +159,10 @@ const BlogPage = () => {
   const renderedPosts = useMemo(() => {
     return posts.map((post) => (
       <View key={post._id} style={styles.postCard}>
-        <View style={styles.userInfo}>
+        <TouchableOpacity 
+          style={styles.userInfo} 
+          onPress={() => handleUserPress(post.user._id)}
+        >
           {post.user && post.user.avatar ? (
             <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
           ) : (
@@ -141,7 +174,7 @@ const BlogPage = () => {
             <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
             <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
           </View>
-        </View>
+        </TouchableOpacity>
 
         <Text style={styles.postContent}>{post.content}</Text>
 
@@ -210,7 +243,7 @@ const BlogPage = () => {
         )}
       </View>
     ));
-  }, [posts, likeStates, handlePostPress, handleLikePress, selectedPostId, commentText, handleCommentPress, handleAddComment]);
+  },  [posts, likeStates, handlePostPress, handleLikePress, selectedPostId, commentText, handleCommentPress, handleAddComment, handleUserPress]);
 
 
   if (loading) {
@@ -231,7 +264,11 @@ const BlogPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.headerText}>Social Feed</Text>
           <TouchableOpacity>

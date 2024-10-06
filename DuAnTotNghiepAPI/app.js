@@ -23,6 +23,7 @@ app.use('/uploads', express.static('uploads'));
 app.use('/api/posts', postRoutes);
 app.use('/api/scan', scanRoutes);
 
+
 // Online users storage
 let onlineUsers = new Map();
 

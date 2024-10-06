@@ -1,13 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground, StyleSheet, KeyboardAvoidingView, Platform, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { login, saveToken } from '../../apiConfig';
+import { login, saveToken, googleSignIn, facebookSignIn } from '../../apiConfig';
+
+import { ResponseType } from 'expo-auth-session';
+
+// Thêm các hằng số cho Google OAuth
 
 const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Lỗi', 'Vui lòng nhập email và mật khẩu');
@@ -15,7 +20,7 @@ const LoginScreen = () => {
     }
   
     try {
-      console.log('Attempting login with:', { email, password });
+  
       const userData = { email, password };
       const response = await login(userData);
      
@@ -24,9 +29,9 @@ const LoginScreen = () => {
         await saveToken(response.token);
         await AsyncStorage.setItem('userData', JSON.stringify(response.user));
         console.log('Login successful, token saved');
-        const userID = response.user.id;
+      
         await AsyncStorage.setItem('userID', response.user.id);
-        console.log('UserID:', userID);
+    
   
         if (response.user.xacMinhDanhTinh) {
           console.log('Identity verified, navigating to TrangChu');
@@ -100,7 +105,6 @@ const LoginScreen = () => {
             keyboardType="email-address"
             autoCapitalize="none"
           />
-
           <TextInput
             style={styles.input}
             placeholder="Mật khẩu"
@@ -131,14 +135,22 @@ const LoginScreen = () => {
               />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialButton}>
-              <Image
-                source={require('../../assets/gg.png')}
-                style={styles.logo}
-              />
-            </TouchableOpacity>
+            <TouchableOpacity 
+          style={styles.socialButton}
+         
+        
+        >
+          <Image
+            source={require('../../assets/gg.png')}
+            style={styles.logo}
+          />
+        </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialButton}>
+        <TouchableOpacity 
+              style={styles.socialButton}
+             
+             
+            >
               <Image
                 source={require('../../assets/fb.png')}
                 style={styles.logo}

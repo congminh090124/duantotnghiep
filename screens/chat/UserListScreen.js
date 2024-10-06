@@ -3,8 +3,9 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, SafeAreaView
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { API_ENDPOINTS, getToken } from '../../apiConfig'; // Import API_ENDPOINTS và getToken
 
-const socket = io('https://lacewing-evolving-generally.ngrok-free.app');
+const socket = io(API_ENDPOINTS.socketURL); // Giả sử bạn đã thêm socketURL vào API_ENDPOINTS
 
 export default function ListScreen({ navigation }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
@@ -29,8 +30,8 @@ export default function ListScreen({ navigation }) {
 
         socket.on('updateOnlineUsers', async (users) => {
             const filteredUsers = users.filter(user => user.id !== userId);
-            const token = await AsyncStorage.getItem('userToken');
-            const response = await fetch('https://lacewing-evolving-generally.ngrok-free.app/api/online-users', {
+            const token = await getToken();
+            const response = await fetch(API_ENDPOINTS.onlineUsers, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const onlineUsersDetails = await response.json();
@@ -45,8 +46,8 @@ export default function ListScreen({ navigation }) {
     useEffect(() => {
         const fetchChatHistory = async () => {
             try {
-                const token = await AsyncStorage.getItem('userToken');
-                const response = await fetch(`https://lacewing-evolving-generally.ngrok-free.app/api/chat-history/${userId}`, {
+                const token = await getToken();
+                const response = await fetch(`${API_ENDPOINTS.chatHistory}/${userId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 
@@ -55,11 +56,11 @@ export default function ListScreen({ navigation }) {
                 }
 
                 const data = await response.json();
-                // Xử lý dữ liệu chat history
+                // Process chat history data
                 const processedChatHistory = data.map(chat => ({
                     _id: chat._id,
-                    username: chat.receiverId, // Tạm thời sử dụng receiverId làm username
-                    avatar: 'https://via.placeholder.com/50', // Placeholder avatar
+                    username: chat.receiverId,
+                    avatar: 'https://via.placeholder.com/50',
                     lastMessage: chat.text,
                     lastMessageTime: new Date(chat.createdAt).toLocaleTimeString()
                 }));

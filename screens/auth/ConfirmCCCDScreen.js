@@ -10,13 +10,13 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
   useEffect(() => {
       if (route.params?.cccdData) {
           setCccdData(route.params.cccdData);
-          console.log('CCCD Data from params:', route.params.cccdData);
+       
       }
 
       const getToken = async () => {
           try {
               const storedToken = await AsyncStorage.getItem('userToken');
-              console.log('Stored Token:', storedToken);
+            
               if (storedToken) {
                   setToken(storedToken);
               } else {
@@ -55,7 +55,7 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
           });
 
           const data = await response.json();
-          console.log('Server response:', data);
+      
 
           if (response.ok) {
               Alert.alert('Success', 'Cập nhật thông tin CCCD thành công');

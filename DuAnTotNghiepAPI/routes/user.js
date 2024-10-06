@@ -4,47 +4,11 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const auth = require('../middleware/auth');
-const multer = require('multer'); // Để xử lý file upload
+const multer = require('multer');
 const path = require('path');
 const { OAuth2Client } = require('google-auth-library');
-
-
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-router.post('/auth/google', async (req, res) => {
-    const { idToken } = req.body;
-    try {
-      const ticket = await client.verifyIdToken({
-        idToken: idToken,
-        audience: process.env.GOOGLE_CLIENT_ID,
-      });
-      const payload = ticket.getPayload();
-      const { email, name, picture } = payload;
-  
-      // Kiểm tra xem user đã tồn tại chưa
-      let user = await User.findOne({ email });
-  
-      if (!user) {
-        // Tạo user mới nếu chưa tồn tại
-        user = new User({
-          email,
-          name,
-          avatar: picture,
-          // Thêm các trường khác nếu cần
-        });
-        await user.save();
-      }
-  
-      // Tạo token JWT cho user
-      const token = user.generateAuthToken();
-  
-      res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
-    } catch (error) {
-      console.error('Google login error:', error);
-      res.status(400).json({ error: 'Invalid Google token' });
-    }
-  });
-
+const fetch = require('node-fetch'); // Thêm dòng này để import node-fetch
+const Post = require('../models/Post');
 
 
 router.post('/register', async (req, res) => {
@@ -87,6 +51,57 @@ router.post('/register', async (req, res) => {
     }
 });
 
+
+router.post('/facebook-login', async (req, res) => {
+    try {
+      const { accessToken } = req.body;
+  
+      // Xác minh access token với Facebook
+      const response = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
+      if (!response.ok) {
+        throw new Error('Không thể xác minh token Facebook');
+      }
+      const { id, name, email } = await response.json();
+  
+      // Kiểm tra xem người dùng đã tồn tại chưa
+      let user = await User.findOne({ email });
+  
+      if (!user) {
+        // Nếu người dùng chưa tồn tại, tạo người dùng mới
+        user = new User({
+          email,
+          name,
+          username: name, // Bạn có thể muốn tạo một username duy nhất
+          facebookId: id,
+          // Đặt các trường mặc định khác nếu cần
+        });
+        await user.save();
+      } else {
+        // Nếu người dùng tồn tại, cập nhật Facebook ID nếu chưa được đặt
+        if (!user.facebookId) {
+          user.facebookId = id;
+          await user.save();
+        }
+      }
+  
+      // Tạo token JWT
+      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  
+      // Trả về token và thông tin người dùng
+      res.json({
+        token,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          xacMinhDanhTinh: user.xacMinhDanhTinh
+        }
+      });
+    } catch (error) {
+      console.error('Lỗi đăng nhập Facebook:', error);
+      res.status(500).json({ message: 'Lỗi máy chủ khi đăng nhập bằng Facebook' });
+    }
+  });
 // Đăng nhập
 router.post('/login', async (req, res) => {
     try {
@@ -235,5 +250,148 @@ router.get('/users', auth, async (req, res) => {
         console.error(error);
         res.status(500).json({ message: 'Lỗi máy chủ' });
     }
+});
+router.get('/profile/:userId', auth, async (req, res) => {
+  try {
+    console.log('Accessing profile route');
+    const userId = req.params.userId;
+    const currentUserId = req.user.id;
+    
+
+    const user = await User.findById(userId);
+    if (!user) {
+      console.log('User not found');
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+    console.log('User found:', user);
+
+    // Kiểm tra xem người dùng hiện tại có đang theo dõi người dùng này không
+    const isFollowing = user.followers.includes(currentUserId);
+
+    const userProfile = {
+      id: user._id,
+      username: user.username,
+      name: user.name,
+      bio: user.bio,
+      anh_dai_dien: user.avatar,
+      thong_ke: {
+        nguoi_theo_doi: user.followers.length,
+        dang_theo_doi: user.following.length,
+        bai_viet: user.posts ? user.posts.length : 0 // Giả sử có trường posts
+      },
+      isFollowing: isFollowing
+    };
+
+    
+    res.json(userProfile);
+  } catch (error) {
+    console.error('Lỗi khi lấy thông tin profile:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+  }
+});
+
+router.post('/follow/:userId', auth, async (req, res) => {
+  try {
+    const userToFollow = await User.findById(req.params.userId);
+    const currentUser = await User.findById(req.user.id);
+
+    if (!userToFollow || !currentUser) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    if (currentUser.following.includes(userToFollow._id)) {
+      return res.status(400).json({ message: 'Bạn đã theo dõi người dùng này rồi' });
+    }
+
+    currentUser.following.push(userToFollow._id);
+    currentUser.followingCount += 1;
+
+    userToFollow.followers.push(currentUser._id);
+    userToFollow.followersCount += 1;
+
+    await currentUser.save();
+    await userToFollow.save();
+
+    res.json({ 
+      message: 'Đã theo dõi thành công',
+      followersCount: userToFollow.followersCount,
+      followingCount: currentUser.followingCount
+    });
+  } catch (error) {
+    console.error('Lỗi khi theo dõi người dùng:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+  }
+});
+
+router.post('/unfollow/:userId', auth, async (req, res) => {
+  try {
+    const userToUnfollow = await User.findById(req.params.userId);
+    const currentUser = await User.findById(req.user.id);
+
+    if (!userToUnfollow || !currentUser) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    if (!currentUser.following.includes(userToUnfollow._id)) {
+      return res.status(400).json({ message: 'Bạn chưa theo dõi người dùng này' });
+    }
+
+    currentUser.following = currentUser.following.filter(id => !id.equals(userToUnfollow._id));
+    currentUser.followingCount = Math.max(0, currentUser.followingCount - 1);
+
+    userToUnfollow.followers = userToUnfollow.followers.filter(id => !id.equals(currentUser._id));
+    userToUnfollow.followersCount = Math.max(0, userToUnfollow.followersCount - 1);
+
+    await currentUser.save();
+    await userToUnfollow.save();
+
+    res.json({ 
+      message: 'Đã hủy theo dõi thành công',
+      followersCount: userToUnfollow.followersCount,
+      followingCount: currentUser.followingCount
+    });
+  } catch (error) {
+    console.error('Lỗi khi hủy theo dõi người dùng:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+  }
+});
+router.get('/followers', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('followers', 'username avatar');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const followers = user.followers.map(follower => ({
+      id: follower._id,
+      username: follower.username,
+      avatar: follower.avatar
+    }));
+
+    res.json(followers);
+  } catch (error) {
+    console.error('Error fetching followers:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.get('/following', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('following', 'username avatar');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const following = user.following.map(followedUser => ({
+      id: followedUser._id,
+      username: followedUser.username,
+      avatar: followedUser.avatar
+    }));
+
+    res.json(following);
+  } catch (error) {
+    console.error('Error fetching following users:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
 });
 module.exports = router;
