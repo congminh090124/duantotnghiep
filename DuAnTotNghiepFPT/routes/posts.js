@@ -153,5 +153,27 @@ router.post('/:postId/like', auth, async (req, res) => {
     res.status(500).json({ message: 'Error processing like', error: error.message });
   }
 });
+router.get('/map-posts', auth, async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .select('title location images user')
+      .populate('user', 'username')
+      .sort({ createdAt: -1 });
 
+    const mapPosts = posts.map(post => {
+      const postObject = post.toObject();
+      return {
+        id: postObject._id,
+        title: postObject.title,
+        location: postObject.location,
+        thumbnail: postObject.images.length > 0 ? postObject.images[0] : null,
+        username: postObject.user.username
+      };
+    });
+
+    res.status(200).json(mapPosts);
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi khi lấy danh sách bài viết cho bản đồ', error: err.message });
+  }
+});
 module.exports = router;

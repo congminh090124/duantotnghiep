@@ -23,7 +23,7 @@ import DKTinhNguyenVien from './screens/DKTinhNguyenVien';
 import NhanTin from './screens/NhanTin';
 
 import TrangHomeDangTus from './screens/TrangHomeDangTus';
-import TrangTimBanDuLich from './screens/TrangTimBanDuLich';
+import TrangTimBanDuLich from './screens/Feed/TrangTimBanDuLich';
 import IdentityVerification from './screens/auth/xacMinhDanhTinh';
 import VerifyIDScreen from './screens/auth/quetCCCD';
 import ConfirmCCCDScreen from './screens/auth/ConfirmCCCDScreen';
@@ -37,8 +37,8 @@ import UpdateProfile from './screens/profile/udateProfile';
 import PostDetailScreen from './screens/blog//PostDetailScreen';
 import UserListScreen from './screens/chat/UserListScreen';
 import ChatScreen from './screens/chat/ChatScreen';
-
-
+import ProfileMapScreen from './screens/profile/ProfileMapScreen';
+import TaoTrangTimBanDuLich from './screens/Feed/TaoTrangTimBanDuLich';
 // Tạo Stack Navigator
 const Stack = createStackNavigator();
 
@@ -106,6 +106,8 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="DangNhap">
         {/* Các màn hình trong Stack Navigator */}
+        <Stack.Screen name="TaoTrangTimBanDuLich" component={TaoTrangTimBanDuLich} options={{ headerShown: false }} />
+        <Stack.Screen name="ProfileMapScreen" component={ProfileMapScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }} />
         <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
         <Stack.Screen name="PostDetailScreen" component={PostDetailScreen} options={{ headerShown: false }} />
