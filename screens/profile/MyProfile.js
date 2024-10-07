@@ -5,8 +5,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getUserProfile, updateAvatar, getUserPosts, getFollowers, getFollowing } from '../../apiConfig';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+import { API_ENDPOINTS, getToken } from '../../apiConfig';
+const API_BASE_URL = API_ENDPOINTS.socketURL;
 
 const MyProfile = () => {
   const navigation = useNavigation();

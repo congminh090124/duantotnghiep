@@ -1,10 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
   login: `${API_BASE_URL}/api/users/login`,
   showProfile: `${API_BASE_URL}/api/users/thong-tin-ca-nhan`,
+  showProfileTravel: `${API_BASE_URL}/api/travel-posts`,
+  createPostTravel: `${API_BASE_URL}/api/travel-posts/create`,
   updateAvatar: `${API_BASE_URL}/api/users/update-avatar`,
   updateProfile: `${API_BASE_URL}/api/users/update-profile`,
   createPost: `${API_BASE_URL}/api/posts/create-post`,
@@ -24,6 +26,35 @@ export const API_ENDPOINTS = {
   following: `${API_BASE_URL}/api/users/following`,
 
   // Thêm các endpoint khác ở đây
+};
+
+// ... other imports and functions
+
+export const getAllTravelPosts = async () => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch travel posts');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in getAllTravelPosts:', error);
+    throw error;
+  }
 };
 
 export const getUserPosts = async () => {
@@ -117,6 +148,46 @@ export const createPost = async (postData) => {
   }
 };
 // ... existing code ...
+// Hàm tạo bài viết mới
+export const createPostTravel = async (postData) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const formData = new FormData();
+    formData.append('title', postData.title);
+    formData.append('startDate', postData.startDate);
+    formData.append('endDate', postData.endDate);
+    formData.append('currentLocationLat', postData.currentLocationLat);
+    formData.append('currentLocationLng', postData.currentLocationLng);
+    formData.append('destinationLat', postData.destinationLat);
+    formData.append('destinationLng', postData.destinationLng);
+
+    postData.image.forEach((img, index) => {
+      formData.append('image', img);
+    });
+
+    const response = await fetch(API_ENDPOINTS.createPostTravel, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Network response was not ok');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in createPostTravel:', error);
+    throw error;
+  }
+};
 export const saveToken = async (token) => {
   try {
     await AsyncStorage.setItem('userToken', token);
@@ -184,6 +255,43 @@ export const register = async (userData) => {
     return data;
   } catch (error) {
     console.error('Lỗi khi đăng ký:', error);
+    throw error;
+  }
+};
+export const getUserProfileTravel = async () => {
+  try {
+    const token = await getToken();
+    console.log('Token for getUserProfile:', token);
+
+    if (!token) {
+      throw new Error('No token found');
+    }
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`, // Thay đổi ở đây
+    };
+    console.log('Request headers:', headers);
+
+    const response = await fetch(API_ENDPOINTS.showProfile, {
+      method: 'GET',
+      headers: headers,
+    });
+
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers.map);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Error response body:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('User profile data:', data);
+    return data;
+  } catch (error) {
+    console.error('Lỗi khi lấy thông tin cá nhân:', error);
     throw error;
   }
 };

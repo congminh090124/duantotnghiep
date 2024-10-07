@@ -22,7 +22,7 @@ import * as Location from 'expo-location';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 const PostCreationScreen = () => {
   const [title, setTitle] = useState('');
 

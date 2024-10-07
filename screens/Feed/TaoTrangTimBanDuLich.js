@@ -7,33 +7,38 @@ import {
   TextInput,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { createPost, getUserProfile } from '../../apiConfig';
+import { createPostTravel, getUserProfile } from '../../apiConfig';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import MapView, { Marker } from 'react-native-maps';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
-
+import DateTimePickerAndroid from '@react-native-community/datetimepicker';
 const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 
 const TaoTrangTimBanDuLich = () => {
   const [title, setTitle] = useState('');
-
   const [image, setImages] = useState([]);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [location, setLocation] = useState(null);
-  const [locationError, setLocationError] = useState(null);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
-
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [locationDisplay, setLocationDisplay] = useState('');
+  const [destination, setDestination] = useState(null);
+  const [destinationName, setDestinationName] = useState('');
+  const [showMap, setShowMap] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -47,40 +52,50 @@ const TaoTrangTimBanDuLich = () => {
         setLoading(false);
       }
     };
-    const getLocation = async () => {
-      setIsLoadingLocation(true);
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationError('Permission to access location was denied');
-        setIsLoadingLocation(false);
-        return;
-      }
-  
-      try {
-        let location = await Location.getCurrentPositionAsync({});
-        setLocation(location.coords);
-      } catch (error) {
-        setLocationError('Error getting location');
-        console.error(error);
-      } finally {
-        setIsLoadingLocation(false);
-      }
-    };
-    fetchUserProfile();
-    getLocation(); // Call getLocation here
-   
-  
-    
-  }, []);
-  
-  
 
+    fetchUserProfile();
+    getCurrentLocation();
+  }, []);
+
+  const getCurrentLocation = async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Permission to access location was denied');
+      return;
+    }
+  
+    try {
+      let location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      });
+      setLocation(`${location.coords.latitude},${location.coords.longitude}`);
+      
+      let address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+      
+      if (address[0]) {
+        setLocationDisplay(`${address[0].city}, ${address[0].country}`);
+      } else {
+        setLocationDisplay(`${location.coords.latitude.toFixed(2)}, ${location.coords.longitude.toFixed(2)}`);
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Unable to get current location');
+    }
+  };
 
   const avatarUri = useMemo(() => {
     return profileData?.anh_dai_dien
       ? `${API_BASE_URL}${profileData.anh_dai_dien}`
       : null;
   }, [profileData?.anh_dai_dien]);
+
   const optimizeImage = async (uri) => {
     try {
       const manipulatedImage = await manipulateAsync(
@@ -94,7 +109,6 @@ const TaoTrangTimBanDuLich = () => {
       return uri; // Return original URI if optimization fails
     }
   };
-
 
   const handleAddImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -111,8 +125,56 @@ const TaoTrangTimBanDuLich = () => {
       setImages([...image, ...optimizedImages]);
     }
   };
+
   const handleRemoveImage = (index) => {
     setImages(image.filter((_, i) => i !== index));
+  };
+
+  const onChangeStartDate = (event, selectedDate) => {
+    const currentDate = selectedDate || startDate;
+    setShowStartPicker(Platform.OS === 'ios');
+    setStartDate(currentDate);
+  };
+
+  const onChangeEndDate = (event, selectedDate) => {
+    const currentDate = selectedDate || endDate;
+    setShowEndPicker(Platform.OS === 'ios');
+    setEndDate(currentDate);
+  };
+
+  const showDatePicker = (startOrEnd) => {
+    if (startOrEnd === 'start') {
+      setShowStartPicker(true);
+    } else {
+      setShowEndPicker(true);
+    }
+  };
+
+  const formatDate = (date) => {
+    return date.toLocaleDateString('vi-VN');
+  };
+
+  const handleSelectDestination = () => {
+    setShowMap(true);
+  };
+
+  const handleMapPress = async (event) => {
+    const { coordinate } = event.nativeEvent;
+    setDestination(coordinate);
+    
+    try {
+      const address = await Location.reverseGeocodeAsync(coordinate);
+      if (address[0]) {
+        setDestinationName(`${address[0].city || address[0].region}, ${address[0].country}`);
+      } else {
+        setDestinationName(`${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`);
+      }
+    } catch (error) {
+      console.error('Error getting address:', error);
+      setDestinationName(`${coordinate.latitude.toFixed(4)}, ${coordinate.longitude.toFixed(4)}`);
+    }
+    
+    setShowMap(false);
   };
 
   const handlePost = async () => {
@@ -122,7 +184,12 @@ const TaoTrangTimBanDuLich = () => {
     }
   
     if (!location) {
-      Alert.alert('Lỗi', 'Không thể lấy vị trí. Vui lòng thử lại.');
+      Alert.alert('Lỗi', 'Không thể lấy vị trí hiện tại. Vui lòng thử lại.');
+      return;
+    }
+  
+    if (!destination) {
+      Alert.alert('Lỗi', 'Vui lòng chọn điểm đến.');
       return;
     }
   
@@ -138,18 +205,23 @@ const TaoTrangTimBanDuLich = () => {
         })
       );
   
+      const [currentLat, currentLng] = location.split(',').map(coord => parseFloat(coord.trim()));
+  
       const postData = {
         title: title.trim(),
-        location: {
-          type: "Point",
-          coordinates: [location.longitude, location.latitude]
-        },
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        currentLocationLat: currentLat,
+        currentLocationLng: currentLng,
+        destinationLat: destination.latitude,
+        destinationLng: destination.longitude,
+        destinationName: destinationName,
         image: optimizedImages,
       };
   
       console.log('Sending post data:', postData);
   
-      const result = await createPost(postData);
+      const result = await createPostTravel(postData);
       console.log('Post created successfully:', result);
       Alert.alert('Thành công', 'Bài viết đã được tạo.');
       navigation.goBack();
@@ -158,6 +230,7 @@ const TaoTrangTimBanDuLich = () => {
       Alert.alert('Lỗi', `Không thể tạo bài viết: ${error.message}`);
     }
   };
+
   const renderImageItem = ({ item, index }) => (
     <View style={styles.imageItem}>
       <Image source={{ uri: item }} style={styles.postImage} />
@@ -167,70 +240,127 @@ const TaoTrangTimBanDuLich = () => {
     </View>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
-    
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.inner}>
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-                <Text style={styles.closeButtonText}>×</Text>
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Tạo bài viết</Text>
-              <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-                <Text style={styles.postButtonText}>Đăng</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.userInfo}>
-              {avatarUri ? (
-                <Image
-                  source={{ uri: avatarUri }}
-                  style={styles.profilePic}
-                />
-              ) : (
-                <View style={[styles.profilePic, styles.placeholderImage]}>
-                  <Text style={styles.placeholderText}>
-                    {profileData?.username ? profileData.username[0].toUpperCase() : '?'}
-                  </Text>
-                </View>
-              )}
-              <Text style={styles.userName}>{profileData?.username || 'User'}</Text>
-            </View>
-
-            <TextInput
-              style={styles.titleInput}
-              placeholder="Tiêu đề bài viết"
-              value={title}
-              onChangeText={setTitle}
-            />
-
-
-
-            <FlatList
-              data={image}
-              renderItem={renderImageItem}
-              keyExtractor={(item, index) => index.toString()}
-              numColumns={3}
-              style={styles.imageList}
-              ListFooterComponent={
-                <TouchableOpacity style={styles.addImageButton} onPress={handleAddImages}>
-                  <Ionicons name="image-outline" size={24} color="#1877f2" />
-                  <Text style={styles.addImageText}>Thêm hình ảnh</Text>
-                </TouchableOpacity>
-              }
-            />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.inner}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Tạo bài viết</Text>
+            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
+              <Text style={styles.postButtonText}>Đăng</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableWithoutFeedback>
-     
+
+          <View style={styles.userInfo}>
+            {avatarUri ? (
+              <Image
+                source={{ uri: avatarUri }}
+                style={styles.profilePic}
+              />
+            ) : (
+              <View style={[styles.profilePic, styles.placeholderImage]}>
+                <Text style={styles.placeholderText}>
+                  {profileData?.username ? profileData.username[0].toUpperCase() : '?'}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.userName}>{profileData?.username || 'User'}</Text>
+          </View>
+
+          {locationDisplay && (
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={16} color="#1877f2" />
+              <Text style={styles.locationText}>{locationDisplay}</Text>
+            </View>
+          )}
+
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Tiêu đề bài viết"
+            value={title}
+            onChangeText={setTitle}
+          />
+
+          <View style={styles.dateContainer}>
+            <TouchableOpacity style={styles.dateButton} onPress={() => showDatePicker('start')}>
+              <Text style={styles.dateButtonText}>Ngày bắt đầu: {formatDate(startDate)}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.dateButton} onPress={() => showDatePicker('end')}>
+              <Text style={styles.dateButtonText}>Ngày kết thúc: {formatDate(endDate)}</Text>
+            </TouchableOpacity>
+          </View>
+
+          {showStartPicker && (
+            <DateTimePickerAndroid
+              testID="startDatePicker"
+              value={startDate}
+              mode="date"
+              display="default"
+              onChange={onChangeStartDate}
+            />
+          )}
+
+          {showEndPicker && (
+            <DateTimePickerAndroid
+              testID="endDatePicker"
+              value={endDate}
+              mode="date"
+              display="default"
+              onChange={onChangeEndDate}
+            />
+          )}
+
+          <TouchableOpacity style={styles.mapButton} onPress={handleSelectDestination}>
+            <Ionicons name="map-outline" size={24} color="#1877f2" />
+            <Text style={styles.mapButtonText}>
+              {destination ? 'Thay đổi điểm đến' : 'Chọn điểm đến'}
+            </Text>
+          </TouchableOpacity>
+
+          {destinationName && (
+            <Text style={styles.destinationText}>
+              Điểm đến: {destinationName}
+            </Text>
+          )}
+
+          <FlatList
+            data={image}
+            renderItem={renderImageItem}
+            keyExtractor={(item, index) => index.toString()}
+            numColumns={3}
+            style={styles.imageList}
+            ListFooterComponent={
+              <TouchableOpacity style={styles.addImageButton} onPress={handleAddImages}>
+                <Ionicons name="image-outline" size={24} color="#1877f2" />
+                <Text style={styles.addImageText}>Thêm hình ảnh</Text>
+              </TouchableOpacity>
+            }
+          />
+        </View>
+      </TouchableWithoutFeedback>
+
+      {showMap && currentLocation && (
+        <View style={styles.mapContainer}>
+          <MapView
+            style={styles.map}
+            initialRegion={currentLocation}
+            onPress={handleMapPress}
+          >
+            {destination && (
+              <Marker
+                coordinate={destination}
+                title="Điểm đến"
+              />
+            )}
+          </MapView>
+          <TouchableOpacity style={styles.closeMapButton} onPress={() => setShowMap(false)}>
+            <Text style={styles.closeMapButtonText}>Đóng</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -348,6 +478,72 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingBottom: 5,
+  },
+  locationText: {
+    marginLeft: 5,
+    color: '#1877f2',
+    fontSize: 14,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 10,
+    marginBottom: 10,
+  },
+  dateButton: {
+    flex: 1,
+    backgroundColor: '#f0f2f5',
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 5,
+  },
+  dateButtonText: {
+    color: '#1877f2',
+    textAlign: 'center',
+  },
+  mapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f2f5',
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 10,
+    marginTop: 10,
+  },
+  mapButtonText: {
+    color: '#1877f2',
+    marginLeft: 10,
+  },
+  destinationText: {
+    marginHorizontal: 10,
+    marginTop: 5,
+    color: '#1877f2',
+  },
+  mapContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  closeMapButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'white',
+    padding: 10,
+    borderRadius: 5,
+  },
+  closeMapButtonText: {
+    color: '#1877f2',
+    fontWeight: 'bold',
   },
 });
 

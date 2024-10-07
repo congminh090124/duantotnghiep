@@ -35,6 +35,7 @@ import MyProfile from './screens/profile/MyProfile';
 import Follower from './screens/profile/Follower';
 import Following from './screens/profile/Following';
 import UpdateProfile from './screens/profile/udateProfile';
+import UserProfile from './screens/profile/UserProfile';
 import PostDetailScreen from './screens/blog/PostDetailScreen';
 import UserListScreen from './screens/chat/UserListScreen';
 import ChatScreen from './screens/chat/ChatScreen';
@@ -107,6 +108,7 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="DangNhap">
         {/* Các màn hình trong Stack Navigator */}
+        
         <Stack.Screen name="TaoTrangTimBanDuLich" component={TaoTrangTimBanDuLich} options={{ headerShown: false }} />
         <Stack.Screen name="ProfileMapScreen" component={ProfileMapScreen} options={{ headerShown: false }} />
         <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }} />

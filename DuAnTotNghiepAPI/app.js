@@ -5,12 +5,12 @@ const connectDB = require('./config/db');
 const userRoutes = require('./routes/user');
 const postRoutes = require('./routes/posts');
 const scanRoutes = require('./routes/scan');
+const travelPostRoutes = require('./routes/TravelPost');
 const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Message = require('./models/Message');
 const authMiddleware = require('./middleware/auth');
-
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -22,7 +22,7 @@ app.use('/api/users', userRoutes);
 app.use('/uploads', express.static('uploads'));
 app.use('/api/posts', postRoutes);
 app.use('/api/scan', scanRoutes);
-
+app.use('/api/travel-posts', travelPostRoutes);
 
 // Online users storage
 let onlineUsers = new Map();

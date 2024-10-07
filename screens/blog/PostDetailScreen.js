@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensio
 import { Ionicons } from '@expo/vector-icons';
 import { showPostWithID } from '../../apiConfig';
 
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 const { width, height } = Dimensions.get('window');
 
 const PostDetailScreen = ({ route, navigation }) => {
