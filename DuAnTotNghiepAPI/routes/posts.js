@@ -197,4 +197,42 @@ router.get('/map-posts', auth, async (req, res) => {
     res.status(500).json({ message: 'Lỗi khi lấy danh sách bài viết cho bản đồ', error: err.message });
   }
 });
+// Thêm route này vào cuối file posts.js
+
+router.get('/feed', auth, async (req, res) => {
+  try {
+    // Lấy ID của người dùng hiện tại
+    const currentUserId = req.user.id;
+
+    // Tìm thông tin người dùng hiện tại, bao gồm danh sách người họ đang theo dõi
+    const currentUser = await User.findById(currentUserId).select('following');
+
+    // Tạo một mảng ID bao gồm người dùng hiện tại và những người họ đang theo dõi
+    const userIds = [currentUserId, ...currentUser.following];
+
+    // Tìm các bài đăng từ người dùng hiện tại và những người họ đang theo dõi
+    const posts = await Post.find({ user: { $in: userIds } })
+      .populate('user', 'username avatar')
+      .sort({ createdAt: -1 })
+      .limit(20); // Giới hạn 20 bài đăng mới nhất, bạn có thể điều chỉnh số này
+
+    // Xử lý URL đầy đủ cho hình ảnh và avatar
+    const postsWithFullInfo = posts.map(post => {
+      const postObject = post.toObject();
+      return {
+        ...postObject,
+        images: postObject.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
+        user: postObject.user ? {
+          ...postObject.user,
+          avatar: postObject.user.avatar ? `${req.protocol}://${req.get('host')}${postObject.user.avatar}` : null
+        } : null
+      };
+    });
+
+    res.status(200).json(postsWithFullInfo);
+  } catch (err) {
+    console.error('Lỗi khi lấy feed:', err);
+    res.status(500).json({ message: 'Lỗi khi lấy feed', error: err.message });
+  }
+});
 module.exports = router;

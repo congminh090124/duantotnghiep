@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { error,Alert, View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput } from 'react-native';
-import { getAllPosts, toggleLikePost, addComment, getComments, getToken,getFeedPosts } from '../../apiConfig';
+import {  toggleLikePost, addComment, getComments, getToken,getFeedPosts } from '../../apiConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
