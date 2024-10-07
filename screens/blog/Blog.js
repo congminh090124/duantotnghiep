@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { error,Alert, View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput } from 'react-native';
-import {  toggleLikePost, addComment, getComments, getToken,getFeedPosts } from '../../apiConfig';
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput, Alert } from 'react-native';
+import { toggleLikePost, addComment, getComments, getToken, getFeedPosts } from '../../apiConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RefreshControl } from 'react-native';
+
+const LIKE_COLOR = '#FF6B6B';
+const UNLIKE_COLOR = '#757575';
+
 const BlogPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,6 +19,31 @@ const BlogPage = () => {
   const [commentText, setCommentText] = useState('');
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [error, setError] = useState(null);
+
+  const fetchPosts = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const feedPosts = await getFeedPosts();
+      setPosts(feedPosts);
+
+      const initialLikeStates = {};
+      feedPosts.forEach(post => {
+        initialLikeStates[post._id] = {
+          isLiked: post.likes.includes(currentUserId),
+          likesCount: post.likesCount
+        };
+      });
+      setLikeStates(initialLikeStates);
+    } catch (error) {
+      console.error('Lỗi khi lấy bài viết từ feed:', error);
+      setError('Không thể lấy bài viết từ feed');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [currentUserId]);
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -23,34 +52,12 @@ const BlogPage = () => {
     };
     fetchUserToken();
   }, []);
-  const fetchPosts = useCallback(async () => {
-    try {
-      setLoading(true);
-      const feedPosts = await getFeedPosts();
-      setPosts(feedPosts);
-      const initialLikeStates = {};
-      feedPosts.forEach(post => {
-        initialLikeStates[post._id] = {
-          isLiked: post.likes.includes(userToken),
-          likesCount: post.likesCount,
-          isLoading: false
-        };
-      });
-      setLikeStates(initialLikeStates);
-    } catch (error) {
-      console.error('Lỗi khi lấy bài viết từ feed:', error);
-      Alert.alert('Lỗi', 'Không thể lấy bài viết từ feed');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [userToken]);
-
 
   useEffect(() => {
     getCurrentUserId();
     fetchPosts();
   }, [userToken, fetchPosts]);
+
   const getCurrentUserId = async () => {
     try {
       const userData = await AsyncStorage.getItem('userData');
@@ -62,14 +69,14 @@ const BlogPage = () => {
       console.error('Error fetching current user ID:', error);
     }
   };
+
   const handleUserPress = useCallback((userId) => {
     if (userId === currentUserId) {
-      navigation.navigate('Profile'); // Giả sử 'Profile' là tên màn hình profile của người dùng hiện tại
+      navigation.navigate('Profile');
     } else {
       navigation.navigate('UserProfile', { userId });
     }
   }, [navigation, currentUserId]);
-  
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -81,53 +88,48 @@ const BlogPage = () => {
   }, [navigation]);
 
   const handleLikePress = useCallback(async (postId) => {
-    setLikeStates(prev => ({
-      ...prev,
-      [postId]: { ...prev[postId], isLoading: true }
-    }));
-
-    const currentLikeState = likeStates[postId];
-    const isCurrentlyLiked = currentLikeState.isLiked;
-
-    // Optimistically update UI
-    setLikeStates(prev => ({
-      ...prev,
-      [postId]: {
-        isLiked: !isCurrentlyLiked,
-        likesCount: isCurrentlyLiked ? prev[postId].likesCount - 1 : prev[postId].likesCount + 1,
-        isLoading: true
-      }
-    }));
+    setLikeStates(prevStates => {
+      const currentState = prevStates[postId];
+      return {
+        ...prevStates,
+        [postId]: {
+          isLiked: !currentState.isLiked,
+          likesCount: currentState.isLiked ? currentState.likesCount - 1 : currentState.likesCount + 1
+        }
+      };
+    });
 
     try {
       const result = await toggleLikePost(postId);
-
-      // Update with server response
-      setLikeStates(prev => ({
-        ...prev,
+      setLikeStates(prevStates => ({
+        ...prevStates,
         [postId]: {
-          isLiked: result.likes.includes(userToken),
-          likesCount: result.likesCount,
-          isLoading: false
+          isLiked: result.likes.includes(currentUserId),
+          likesCount: result.likesCount
         }
       }));
     } catch (error) {
-      console.error('Error toggling like:', error);
-      // Revert to original state
-      setLikeStates(prev => ({
-        ...prev,
-        [postId]: { ...currentLikeState, isLoading: false }
-      }));
-      Alert.alert('Error', `Failed to update like status: ${error.message}`);
+      console.error('Lỗi khi thay đổi trạng thái like:', error);
+      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái like');
+      setLikeStates(prevStates => {
+        const currentState = prevStates[postId];
+        return {
+          ...prevStates,
+          [postId]: {
+            isLiked: !currentState.isLiked,
+            likesCount: currentState.isLiked ? currentState.likesCount + 1 : currentState.likesCount - 1
+          }
+        };
+      });
     }
-  }, [likeStates, userToken]);
+  }, [currentUserId]);
+
   const handleCommentPress = useCallback((postId) => {
     setSelectedPostId(prevId => prevId === postId ? null : postId);
     if (selectedPostId !== postId) {
       getComments(postId).then(data => {
-        console.log('Fetched comments:', data);
         setPosts(prevPosts => prevPosts.map(post =>
-          post._id === postId ? { ...post, comments: data.comments, commentsCount: data.commentsCount } : post
+          post._id === postId ? { ...post, comments: data.comments } : post
         ));
       }).catch(error => {
         console.error('Error fetching comments:', error);
@@ -135,12 +137,12 @@ const BlogPage = () => {
       });
     }
   }, [selectedPostId]);
+
   const handleAddComment = useCallback(async () => {
     if (!commentText.trim() || !selectedPostId) return;
 
     try {
       const result = await addComment(selectedPostId, commentText);
-      console.log('Add comment result:', result);
       setPosts(prevPosts => prevPosts.map(post =>
         post._id === selectedPostId
           ? {
@@ -156,11 +158,12 @@ const BlogPage = () => {
       Alert.alert('Error', 'Failed to add comment');
     }
   }, [selectedPostId, commentText]);
+
   const renderedPosts = useMemo(() => {
     return posts.map((post) => (
       <View key={post._id} style={styles.postCard}>
-        <TouchableOpacity 
-          style={styles.userInfo} 
+        <TouchableOpacity
+          style={styles.userInfo}
           onPress={() => handleUserPress(post.user._id)}
         >
           {post.user && post.user.avatar ? (
@@ -176,7 +179,7 @@ const BlogPage = () => {
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.postContent}>{post.content}</Text>
+        <Text style={styles.postContent}>{post.title}</Text>
 
         {post.images && post.images.length > 0 ? (
           <TouchableOpacity onPress={() => handlePostPress(post)}>
@@ -192,18 +195,18 @@ const BlogPage = () => {
           <TouchableOpacity
             style={styles.interactionItem}
             onPress={() => handleLikePress(post._id)}
-            disabled={likeStates[post._id]?.isLoading}
           >
-            {likeStates[post._id]?.isLoading ? (
-              <ActivityIndicator size="small" color="#0000ff" />
-            ) : (
-              <Ionicons
-                name={likeStates[post._id]?.isLiked ? "heart" : "heart-outline"}
-                size={24}
-                color={likeStates[post._id]?.isLiked ? "red" : "#555"}
-              />
-            )}
-            <Text style={styles.interactionText}>{likeStates[post._id]?.likesCount || 0}</Text>
+            <Ionicons
+              name={likeStates[post._id]?.isLiked ? "heart" : "heart-outline"}
+              size={24}
+              color={likeStates[post._id]?.isLiked ? LIKE_COLOR : UNLIKE_COLOR}
+            />
+            <Text style={[
+              styles.interactionText,
+              { color: likeStates[post._id]?.isLiked ? LIKE_COLOR : UNLIKE_COLOR }
+            ]}>
+              {likeStates[post._id]?.likesCount || 0}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.interactionItem}
@@ -243,8 +246,7 @@ const BlogPage = () => {
         )}
       </View>
     ));
-  },  [posts, likeStates, handlePostPress, handleLikePress, selectedPostId, commentText, handleCommentPress, handleAddComment, handleUserPress]);
-
+  }, [posts, likeStates, handlePostPress, handleLikePress, selectedPostId, commentText, handleCommentPress, handleAddComment, handleUserPress]);
 
   if (loading) {
     return (
@@ -280,7 +282,6 @@ const BlogPage = () => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

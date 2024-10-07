@@ -9,6 +9,7 @@ const socketIo = require('socket.io');
 const mongoose = require('mongoose');
 const User = require('./models/User');
 const Message = require('./models/Message');
+const soThich = require('./models/soThich');
 const authMiddleware = require('./middleware/auth');
 
 const app = express();
@@ -22,7 +23,7 @@ app.use('/api/users', userRoutes);
 app.use('/uploads', express.static('uploads'));
 app.use('/api/posts', postRoutes);
 app.use('/api/scan', scanRoutes);
-
+app.use('/api/soThich', soThich);
 
 // Online users storage
 let onlineUsers = new Map();
