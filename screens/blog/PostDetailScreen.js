@@ -117,21 +117,7 @@ const PostDetailScreen = ({ route, navigation }) => {
         )}
 
         {/* Interaction Buttons */}
-        <View style={styles.interactionButtons}>
-          <TouchableOpacity>
-            <Ionicons name="heart-outline" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Ionicons name="chatbubble-outline" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Ionicons name="paper-plane-outline" size={24} color="white" />
-          </TouchableOpacity>
-          <View style={styles.spacer} />
-          <TouchableOpacity>
-            <Ionicons name="bookmark-outline" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
+       
 
         {/* Likes Count */}
         <Text style={styles.likesCount}>{post.likes ? post.likes.length : 0} lượt thích</Text>

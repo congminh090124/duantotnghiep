@@ -38,6 +38,7 @@ import UpdateProfile from './screens/profile/udateProfile';
 import UserProfile from './screens/profile/UserProfile';
 import PostDetailScreen from './screens/blog/PostDetailScreen';
 import UserListScreen from './screens/chat/UserListScreen';
+import UserProfile from './screens/profile/UserProfile';
 import ChatScreen from './screens/chat/ChatScreen';
 import ProfileMapScreen from './screens/profile/ProfileMapScreen';
 import TaoTrangTimBanDuLich from './screens/Feed/TaoTrangTimBanDuLich';

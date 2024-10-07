@@ -197,4 +197,132 @@ router.get('/map-posts', auth, async (req, res) => {
     res.status(500).json({ message: 'Lỗi khi lấy danh sách bài viết cho bản đồ', error: err.message });
   }
 });
+// Thêm route này vào cuối file posts.js
+
+router.get('/feed', auth, async (req, res) => {
+  try {
+    // Lấy ID của người dùng hiện tại
+    const currentUserId = req.user.id;
+
+    // Tìm thông tin người dùng hiện tại, bao gồm danh sách người họ đang theo dõi
+    const currentUser = await User.findById(currentUserId).select('following');
+
+    // Tạo một mảng ID bao gồm người dùng hiện tại và những người họ đang theo dõi
+    const userIds = [currentUserId, ...currentUser.following];
+
+    // Tìm các bài đăng từ người dùng hiện tại và những người họ đang theo dõi
+    const posts = await Post.find({ user: { $in: userIds } })
+      .populate('user', 'username avatar')
+      .sort({ createdAt: -1 })
+      .limit(20); // Giới hạn 20 bài đăng mới nhất, bạn có thể điều chỉnh số này
+
+    // Xử lý URL đầy đủ cho hình ảnh và avatar
+    const postsWithFullInfo = posts.map(post => {
+      const postObject = post.toObject();
+      return {
+        ...postObject,
+        images: postObject.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
+        user: postObject.user ? {
+          ...postObject.user,
+          avatar: postObject.user.avatar ? `${req.protocol}://${req.get('host')}${postObject.user.avatar}` : null
+        } : null
+      };
+    });
+
+    res.status(200).json(postsWithFullInfo);
+  } catch (err) {
+    console.error('Lỗi khi lấy feed:', err);
+    res.status(500).json({ message: 'Lỗi khi lấy feed', error: err.message });
+  }
+});
+// ... (giữ nguyên code hiện tại)
+
+// Thêm comment vào bài viết
+router.post('/:postId/comments', auth, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const postId = req.params.postId;
+    const userId = req.user.id;
+
+    if (!content) {
+      return res.status(400).json({ message: 'Nội dung comment không được để trống' });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+    }
+
+    const newComment = {
+      user: userId,
+      content: content,
+      createdAt: new Date()
+    };
+
+    post.comments.push(newComment);
+    post.commentsCount = post.comments.length;
+    await post.save();
+
+    // Populate thông tin user cho comment mới
+    const populatedPost = await Post.findById(postId)
+      .populate({
+        path: 'comments.user',
+        select: 'username avatar'
+      });
+
+    const addedComment = populatedPost.comments[populatedPost.comments.length - 1];
+
+    // Tạo URL đầy đủ cho avatar
+    const commentWithFullInfo = {
+      ...addedComment.toObject(),
+      user: addedComment.user ? {
+        ...addedComment.user.toObject(),
+        avatar: addedComment.user.avatar ? `${req.protocol}://${req.get('host')}${addedComment.user.avatar}` : null
+      } : null
+    };
+
+    res.status(201).json({
+      message: 'Comment đã được thêm thành công',
+      comment: commentWithFullInfo
+    });
+  } catch (error) {
+    console.error('Lỗi khi thêm comment:', error);
+    res.status(500).json({ message: 'Lỗi server khi thêm comment', error: error.message });
+  }
+});
+// Lấy danh sách comments của một bài viết
+router.get('/:postId/comments', async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const post = await Post.findById(postId)
+      .populate({
+        path: 'comments.user',
+        select: 'username avatar'
+      })
+      .select('comments');
+
+    if (!post) {
+      return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+    }
+
+    // Tạo URL đầy đủ cho avatar của mỗi comment
+    const commentsWithFullInfo = post.comments.map(comment => ({
+      ...comment.toObject(),
+      user: comment.user ? {
+        ...comment.user.toObject(),
+        avatar: comment.user.avatar ? `${req.protocol}://${req.get('host')}${comment.user.avatar}` : null
+      } : null
+    }));
+
+    res.status(200).json({
+      message: 'Lấy danh sách comments thành công',
+      comments: commentsWithFullInfo
+    });
+  } catch (error) {
+    console.error('Lỗi khi lấy danh sách comments:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách comments', error: error.message });
+  }
+});
+
+module.exports = router;
 module.exports = router;
