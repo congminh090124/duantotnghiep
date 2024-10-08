@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { Heart, MessageCircle, Users, Search } from 'react-native-feather';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { getAllTravelPosts, API_ENDPOINTS } from '../../apiConfig';
-import BlogPage  from '../blog/Blog'
+import Blog from '../blog/Blog';
+import * as Location from 'expo-location';
+
 const TopTab = createMaterialTopTabNavigator();
 const { width, height } = Dimensions.get('window');
-const ITEM_HEIGHT = height * 0.98;
 
 const UserImages = React.memo(({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
@@ -39,7 +40,7 @@ const UserImages = React.memo(({ post }) => {
 
   return (
     <View style={styles.imageContainer}>
-      <Swiper loop={false} style={styles.wrapper}>
+      <Swiper loop={false} style={styles.wrapper} containerStyle={styles.swiperContainer}>
         {post.images && post.images.length > 0 ? (
           post.images.map((image, index) => (
             <View key={index} style={styles.slide}>
@@ -49,6 +50,9 @@ const UserImages = React.memo(({ post }) => {
                 resizeMode="cover"
                 onError={(e) => console.error('Image load error:', e.nativeEvent.error)}
               />
+              <View style={styles.overlay}>
+                <UserInfo post={post} />
+              </View>
             </View>
           ))
         ) : (
@@ -57,39 +61,78 @@ const UserImages = React.memo(({ post }) => {
           </View>
         )}
       </Swiper>
-      <UserInfo post={post} />
-      <ActionButtons
-        isLiked={isLiked}
-        onLike={handleLike}
-        onMessage={handleMessage}
-        onTravelTogether={handleTravelTogether}
-      />
+      <View style={styles.actionButtonsContainer}>
+        <ActionButtons
+          isLiked={isLiked}
+          onLike={handleLike}
+          onMessage={handleMessage}
+          onTravelTogether={handleTravelTogether}
+        />
+      </View>
     </View>
   );
 });
 
-const UserInfo = React.memo(({ post }) => (
-  <View style={styles.userInfo}>
-    <Text style={styles.userName}>{post.author.username}</Text>
-    <Text style={styles.userAge}>{post.author.age || 'Age not available'}</Text>
-    <Text style={styles.userLocation}>
-      {post.currentLocation && post.currentLocation.coordinates 
-        ? `${post.currentLocation.coordinates[1].toFixed(2)}, ${post.currentLocation.coordinates[0].toFixed(2)}`
-        : 'Location not available'}
-    </Text>
-    <Text style={styles.userDestination}>
-      Muốn đến: {post.destination && post.destination.coordinates 
-        ? `${post.destination.coordinates[1].toFixed(2)}, ${post.destination.coordinates[0].toFixed(2)}`
-        : 'Destination not set'}
-    </Text>
-    <Text style={styles.userDescription}>{post.title}</Text>
-    <View style={styles.userInterests}>
-      {post.interests && post.interests.length > 0 ? post.interests.map((hobby, index) => (
-        <Text key={index} style={styles.hobby}>#{hobby}</Text>
-      )) : <Text style={styles.hobby}>No interests specified</Text>}
+const UserInfo = React.memo(({ post }) => {
+  const [currentLocationName, setCurrentLocationName] = useState('Đang tải...');
+  const [destinationName, setDestinationName] = useState('Đang tải...');
+
+  useEffect(() => {
+    const reverseGeocode = async (latitude, longitude, setter) => {
+      try {
+        const result = await Location.reverseGeocodeAsync({ latitude, longitude });
+        if (result.length > 0) {
+          const { city, region, country } = result[0];
+          setter(`${city || ''}, ${region || ''}, ${country || ''}`);
+        } else {
+          setter('Không tìm thấy địa chỉ');
+        }
+      } catch (error) {
+        console.error('Lỗi khi chuyển đổi tọa độ:', error);
+        setter('Lỗi khi tải địa chỉ');
+      }
+    };
+
+    if (post.currentLocation && post.currentLocation.coordinates) {
+      reverseGeocode(
+        post.currentLocation.coordinates[1],
+        post.currentLocation.coordinates[0],
+        setCurrentLocationName
+      );
+    } else {
+      setCurrentLocationName('Vị trí hiện tại không có sẵn');
+    }
+
+    if (post.destination && post.destination.coordinates) {
+      reverseGeocode(
+        post.destination.coordinates[1],
+        post.destination.coordinates[0],
+        setDestinationName
+      );
+    } else {
+      setDestinationName('Điểm đến chưa được đặt');
+    }
+  }, [post]);
+
+  return (
+    <View style={styles.userInfo}>
+      <Text style={styles.userName}>{post.author.username}</Text>
+      <Text style={styles.userAge}>{post.author.age || 'Tuổi không có sẵn'}</Text>
+      <Text style={styles.userLocation}>
+        Vị trí hiện tại: {currentLocationName}
+      </Text>
+      <Text style={styles.userDestination}>
+        Muốn đến: {destinationName}
+      </Text>
+      <Text style={styles.userDescription}>{post.title}</Text>
+      <View style={styles.userInterests}>
+        {post.interests && post.interests.length > 0 ? post.interests.map((hobby, index) => (
+          <Text key={index} style={styles.hobby}>#{hobby}</Text>
+        )) : <Text style={styles.hobby}>Không có sở thích được chỉ định</Text>}
+      </View>
     </View>
-  </View>
-));
+  );
+});
 
 const ActionButtons = React.memo(({ isLiked, onLike, onMessage, onTravelTogether }) => (
   <View style={styles.actionButtons}>
@@ -147,25 +190,25 @@ const MainScreen = () => {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        ref={flatListRef}
-        data={posts}
-        renderItem={({ item }) => <UserImages post={item} />}
-        keyExtractor={(item) => item._id}
-        pagingEnabled
-        showsVerticalScrollIndicator={false}
-        snapToInterval={ITEM_HEIGHT}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        getItemLayout={(data, index) => ({
-          length: ITEM_HEIGHT,
-          offset: ITEM_HEIGHT * index,
-          index,
-        })}
-      />
-    </View>
+    <FlatList
+      ref={flatListRef}
+      data={posts}
+      renderItem={({ item }) => <UserImages post={item} />}
+      keyExtractor={(item) => item._id}
+      pagingEnabled
+      showsVerticalScrollIndicator={false}
+      snapToInterval={height}
+      snapToAlignment="start"
+      decelerationRate="fast"
+      onViewableItemsChanged={onViewableItemsChanged}
+      viewabilityConfig={viewabilityConfig}
+      getItemLayout={(data, index) => ({
+        length: height,
+        offset: height * index,
+        index,
+      })}
+    />
+  </View>
   );
 };
 
@@ -230,7 +273,7 @@ const TrangTimBanDuLich = () => (
       }}
     >
       <TopTab.Screen name="Trang chủ" component={MainScreen} />
-      <TopTab.Screen name="Feed" component={BlogPage} />
+      <TopTab.Screen name="Feed" component={Blog} />
     </TopTab.Navigator>
     <SearchButton />
   </SafeAreaView>
@@ -239,13 +282,21 @@ const TrangTimBanDuLich = () => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#000', // Black background for a TikTok-like feel
   },
   imageContainer: {
-    width: width,
-    height: ITEM_HEIGHT,
+    flex: 1,
+    width: '100%',
+    height: height,
+    bottom: Platform.OS === 'ios' ? '18%' : '8%',
   },
-  wrapper: {},
+  imageWrapper: {
+    width: '100%',
+    height: '50%', // Set the height to 50% of the screen
+  },
+  swiperContainer: {
+    height: '100%', // Ensure Swiper takes full height of its container
+  },
   slide: {
     flex: 1,
     justifyContent: 'center',
@@ -254,129 +305,111 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+  },
+  noImageText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  overlay: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: '5%',
   },
   userInfo: {
-    position: 'absolute',
-    bottom: 50,
-    left: 10,
-    right: 10,
+    // Styles for user info container
   },
   userName: {
-    color: 'white',
-    fontSize: 20,
+    color: '#fff',
+    fontSize: 18,
     fontWeight: 'bold',
+    marginBottom: '2%',
   },
   userAge: {
-    color: 'white',
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 14,
   },
   userLocation: {
-    color: 'white',
-    fontSize: 16,
-    fontStyle: 'italic',
+    color: '#fff',
+    fontSize: 14,
+  },
+  userDestination: {
+    color: '#fff',
+    fontSize: 14,
   },
   userDescription: {
-    color: 'white',
-    fontSize: 14,
-    marginTop: 5,
+    color: '#fff',
+    fontSize: 16,
+    marginTop: '3%',
   },
   userInterests: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginTop: 5,
+    marginTop: '3%',
   },
   hobby: {
-    color: 'white',
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 10,
-    padding: 5,
-    marginRight: 5,
-    marginBottom: 5,
+    color: '#fff',
+    fontSize: 14,
+    marginRight: '3%',
+    marginBottom: '2%',
   },
-  userDestination: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  actionButtons: {
+  actionButtonsContainer: {
     position: 'absolute',
-    right: 10,
-    bottom: 100,
+    right: '5%',
+    bottom: Platform.OS === 'ios' ? '30%' : '35%',
     alignItems: 'center',
   },
   actionButton: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 25,
-    padding: 10,
-    marginBottom: 15,
+    marginVertical: 10,
   },
-  screenContainer: {
-    flex: 1,
+  loadingContainer: {
+    height: height,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000', // Black background during loading
   },
-  text: {
-    color: 'white',
-    fontSize: 18,
+  feedItem: {
+    padding: 15,
+    backgroundColor: '#000', // Dark feed background
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
   },
-  topNav: {
-    backgroundColor: 'rgba(0, 0, 0, 0)',
-    // position: 'absolute',
-    top: '0',
-    left: 0,
-    right: 0,
-    zIndex: 1,
+  feedTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  tabBarIndicator: {
-    backgroundColor: 'white',
-    height: 3,
+  feedAuthor: {
+    color: '#fff',
+    fontSize: 14,
   },
-  tabBarLabel: {
-    fontSize: 15,
-  
-    color: 'white',
+  feedDate: {
+    color: '#888',
+    fontSize: 12,
   },
   searchButton: {
     position: 'absolute',
-    top: '5%',
     right: 20,
+    top: 40,
+    backgroundColor: '#222', // Dark button background
+    borderRadius: 50,
     padding: 10,
-    zIndex: 2,
-  },
-  loadingContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'black',
   },
-  feedItem: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    padding: 15,
-    marginVertical: 8,
-    marginHorizontal: 16,
-    borderRadius: 5,
+  topNav: {
+    backgroundColor: '#000', // Black top nav background
   },
-  feedTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
+  tabBarIndicator: {
+    backgroundColor: '#fff', // White underline for active tab
   },
-  feedAuthor: {
+  tabBarLabel: {
+    color: '#fff',
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 5,
-  },
-  feedDate: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
-    marginTop: 5,
-  },
-  noImageText: {
-    color: 'white',
-    fontSize: 18,
   },
 });
+
 
 export default TrangTimBanDuLich;

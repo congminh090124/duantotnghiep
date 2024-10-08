@@ -21,7 +21,7 @@ import MapView, { Marker } from 'react-native-maps';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePickerAndroid from '@react-native-community/datetimepicker';
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
+import {API_ENDPOINTS } from '../../apiConfig';
 
 const TaoTrangTimBanDuLich = () => {
   const [title, setTitle] = useState('');
@@ -92,7 +92,7 @@ const TaoTrangTimBanDuLich = () => {
 
   const avatarUri = useMemo(() => {
     return profileData?.anh_dai_dien
-      ? `${API_BASE_URL}${profileData.anh_dai_dien}`
+      ? `${API_ENDPOINTS.socketURL}${profileData.anh_dai_dien}`
       : null;
   }, [profileData?.anh_dai_dien]);
 
