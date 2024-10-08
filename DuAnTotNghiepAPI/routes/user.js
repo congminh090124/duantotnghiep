@@ -9,6 +9,7 @@ const path = require('path');
 const { OAuth2Client } = require('google-auth-library');
 const fetch = require('node-fetch'); // Thêm dòng này để import node-fetch
 const Post = require('../models/Post');
+const { cloudinary, upload } = require('../config/cloudinaryConfig');
 
 
 router.post('/register', async (req, res) => {
@@ -160,42 +161,34 @@ router.get('/thong-tin-ca-nhan', auth, async (req, res) => {
         res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
     }
 });
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/') // Thư mục lưu file
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + path.extname(file.originalname)) // Đặt tên file
-    }
-});
-
-const upload = multer({ storage: storage });
 
 // Route cập nhật avatar
 router.post('/update-avatar', auth, upload.single('avatar'), async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).send({ message: 'No file uploaded' });
-        }
-
-        const avatarUrl = `/uploads/${req.file.filename}`; // URL của file đã upload
-
-        const user = await User.findByIdAndUpdate(
-            req.user.id,
-            { avatar: avatarUrl },
-            { new: true }
-        );
-
-        if (!user) {
-            return res.status(404).send({ message: 'User not found' });
-        }
-
-            res.send({ avatar: user.avatar });
-    } catch (error) {
-        console.error('Error updating avatar:', error);
-        res.status(500).send({ message: 'Server error' });
+  try {
+    if (!req.file) {
+      return res.status(400).send({ message: 'No file uploaded' });
     }
+
+    // Cloudinary đã tự động upload file, chúng ta chỉ cần lấy URL
+    const avatarUrl = req.file.path;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { avatar: avatarUrl },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).send({ message: 'User not found' });
+    }
+
+    res.send({ avatar: user.avatar });
+  } catch (error) {
+    console.error('Error updating avatar:', error);
+    res.status(500).send({ message: 'Server error' });
+  }
 });
+
 router.put('/update-profile', auth, async (req, res) => {
     try {
         const { username, bio, sdt, diachi, sex,tinhtranghonnhan } = req.body;

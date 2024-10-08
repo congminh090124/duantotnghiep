@@ -7,7 +7,7 @@ import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleShee
 import DangKiDulichScreen from './DangKiDuLichScreen';
 import DangKiTinhNguyenVienScreen from './DangKiTinhNguyenVienScreen';
 import TrangTimBanDuLich from './TrangTimBanDuLich';
-import DangBaiScreen from './DangBaiScreen';
+import BlogPage from '../screens/blog/Blog';
 
 const Tab = createMaterialTopTabNavigator();
 
@@ -42,7 +42,7 @@ export default function TrangChuScreen() {
       />
       <Tab.Screen
         name="Blog"
-        component={DangBaiScreen}
+        component={BlogPage}
       />
       <Tab.Screen
         name="Messages"

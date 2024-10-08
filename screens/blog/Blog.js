@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput, Alert } from 'react-native';
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput, Alert, RefreshControl } from 'react-native';
 import { toggleLikePost, addComment, getComments, getToken, getFeedPosts } from '../../apiConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { RefreshControl } from 'react-native';
-
 const LIKE_COLOR = '#FF6B6B';
 const UNLIKE_COLOR = '#757575';
 
@@ -44,6 +42,10 @@ const BlogPage = () => {
       setRefreshing(false);
     }
   }, [currentUserId]);
+  useEffect(() => {
+    console.log('Images:', posts.map(post => post.images));
+  }, [posts]);
+
 
   useEffect(() => {
     const fetchUserToken = async () => {
@@ -159,94 +161,95 @@ const BlogPage = () => {
     }
   }, [selectedPostId, commentText]);
 
-  const renderedPosts = useMemo(() => {
-    return posts.map((post) => (
-      <View key={post._id} style={styles.postCard}>
-        <TouchableOpacity
-          style={styles.userInfo}
-          onPress={() => handleUserPress(post.user._id)}
-        >
-          {post.user && post.user.avatar ? (
-            <Image source={{ uri: post.user.avatar }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.placeholderAvatar]}>
-              <Ionicons name="person-outline" size={20} color="#fff" />
-            </View>
-          )}
-          <View>
-            <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
-            <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
+  const renderPost = useCallback(({ item: post }) => (
+    <View key={post._id} style={styles.postCard}>
+      <TouchableOpacity
+        style={styles.userInfo}
+        onPress={() => handleUserPress(post.user._id)}
+        
+      >
+        {post.user && post.user.avatar ? (
+          <Image
+            source={{ uri: post.user.avatar }}
+            style={styles.avatar}
+            onError={(e) => console.log('Avatar load error:', e.nativeEvent.error)}
+          />
+        ) : (
+          <View style={[styles.avatar, styles.placeholderAvatar]}>
+            <Ionicons name="person-outline" size={20} color="#fff" />
           </View>
+        )}
+        <View>
+          <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
+          <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity onPress={() => handlePostPress(post)}>
+      <Text style={styles.postContent}>{post.title}</Text>
+
+      {post.images && post.images.length > 0 && (
+        <Image
+          source={{ uri: post.images[0] }}
+          style={styles.postImage}
+          onError={(e) => console.log('Post image load error:', e.nativeEvent.error)}
+        />
+      )}
+    </TouchableOpacity>
+      <View style={styles.interactionInfo}>
+        <TouchableOpacity
+          style={styles.interactionItem}
+          onPress={() => handleLikePress(post._id)}
+        >
+          <Ionicons
+            name={likeStates[post._id]?.isLiked ? "heart" : "heart-outline"}
+            size={24}
+            color={likeStates[post._id]?.isLiked ? LIKE_COLOR : UNLIKE_COLOR}
+          />
+          <Text style={styles.interactionText}>
+            {likeStates[post._id]?.likesCount || 0} Likes
+          </Text>
         </TouchableOpacity>
 
-        <Text style={styles.postContent}>{post.title}</Text>
-
-        {post.images && post.images.length > 0 ? (
-          <TouchableOpacity onPress={() => handlePostPress(post)}>
-            <Image source={{ uri: post.images[0] }} style={styles.postImage} resizeMode="cover" />
-          </TouchableOpacity>
-        ) : (
-          <View style={[styles.postImage, styles.placeholderImage]}>
-            <Ionicons name="image-outline" size={50} color="#888" />
-          </View>
-        )}
-
-        <View style={styles.interactionInfo}>
-          <TouchableOpacity
-            style={styles.interactionItem}
-            onPress={() => handleLikePress(post._id)}
-          >
-            <Ionicons
-              name={likeStates[post._id]?.isLiked ? "heart" : "heart-outline"}
-              size={24}
-              color={likeStates[post._id]?.isLiked ? LIKE_COLOR : UNLIKE_COLOR}
-            />
-            <Text style={[
-              styles.interactionText,
-              { color: likeStates[post._id]?.isLiked ? LIKE_COLOR : UNLIKE_COLOR }
-            ]}>
-              {likeStates[post._id]?.likesCount || 0}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.interactionItem}
-            onPress={() => handleCommentPress(post._id)}
-          >
-            <Ionicons name="chatbubble-outline" size={24} color="#555" />
-            <Text style={styles.interactionText}>{post.commentsCount || 0}</Text>
-          </TouchableOpacity>
-        </View>
-
-        {selectedPostId === post._id && (
-          <View style={styles.commentSection}>
-            <TextInput
-              style={styles.commentInput}
-              value={commentText}
-              onChangeText={setCommentText}
-              placeholder="Add a comment..."
-            />
-            <TouchableOpacity onPress={handleAddComment} style={styles.addCommentButton}>
-              <Text style={styles.addCommentButtonText}>Post</Text>
-            </TouchableOpacity>
-
-            <ScrollView style={styles.commentList}>
-              {post.comments && post.comments.map((comment, index) => (
-                <View key={index} style={styles.commentItem}>
-                  <View style={styles.commentHeader}>
-                    <Text style={styles.commentUser}>{comment.user?.username || 'Unknown User'}</Text>
-                    <Text style={styles.commentDate}>
-                      {new Date(comment.createdAt).toLocaleDateString()}
-                    </Text>
-                  </View>
-                  <Text style={styles.commentContent}>{comment.content}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        )}
+        <TouchableOpacity
+          style={styles.interactionItem}
+          onPress={() => handleCommentPress(post._id)}
+        >
+          <Ionicons name="chatbubble-outline" size={24} color="#555" />
+          <Text style={styles.interactionText}>{post.commentsCount || 0} Comments</Text>
+        </TouchableOpacity>
       </View>
-    ));
-  }, [posts, likeStates, handlePostPress, handleLikePress, selectedPostId, commentText, handleCommentPress, handleAddComment, handleUserPress]);
+
+      {selectedPostId === post._id && (
+        <View style={styles.commentSection}>
+          <TextInput
+            style={styles.commentInput}
+            value={commentText}
+            onChangeText={setCommentText}
+            placeholder="Add a comment..."
+          />
+          <TouchableOpacity style={styles.addCommentButton} onPress={handleAddComment}>
+            <Text style={styles.addCommentButtonText}>Add Comment</Text>
+          </TouchableOpacity>
+          <FlatList
+            data={post.comments}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => (
+              <View style={styles.commentItem}>
+                <View style={styles.commentHeader}>
+                  <Text style={styles.commentUser}>{item.user.username}</Text>
+                  <Text style={styles.commentDate}>
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </Text>
+                </View>
+                <Text style={styles.commentContent}>{item.content}</Text>
+              </View>
+            )}
+          />
+        </View>
+      )}
+    </View>
+  ), [handleUserPress, handleLikePress, handleCommentPress, likeStates, selectedPostId, commentText, handleAddComment]);
 
   if (loading) {
     return (
@@ -266,22 +269,23 @@ const BlogPage = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
+      <FlatList
+        data={posts}
+        renderItem={renderPost}
+        keyExtractor={(item) => item._id}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-      >
-        <View style={styles.header}>
-          <Text style={styles.headerText}>Social Feed</Text>
-          <TouchableOpacity>
-            <Ionicons name="search-outline" size={24} color="black" />
-          </TouchableOpacity>
-        </View>
-        {renderedPosts}
-      </ScrollView>
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.headerText}>Social Feed</Text>
+          </View>
+        }
+      />
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -296,57 +300,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EDEDED',
   },
-  postContent: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#333',
-    lineHeight: 24, // Add this for better readability
-  },
-  commentSection: {
-    marginTop: 10,
-  },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
-  addCommentButton: {
-    backgroundColor: '#0066cc',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  addCommentButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  commentList: {
-    maxHeight: 200, // Limit the height of the comment list
-  },
-  commentItem: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  commentUser: {
-    fontWeight: 'bold',
-  },
-  commentDate: {
-    fontSize: 12,
-    color: '#888',
-  },
-  commentContent: {
-    fontSize: 14,
-  },
   headerText: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -356,51 +309,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  commentSection: {
-    marginTop: 10,
-  },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
-  addCommentButton: {
-    backgroundColor: '#0066cc',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  addCommentButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  commentList: {
-    maxHeight: 200, // Limit the height of the comment list
-  },
-  commentItem: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-  },
-  commentHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 5,
-  },
-  commentUser: {
-    fontWeight: 'bold',
-  },
-  commentDate: {
-    fontSize: 12,
-    color: '#888',
-  },
-  commentContent: {
-    fontSize: 14,
   },
   errorContainer: {
     flex: 1,
@@ -444,17 +352,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
     color: '#333',
+    lineHeight: 24,
   },
   postImage: {
     width: '100%',
     height: 200,
     borderRadius: 8,
     marginBottom: 10,
-  },
-  placeholderImage: {
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   interactionInfo: {
     flexDirection: 'row',
@@ -467,6 +371,48 @@ const styles = StyleSheet.create({
   interactionText: {
     marginLeft: 5,
     color: '#555',
+  },
+  commentSection: {
+    marginTop: 10,
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
+  },
+  addCommentButton: {
+    backgroundColor: '#0066cc',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  addCommentButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  commentItem: {
+    marginBottom: 10,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5,
+  },
+  commentUser: {
+    fontWeight: 'bold',
+  },
+  commentDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  commentContent: {
+    fontSize: 14,
   },
 });
 

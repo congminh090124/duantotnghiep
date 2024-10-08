@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
+import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator, RefreshControl, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getUserProfile, updateAvatar, getUserPosts, getFollowers, getFollowing } from '../../apiConfig';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
-import { API_ENDPOINTS, getToken } from '../../apiConfig';
-const API_BASE_URL = API_ENDPOINTS.socketURL;
+
+const windowWidth = Dimensions.get('window').width;
+const imageSize = (windowWidth - 40) / 2;
 
 const MyProfile = () => {
   const navigation = useNavigation();
@@ -16,9 +17,12 @@ const MyProfile = () => {
   const [posts, setPosts] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
+      setIsLoading(true);
       const [profileData, postsData, followersData, followingData] = await Promise.all([
         getUserProfile(),
         getUserPosts(),
@@ -34,15 +38,21 @@ const MyProfile = () => {
       Alert.alert('Error', 'Unable to fetch data. Please try again later.');
     } finally {
       setIsLoading(false);
+      setRefreshing(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
       fetchData();
-      return () => {};
+      return () => { };
     }, [fetchData])
   );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData();
+  }, [fetchData]);
 
   const handleEditProfile = useCallback(() => {
     navigation.navigate('UpdateProfile', {
@@ -80,7 +90,7 @@ const MyProfile = () => {
 
         setProfileData(prevState => ({
           ...prevState,
-          avatar: updatedProfile.avatar
+          anh_dai_dien: updatedProfile.avatar
         }));
 
         Alert.alert('Success', 'Avatar updated successfully');
@@ -92,11 +102,7 @@ const MyProfile = () => {
     }
   }, []);
 
-  const avatarUri = useMemo(() => {
-    return profileData?.anh_dai_dien
-      ? `${API_BASE_URL}${profileData.anh_dai_dien}`
-      : null;
-  }, [profileData?.anh_dai_dien]);
+  const avatarUri = useMemo(() => profileData?.anh_dai_dien || null, [profileData?.anh_dai_dien]);
 
   const handlePostPress = useCallback((post) => {
     navigation.navigate('PostDetailScreen', { postId: post._id });
@@ -108,6 +114,50 @@ const MyProfile = () => {
       <Text style={styles.statLabel}>{label}</Text>
     </TouchableOpacity>
   ), []);
+
+  const handleMenuPress = useCallback(() => {
+    setIsMenuVisible(true);
+  }, []);
+
+  const handleMenuClose = useCallback(() => {
+    setIsMenuVisible(false);
+  }, []);
+
+  const handleMenuItemPress = useCallback((action) => {
+    setIsMenuVisible(false);
+    switch (action) {
+      case 'settings':
+        // Điều hướng đến trang cài đặt
+        navigation.navigate('Settings');
+        break;
+      case 'volunteer':
+        // Điều hướng đến trang đăng ký TNV
+        navigation.navigate('VolunteerRegistration');
+        break;
+      case 'logout':
+        // Xử lý đăng xuất
+        Alert.alert(
+          "Đăng xuất",
+          "Bạn có chắc chắn muốn đăng xuất?",
+          [
+            { text: "Hủy", style: "cancel" },
+            { text: "Đăng xuất", onPress: () => {
+              // Thực hiện đăng xuất ở đây
+              // Ví dụ: clearToken() và điều hướng về màn hình đăng nhập
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'DangNhap' }],
+              });
+            }}
+          ]
+        );
+        break;
+      case 'support':
+        // Điều hướng đến trang hỗ trợ
+        navigation.navigate('Support');
+        break;
+    }
+  }, [navigation]);
 
   if (isLoading) {
     return (
@@ -123,7 +173,11 @@ const MyProfile = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+      <ScrollView
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         <View style={styles.header}>
           <TouchableOpacity>
             <Ionicons name="lock-closed-outline" size={24} color="black" />
@@ -136,7 +190,7 @@ const MyProfile = () => {
             <TouchableOpacity style={styles.iconButton}>
               <Ionicons name="add-outline" size={24} color="black" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity style={styles.iconButton} onPress={handleMenuPress}>
               <Ionicons name="menu-outline" size={24} color="black" />
             </TouchableOpacity>
           </View>
@@ -239,12 +293,41 @@ const MyProfile = () => {
           </View>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={isMenuVisible}
+        onRequestClose={handleMenuClose}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPressOut={handleMenuClose}
+        >
+          <View style={styles.modalView}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress('settings')}>
+              <Ionicons name="settings-outline" size={24} color="black" />
+              <Text style={styles.menuItemText}>Cài đặt</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress('volunteer')}>
+              <Ionicons name="person-add-outline" size={24} color="black" />
+              <Text style={styles.menuItemText}>Đăng ký TNV</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress('logout')}>
+              <Ionicons name="log-out-outline" size={24} color="black" />
+              <Text style={styles.menuItemText}>Đăng xuất</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress('support')}>
+              <Ionicons name="help-circle-outline" size={24} color="black" />
+              <Text style={styles.menuItemText}>Hỗ trợ</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
-
-const windowWidth = Dimensions.get('window').width;
-const imageSize = (windowWidth - 40) / 2;
 
 const styles = StyleSheet.create({
   sectionTitle: {
@@ -255,21 +338,21 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     marginTop: 10,
   },
-  
+
   postGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
-  
-  
+
+
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
     marginLeft: 10,
   },
-  
+
   infoText: {
     color: 'black',
     fontSize: 16,
@@ -428,8 +511,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#e0e0e0',
     marginTop: 20,
   },
-  
-  
+
+
   loadingText: {
     color: 'black',
     fontSize: 16,
@@ -444,7 +527,7 @@ const styles = StyleSheet.create({
   },
 
 
-  
+
   postsContainer: {
     marginTop: 20,
     paddingHorizontal: 10,
@@ -512,6 +595,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabContentText: {
+    fontSize: 16,
+    color: 'black',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalView: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  menuItemText: {
+    marginLeft: 15,
     fontSize: 16,
     color: 'black',
   },
