@@ -38,7 +38,6 @@ import UpdateProfile from './screens/profile/udateProfile';
 import UserProfile from './screens/profile/UserProfile';
 import PostDetailScreen from './screens/blog/PostDetailScreen';
 import UserListScreen from './screens/chat/UserListScreen';
-import UserProfile from './screens/profile/UserProfile';
 import ChatScreen from './screens/chat/ChatScreen';
 import ProfileMapScreen from './screens/profile/ProfileMapScreen';
 import TaoTrangTimBanDuLich from './screens/Feed/TaoTrangTimBanDuLich';
@@ -123,7 +122,7 @@ const App = () => {
         <Stack.Screen name="IdentityVerification" component={IdentityVerification} options={{ headerShown: false }} />
         <Stack.Screen name="MapScreen" component={MapScreen} options={{ headerShown: false }} />
         <Stack.Screen name="LocationSearch" component={LocationSearch} options={{ headerShown: false }} />
-        <Stack.Screen name="CreatePost" component={CreatePost} options={{ headerShown: false }} />
+<Stack.Screen name="CreatePost" component={CreatePost} options={{ headerShown: false }} />
         <Stack.Screen name="ConfirmCCCDScreen" component={ConfirmCCCDScreen} options={{ headerShown: false }} />
         <Stack.Screen name="VerifyIDScreen" component={VerifyIDScreen} options={{ headerShown: false }} />
         <Stack.Screen name="QuenMatKhau" component={QuenMatKhauScreen} options={{ headerShown: false }} />
