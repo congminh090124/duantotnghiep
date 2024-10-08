@@ -12,10 +12,21 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'DuAnTotNghiep', // Tên folder trên Cloudinary
-    allowed_formats: ['jpg', 'png', 'jpeg', 'gif'] // Định dạng file cho phép
+    allowed_formats: ['jpg', 'png', 'jpeg', 'gif'], // Định dạng file cho phép
+    transformation: [{ width: 500, height: 500, crop: 'limit' }] // Tùy chọn: giới hạn kích thước ảnh
   }
 });
 
 const upload = multer({ storage: storage });
 
-module.exports = { cloudinary, upload };
+// Hàm helper để upload ảnh lên Cloudinary
+const uploadToCloudinary = (file) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload(file, (error, result) => {
+      if (error) reject(error);
+      else resolve(result);
+    });
+  });
+};
+
+module.exports = { cloudinary, upload, uploadToCloudinary };

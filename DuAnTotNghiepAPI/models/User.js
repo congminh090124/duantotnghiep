@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema({
     nationality: { type: String, default: '' },
     home: { type: String, default: '' },
     diachi: { type: String, default: '' },
-    dob: { type: Date },
+    dob: { type: String },
     chieucao: { type: Number },
     resetPasswordOtp: String,
   resetPasswordExpires: Date

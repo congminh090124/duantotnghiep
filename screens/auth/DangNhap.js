@@ -47,7 +47,7 @@ const LoginScreen = () => {
                 text: 'Xác minh ngay',
                 onPress: () => {
                   console.log('Navigating to IdentityVerification');
-                  navigation.navigate('TrangChu');
+                  navigation.navigate('VerifyIDScreen');
                 },
               },
               {

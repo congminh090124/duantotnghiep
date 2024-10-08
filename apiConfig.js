@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
+const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -26,8 +26,6 @@ export const API_ENDPOINTS = {
   following: `${API_BASE_URL}/api/users/following`,
   forgotPassword: `${API_BASE_URL}/api/users/forgot-password`,
   resetPassword: `${API_BASE_URL}/api/users/reset-password`,
-
-  // Thêm các endpoint khác ở đây
 };
 
 // Hàm helper để xử lý response

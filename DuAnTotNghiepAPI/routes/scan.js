@@ -77,7 +77,7 @@ router.post('/scan-cccd', upload.single('image'), (req, res) => {
 
 
 
-// POST /api/users/update-cccd
+
 
 
 

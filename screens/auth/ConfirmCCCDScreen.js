@@ -35,7 +35,7 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
           Alert.alert('Error', 'Missing token or CCCD data');
           return;
       }
-
+        
       try {
           const response = await fetch("https://lacewing-evolving-generally.ngrok-free.app/api/scan/update-cccd", {
               method: 'POST',
