@@ -1,13 +1,18 @@
 import React, { useState } from 'react';
-import { SafeAreaView,View, Text, TextInput, TouchableOpacity, Alert, StyleSheet,Image } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { forgotPassword } from '../../apiConfig'; // Đảm bảo đường dẫn này chính xác
 
 const QuenMatKhauScreen = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+
   const handleBack = () => {
     navigation.goBack();
   };
-  const handleGetOTP = () => {
+
+  const handleGetOTP = async () => {
     if (!email) {
       Alert.alert('Thông báo', 'Vui lòng nhập địa chỉ email.');
       return;
@@ -15,48 +20,50 @@ const QuenMatKhauScreen = () => {
 
     setLoading(true);
 
-    // Giả lập việc gửi OTP (thực tế bạn sẽ thực hiện API call ở đây)
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const response = await forgotPassword(email);
       Alert.alert('Thông báo', 'Mã OTP đã được gửi đến email của bạn.');
-    }, 2000);
+      navigation.navigate('XacMinhOTP', { email });
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Đã xảy ra lỗi khi gửi OTP.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-        <View style={styles.inner}>
-      {/* Row container for Back button and Title */}
-      <View style={styles.headerRow}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Image
-            source={require('../../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
-            style={styles.backIcon}
-          />
+      <View style={styles.inner}>
+        {/* Row container for Back button and Title */}
+        <View style={styles.headerRow}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Image
+              source={require('../../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
+              style={styles.backIcon}
+            />
+          </TouchableOpacity>
+          <Text style={styles.title}>Quên mật khẩu</Text>
+        </View>
+  
+        <Text style={styles.description}>
+          Vui lòng nhập địa chỉ email của bạn để nhận mã OTP. Mã OTP sẽ được gửi đến email của bạn trong vòng vài phút.
+          Nếu bạn không nhận được mã, hãy kiểm tra thư mục spam hoặc thử lại sau.
+        </Text>
+  
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+  
+        <TouchableOpacity style={styles.button} onPress={handleGetOTP} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Đang gửi...' : 'Nhận OTP'}</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Quên mật khẩu</Text>
-      </View>
-  
-      <Text style={styles.description}>
-        Vui lòng nhập địa chỉ email của bạn để nhận mã OTP. Mã OTP sẽ được gửi đến email của bạn trong vòng vài phút.
-        Nếu bạn không nhận được mã, hãy kiểm tra thư mục spam hoặc thử lại sau.
-      </Text>
-  
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        keyboardType="email-address"
-        value={email}
-        onChangeText={setEmail}
-      />
-  
-      <TouchableOpacity style={styles.button} onPress={handleGetOTP} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? 'Đang gửi...' : 'Nhận OTP'}</Text>
-      </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
-  
-  
 };
 
 const styles = StyleSheet.create({

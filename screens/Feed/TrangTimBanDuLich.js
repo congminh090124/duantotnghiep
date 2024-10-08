@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
   },
   topNav: {
     backgroundColor: 'rgba(0, 0, 0, 0)',
-    position: 'absolute',
+    // position: 'absolute',
     top: '0',
     left: 0,
     right: 0,
@@ -334,8 +334,8 @@ const styles = StyleSheet.create({
     height: 3,
   },
   tabBarLabel: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 15,
+  
     color: 'white',
   },
   searchButton: {

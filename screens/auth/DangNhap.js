@@ -78,6 +78,9 @@ const LoginScreen = () => {
   const handleRegister = () => {
     navigation.navigate('DangKy');
   };
+  const handleForgotPassword = () => {
+    navigation.navigate('QuenMatKhauScreen');
+  };
 
   return (
     <ImageBackground
@@ -121,7 +124,7 @@ const LoginScreen = () => {
             <Text style={styles.buttonText}>Đăng ký</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.forgotPassword}>
+          <TouchableOpacity style={styles.forgotPassword} onPress={handleForgotPassword}>
             <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
           </TouchableOpacity>
 

@@ -4,14 +4,79 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const auth = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
-const { OAuth2Client } = require('google-auth-library');
-const fetch = require('node-fetch'); // Thêm dòng này để import node-fetch
 const Post = require('../models/Post');
 const { cloudinary, upload } = require('../config/cloudinaryConfig');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
 
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng với email này' });
+    }
 
+    // Generate OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.resetPasswordOtp = otp;
+    user.resetPasswordExpires = Date.now() + 3600000; // OTP expires after 1 hour
+    await user.save();
+
+    // Send email with OTP
+    let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USERNAME,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    let mailOptions = {
+      from: process.env.EMAIL_USERNAME,
+      to: user.email,
+      subject: 'Đặt lại mật khẩu',
+      text: `Mã OTP của bạn là: ${otp}. Mã này sẽ hết hạn sau 1 giờ.`
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: 'OTP đã được gửi đến email của bạn' });
+  } catch (error) {
+    console.error('Lỗi khi gửi OTP:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+  }
+});
+
+// New route to reset password with OTP
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ thông tin: email, OTP và mật khẩu mới' });
+    }
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng với email này' });
+    }
+
+    if (!user.verifyResetPasswordOtp(otp)) {
+      return res.status(400).json({ message: 'OTP không hợp lệ hoặc đã hết hạn' });
+    }
+
+    user.password = newPassword;
+    user.clearResetPasswordFields();
+    await user.save();
+
+    res.json({ message: 'Mật khẩu đã được đặt lại thành công' });
+  } catch (error) {
+    console.error('Lỗi khi đặt lại mật khẩu:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+  }
+});
 router.post('/register', async (req, res) => {
     const { email, password, username } = req.body;
 
@@ -52,83 +117,54 @@ router.post('/register', async (req, res) => {
     }
 });
 
-
-router.post('/facebook-login', async (req, res) => {
-    try {
-      const { accessToken } = req.body;
-  
-      // Xác minh access token với Facebook
-      const response = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
-      if (!response.ok) {
-        throw new Error('Không thể xác minh token Facebook');
-      }
-      const { id, name, email } = await response.json();
-  
-      // Kiểm tra xem người dùng đã tồn tại chưa
-      let user = await User.findOne({ email });
-  
-      if (!user) {
-        // Nếu người dùng chưa tồn tại, tạo người dùng mới
-        user = new User({
-          email,
-          name,
-          username: name, // Bạn có thể muốn tạo một username duy nhất
-          facebookId: id,
-          // Đặt các trường mặc định khác nếu cần
-        });
-        await user.save();
-      } else {
-        // Nếu người dùng tồn tại, cập nhật Facebook ID nếu chưa được đặt
-        if (!user.facebookId) {
-          user.facebookId = id;
-          await user.save();
-        }
-      }
-  
-      // Tạo token JWT
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  
-      // Trả về token và thông tin người dùng
-      res.json({
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          xacMinhDanhTinh: user.xacMinhDanhTinh
-        }
-      });
-    } catch (error) {
-      console.error('Lỗi đăng nhập Facebook:', error);
-      res.status(500).json({ message: 'Lỗi máy chủ khi đăng nhập bằng Facebook' });
-    }
-  });
-// Đăng nhập
 router.post('/login', async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      const user = await User.findOne({ email });
-      if (!user) {
-        return res.status(400).json({ message: 'User not found' });
-      }
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(400).json({ message: 'Invalid credentials' });
-      }
-      const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-      res.json({
-        token,
-        user: {
-          id: user._id,
-          email: user.email,
-          sdt: user.sdt,
-          xacMinhDanhTinh: user.xacMinhDanhTinh // Thêm trường này
-        }
-      });
-    } catch (error) {
-      res.status(500).json({ message: 'Server error' });
+  try {
+    const { email, password } = req.body;
+    console.log('Login attempt for email:', email);
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email và mật khẩu là bắt buộc' });
     }
-  })
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log('User not found for email:', email);
+      return res.status(400).json({ message: 'Email hoặc mật khẩu không đúng' });
+    }
+
+    console.log('Stored hashed password:', user.password);
+    console.log('Entered password:', password);
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.log('Password mismatch for user:', email);
+      return res.status(400).json({ message: 'Email hoặc mật khẩu không đúng' });
+    }
+
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    console.log('Login successful for user:', email);
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        username: user.username,
+        avatar: user.avatar,
+        sdt: user.sdt,
+        xacMinhDanhTinh: user.xacMinhDanhTinh
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi đăng nhập:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
+  }
+});
 router.get('/thong-tin-ca-nhan', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
@@ -385,6 +421,38 @@ router.get('/following', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching following users:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+router.post('/change-password', auth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    console.log('Change password request for user:', req.user.id);
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      console.log('User not found:', req.user.id);
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) {
+      console.log('Current password mismatch for user:', user.email);
+      return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    console.log('Password changed successfully for user:', user.email);
+    console.log('New hashed password:', hashedPassword);
+
+    res.json({ message: 'Đổi mật khẩu thành công' });
+  } catch (error) {
+    console.error('Lỗi khi đổi mật khẩu:', error);
+    res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
   }
 });
 module.exports = router;

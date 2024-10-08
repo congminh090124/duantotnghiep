@@ -179,17 +179,10 @@ const MyProfile = () => {
         }
       >
         <View style={styles.header}>
-          <TouchableOpacity>
-            <Ionicons name="lock-closed-outline" size={24} color="black" />
-          </TouchableOpacity>
+         
           <Text style={styles.username}>{profileData.username}</Text>
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="timer-outline" size={24} color="black" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="add-outline" size={24} color="black" />
-            </TouchableOpacity>
+          
             <TouchableOpacity style={styles.iconButton} onPress={handleMenuPress}>
               <Ionicons name="menu-outline" size={24} color="black" />
             </TouchableOpacity>
@@ -345,6 +338,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
+  bioText:{
+    marginLeft:"5%"
+  },
 
   infoItem: {
     flexDirection: 'row',
@@ -359,35 +355,35 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
+    paddingHorizontal: 15, // Thêm padding ngang cho toàn bộ container
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    paddingVertical: 15, // Thêm padding dọc cho header
+    paddingHorizontal: 10, // Thêm padding ngang cho header
+   
   },
   username: {
-    color: 'black',
-    fontSize: 23,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   headerIcons: {
     flexDirection: 'row',
   },
   iconButton: {
-    marginLeft: 15,
+    marginLeft: 15, // Tăng khoảng cách giữa các icon
   },
   profileContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingVertical: 20, // Thêm padding dọc
+    marginLeft:"2%"
   },
   avatarContainer: {
-    alignItems: 'center',
-    marginTop: 10,
-    marginLeft: 10,
+    marginRight: 20, // Tăng khoảng cách giữa avatar và stats
   },
   profileImage: {
     width: 80,
@@ -417,11 +413,10 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    flex: 1,
   },
   statItem: {
     alignItems: 'center',
+    marginRight: 20, // Tăng khoảng cách giữa các stat
   },
   statNumber: {
     color: 'black',
@@ -441,7 +436,8 @@ const styles = StyleSheet.create({
   editButton: {
     flex: 1,
     backgroundColor: '#f0f0f0',
-    paddingVertical: 8,
+    paddingVertical: 10, // Tăng padding dọc cho button
+    paddingHorizontal: 15, // Tăng padding ngang cho button
     borderRadius: 5,
     marginRight: 5,
   },
@@ -453,7 +449,8 @@ const styles = StyleSheet.create({
   shareButton: {
     flex: 1,
     backgroundColor: '#f0f0f0',
-    paddingVertical: 8,
+    paddingVertical: 10, // Tăng padding dọc cho button
+    paddingHorizontal: 15, // Tăng padding ngang cho button
     borderRadius: 5,
     marginLeft: 5,
   },
@@ -531,21 +528,17 @@ const styles = StyleSheet.create({
   postsContainer: {
     marginTop: 20,
     paddingHorizontal: 10,
+    paddingVertical: 15, // Thêm padding dọc
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
-  },
+  
   postGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   postItem: {
-    width: imageSize,
-    marginBottom: 20,
+    width: (windowWidth - 45) / 2, // Điều chỉnh để có khoảng cách giữa các item
+    marginBottom: 15, // Tăng khoảng cách giữa các hàng
     borderRadius: 10,
     backgroundColor: '#fff',
     shadowColor: '#000',
