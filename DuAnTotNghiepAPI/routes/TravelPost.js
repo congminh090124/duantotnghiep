@@ -3,20 +3,7 @@ const router = express.Router();
 const TravelPost = require('../models/TravelPost');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
-
-// Multer configuration
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ storage: storage });
+const { upload } = require('../config/cloudinaryConfig');
 
 // Create a travel post
 router.post('/create', auth, upload.array('image', 5), async (req, res) => {
@@ -40,7 +27,7 @@ router.post('/create', auth, upload.array('image', 5), async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const imageUrls = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    const imageUrls = req.files ? req.files.map(file => file.path) : [];
 
     const newPost = new TravelPost({
       author: req.user.id,

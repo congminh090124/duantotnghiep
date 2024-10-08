@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -16,7 +16,7 @@ export const API_ENDPOINTS = {
   showAllPostsMap: `${API_BASE_URL}/api/posts/map-posts`,
    likePost: `${API_BASE_URL}/api/posts/:postId/like`,
    socketURL: `${API_BASE_URL}`,
-   onlineUsers: `${API_BASE_URL}/api/online-users`,
+   onlineUsers: `${API_BASE_URL}/api/all-users`,
    chatHistory: `${API_BASE_URL}/api/chat-history`,
    messages: `${API_BASE_URL}/api/messages`,
    likePost: `${API_BASE_URL}/api/posts/:postId/like`,

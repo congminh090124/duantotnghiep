@@ -18,17 +18,15 @@ const UserImages = React.memo(({ post }) => {
   const handleMessage = useCallback(() => console.log('Gửi tin nhắn cho', post.author.username), [post.author.username]);
   const handleTravelTogether = useCallback(() => console.log('Muốn đi du lịch cùng', post.author.username), [post.author.username]);
 
-  const getImageUrl = useCallback((imagePath) => `${API_ENDPOINTS.socketURL}${imagePath}`, []);
-
   useEffect(() => {
     if (post.images && post.images.length > 0) {
-      Promise.all(post.images.map(imagePath => Image.prefetch(getImageUrl(imagePath))))
+      Promise.all(post.images.map(imagePath => Image.prefetch(imagePath)))
         .then(() => setImagesLoaded(true))
         .catch(error => console.error('Failed to load images:', error));
     } else {
       setImagesLoaded(true);
     }
-  }, [post.images, getImageUrl]);
+  }, [post.images]);
 
   if (!imagesLoaded) {
     return (
@@ -45,7 +43,7 @@ const UserImages = React.memo(({ post }) => {
           post.images.map((image, index) => (
             <View key={index} style={styles.slide}>
               <Image
-                source={{ uri: getImageUrl(image) }}
+                source={{ uri: image }}
                 style={styles.image}
                 resizeMode="cover"
                 onError={(e) => console.error('Image load error:', e.nativeEvent.error)}
@@ -190,25 +188,25 @@ const MainScreen = () => {
 
   return (
     <View style={styles.container}>
-    <FlatList
-      ref={flatListRef}
-      data={posts}
-      renderItem={({ item }) => <UserImages post={item} />}
-      keyExtractor={(item) => item._id}
-      pagingEnabled
-      showsVerticalScrollIndicator={false}
-      snapToInterval={height}
-      snapToAlignment="start"
-      decelerationRate="fast"
-      onViewableItemsChanged={onViewableItemsChanged}
-      viewabilityConfig={viewabilityConfig}
-      getItemLayout={(data, index) => ({
-        length: height,
-        offset: height * index,
-        index,
-      })}
-    />
-  </View>
+      <FlatList
+        ref={flatListRef}
+        data={posts}
+        renderItem={({ item }) => <UserImages post={item} />}
+        keyExtractor={(item) => item._id}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        snapToInterval={height}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        getItemLayout={(data, index) => ({
+          length: height,
+          offset: height * index,
+          index,
+        })}
+      />
+    </View>
   );
 };
 

@@ -29,11 +29,15 @@ app.use('/api/soThich', soThich);
 // Online users storage
 let onlineUsers = new Map();
 
+// Thêm biến để lưu trữ thời gian hoạt động cuối cùng của người dùng
+let lastActiveTime = new Map();
+
 io.on('connection', (socket) => {
     console.log('New client connected');
 
     socket.on('userConnected', (userId) => {
         onlineUsers.set(userId, socket.id);
+        lastActiveTime.set(userId, new Date());
         io.emit('updateOnlineUsers', Array.from(onlineUsers.keys()).map(id => ({ id })));
     });
 
@@ -81,26 +85,31 @@ io.on('connection', (socket) => {
         const userId = Array.from(onlineUsers.entries()).find(([key, value]) => value === socket.id)?.[0];
         if (userId) {
             onlineUsers.delete(userId);
+            lastActiveTime.set(userId, new Date());
             io.emit('updateOnlineUsers', Array.from(onlineUsers.keys()).map(id => ({ id })));
         }
         console.log('Client disconnected');
     });
 });
 
-// Get online users
-app.get('/api/online-users', authMiddleware, async (req, res) => {
+// Sửa đổi route để lấy tất cả người dùng và trạng thái online
+app.get('/api/all-users', authMiddleware, async (req, res) => {
     try {
-        const onlineUserIds = Array.from(onlineUsers.keys());
-        const onlineUsersDetails = await User.find(
-            { _id: { $in: onlineUserIds } },
-            'username avatar'
-        );
-        res.json(onlineUsersDetails);
+        const userId = req.user.id;
+        const allUsers = await User.find({ _id: { $ne: userId } }, 'username avatar');
+        const usersWithStatus = allUsers.map(user => ({
+            ...user.toObject(),
+            isOnline: onlineUsers.has(user._id.toString()),
+            lastActive: lastActiveTime.get(user._id.toString()) || null
+        }));
+        res.json(usersWithStatus);
     } catch (error) {
-        console.error('Server error in /api/online-users:', error);
+        console.error('Server error in /api/all-users:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
+
+// Get online users
 
 // Get chat history
 app.get('/api/chat-history/:userId', authMiddleware, async (req, res) => {

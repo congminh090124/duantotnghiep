@@ -5,20 +5,29 @@ import io from 'socket.io-client';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { API_ENDPOINTS, getToken } from '../../apiConfig';
 import NetInfo from "@react-native-community/netinfo";
-import { debounce } from 'lodash'; // Import debounce to improve search efficiency
+import { debounce } from 'lodash';
+import moment from 'moment';
 
-// Initialize socket connection globally
 const socket = io(API_ENDPOINTS.socketURL);
 
+const getCloudinaryUrl = (publicId, options = {}) => {
+  if (!publicId) return 'https://via.placeholder.com/50';
+  if (publicId.startsWith('http')) return publicId;
+  const baseUrl = "https://res.cloudinary.com/dois3oewd/image/upload/";
+  const optionsString = Object.entries(options)
+    .map(([key, value]) => `${key}_${value}`)
+    .join(',');
+  return `${baseUrl}${optionsString}/${publicId}`;
+};
+
 export default function ListScreen({ navigation }) {
-    const [onlineUsers, setOnlineUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
     const [chatHistory, setChatHistory] = useState([]);
     const [userId, setUserId] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isConnected, setIsConnected] = useState(true);
 
-    // Handle network connection status
     useEffect(() => {
         const unsubscribe = NetInfo.addEventListener(state => {
             setIsConnected(state.isConnected);
@@ -27,7 +36,6 @@ export default function ListScreen({ navigation }) {
         return () => unsubscribe();
     }, []);
 
-    // Load user data and initialize socket
     useEffect(() => {
         const loadUserData = async () => {
             try {
@@ -37,35 +45,41 @@ export default function ListScreen({ navigation }) {
                     socket.emit('userConnected', storedUserId);
                 }
             } catch (error) {
-                console.error('Error loading user data:', error);
+                // Handle error silently or show an alert if necessary
             }
         };
 
         loadUserData();
 
-        // Update online users when receiving the event from socket
-        const handleUpdateOnlineUsers = async (users) => {
-            const filteredUsers = users.filter(user => user.id !== userId);
+        socket.on('updateOnlineUsers', handleUpdateOnlineUsers);
+
+        return () => {
+            socket.off('updateOnlineUsers', handleUpdateOnlineUsers);
+        };
+    }, []);
+
+    const fetchAllUsers = useCallback(async () => {
+        if (!isConnected) return;
+
+        try {
             const token = await getToken();
             const response = await fetch(API_ENDPOINTS.onlineUsers, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            const onlineUsersDetails = await response.json();
-            setOnlineUsers(onlineUsersDetails.filter(user => user._id !== userId));
-        };
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        // Register socket event listener for online users
-        socket.on('updateOnlineUsers', handleUpdateOnlineUsers);
+            const data = await response.json();
+            setAllUsers(data);
+        } catch (error) {
+            // Handle error
+        }
+    }, [isConnected]);
 
-        return () => {
-            // Clean up socket events on unmount
-            socket.off('updateOnlineUsers', handleUpdateOnlineUsers);
-        };
-    }, [userId]);
-
-    // Fetch chat history from API
     const fetchChatHistory = useCallback(async () => {
-        if (!userId || !isConnected) return;
+        if (!isConnected || !userId) return;
 
         try {
             const token = await getToken();
@@ -78,63 +92,58 @@ export default function ListScreen({ navigation }) {
             }
 
             const data = await response.json();
-            const processedChatHistory = data.map(chat => ({
-                id: chat.id || chat._id, 
-                username: chat.username,
-                avatar: chat.avatar,
-                lastMessage: chat.lastMessage?.text || 'No messages',
-                lastMessageTime: chat.lastMessage?.createdAt 
-                    ? new Date(chat.lastMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-                    : ''
-            }));
-            setChatHistory(processedChatHistory);
+            setChatHistory(data);
         } catch (error) {
-            console.error('Error fetching chat history:', error);
+            // Handle error
         }
-    }, [userId, isConnected]);
+    }, [isConnected, userId]);
 
-    // Initial fetch chat history
     useEffect(() => {
+        fetchAllUsers();
         fetchChatHistory();
-    }, [fetchChatHistory]);
+    }, [fetchAllUsers, fetchChatHistory]);
 
-    // Refresh chat history on pull-down
     const onRefresh = useCallback(async () => {
         setIsRefreshing(true);
-        await fetchChatHistory();
+        await Promise.all([fetchAllUsers(), fetchChatHistory()]);
         setIsRefreshing(false);
-    }, [fetchChatHistory]);
+    }, [fetchAllUsers, fetchChatHistory]);
 
-    // Debounced search handler
     const handleSearch = useMemo(() => debounce((query) => setSearchQuery(query), 300), []);
 
-    // Filtered chat history based on search query
-    const filteredChatHistory = useMemo(() => {
-        return chatHistory.filter(chat => 
-            chat.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            chat.lastMessage.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredUsers = useMemo(() => {
+        return allUsers.filter(user => 
+            user.username.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [chatHistory, searchQuery]);
+    }, [allUsers, searchQuery]);
 
-    // Render online user
-    const renderOnlineUser = useCallback(({ item }) => {
-        const avatarUrl = `${API_ENDPOINTS.socketURL}${item.avatar}`;
+    const handleUpdateOnlineUsers = useCallback((onlineUserIds) => {
+        setAllUsers(prevUsers => prevUsers.map(user => ({
+            ...user,
+            isOnline: onlineUserIds.some(onlineUser => onlineUser.id === user._id.toString())
+        })));
+    }, []);
+
+    const renderUserItem = useCallback(({ item }) => {
+        const avatarUrl = getCloudinaryUrl(item.avatar, { width: 60, height: 60, crop: 'fill' });
         
         return (
             <TouchableOpacity
                 style={styles.onlineUserItem}
-                onPress={() => navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username, receiverAvatar: item.avatar })}
+                onPress={() => {
+                    navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username, receiverAvatar: item.avatar });
+                }}
             >
                 <Image source={{ uri: avatarUrl }} style={styles.onlineAvatar} />
                 <Text style={styles.onlineUserName}>{item.username}</Text>
-                <View style={styles.onlineIndicator} />
+                {item.isOnline && <View style={styles.onlineIndicator} />}
             </TouchableOpacity>
         );
     }, [navigation]);
 
-    // Render chat item
     const renderChatItem = useCallback(({ item }) => {
-        const avatarUrl = item.avatar ? `${API_ENDPOINTS.socketURL}${item.avatar}` : 'https://via.placeholder.com/50';
+        const avatarUrl = getCloudinaryUrl(item.avatar, { width: 50, height: 50, crop: 'fill' });
+        const lastMessageTime = moment(item.lastMessage.createdAt).format('HH:mm');
     
         return (
             <TouchableOpacity
@@ -145,12 +154,12 @@ export default function ListScreen({ navigation }) {
             >
                 <Image source={{ uri: avatarUrl }} style={styles.avatar} />
                 <View style={styles.chatInfo}>
-                    <Text style={styles.userName}>{item.username || 'Unknown User'}</Text>
+                    <Text style={styles.userName}>{item.username}</Text>
                     <Text style={styles.lastMessage} numberOfLines={1}>
-                        {item.lastMessage}
+                        {item.lastMessage.text}
                     </Text>
                 </View>
-                <Text style={styles.timeStamp}>{item.lastMessageTime}</Text>
+                <Text style={styles.timeStamp}>{lastMessageTime}</Text>
             </TouchableOpacity>
         );
     }, [navigation]);
@@ -169,7 +178,7 @@ export default function ListScreen({ navigation }) {
                     style={styles.searchInput}
                     placeholder="Tìm kiếm"
                     placeholderTextColor="#8E8E93"
-                    onChangeText={handleSearch} // Use debounce for search
+                    onChangeText={handleSearch}
                 />
             </View>
             {!isConnected && (
@@ -179,16 +188,14 @@ export default function ListScreen({ navigation }) {
                 ListHeaderComponent={
                     <FlatList
                         horizontal
-                        data={onlineUsers}
-                        renderItem={renderOnlineUser}
+                        data={allUsers}
+                        renderItem={renderUserItem}
                         keyExtractor={(item) => item._id}
                         style={styles.onlineList}
                         showsHorizontalScrollIndicator={false}
-                        initialNumToRender={5} // Optimized rendering for online users
-                        removeClippedSubviews={true} // Improve performance by removing off-screen components
                     />
                 }
-                data={filteredChatHistory}
+                data={chatHistory}
                 renderItem={renderChatItem}
                 keyExtractor={(item) => item.id}
                 refreshControl={
@@ -197,8 +204,6 @@ export default function ListScreen({ navigation }) {
                         onRefresh={onRefresh}
                     />
                 }
-                initialNumToRender={10} // Optimize FlatList initial render
-                removeClippedSubviews={true} // Improve performance for large lists
             />
         </SafeAreaView>
     );
@@ -239,8 +244,7 @@ const styles = StyleSheet.create({
         color: '#000000',
     },
     onlineList: {
-        paddingLeft: 16,
-        marginBottom: 16,
+        paddingVertical: 16,
     },
     onlineUserItem: {
         alignItems: 'center',
@@ -301,5 +305,31 @@ const styles = StyleSheet.create({
         color: '#721c24',
         padding: 10,
         textAlign: 'center',
+    },
+    userItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E5E5',
+    },
+    userInfo: {
+        flex: 1,
+        marginLeft: 12,
+    },
+    lastActive: {
+        color: '#8E8E93',
+        fontSize: 12,
+    },
+    onlineIndicator: {
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: '#4CD964',
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
     },
 });
