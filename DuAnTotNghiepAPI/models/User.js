@@ -29,22 +29,33 @@ const userSchema = new mongoose.Schema({
     diachi: { type: String, default: '' },
     dob: { type: Date },
     chieucao: { type: Number },
+    resetPasswordOtp: String,
+  resetPasswordExpires: Date
 }, {
     timestamps: true
 });
 
-// Pre-save middleware to hash password
-userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) {
-        next();
+userSchema.pre('save', async function(next) {
+    if (this.isModified('password') && !this.password.startsWith('$2a$')) {
+      const salt = await bcrypt.genSalt(10);
+      this.password = await bcrypt.hash(this.password, salt);
     }
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-});
-
-// Method to match password
-userSchema.methods.matchPassword = async function (enteredPassword) {
+    next();
+  });
+  
+  userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
-};
+  };
+  
+  // New method to verify reset password OTP
+  userSchema.methods.verifyResetPasswordOtp = function (otp) {
+    return this.resetPasswordOtp === otp && this.resetPasswordExpires > Date.now();
+  };
+  
+  // New method to clear reset password fields
+  userSchema.methods.clearResetPasswordFields = function () {
+    this.resetPasswordOtp = undefined;
+    this.resetPasswordExpires = undefined;
+  };
 
 module.exports = mongoose.model('User', userSchema);

@@ -24,11 +24,80 @@ export const API_ENDPOINTS = {
    getComments: `${API_BASE_URL}/api/posts/:postId/comments`,
    followers: `${API_BASE_URL}/api/users/followers`,
   following: `${API_BASE_URL}/api/users/following`,
+  forgotPassword: `${API_BASE_URL}/api/users/forgot-password`,
+  resetPassword: `${API_BASE_URL}/api/users/reset-password`,
 
   // Thêm các endpoint khác ở đây
 };
 
-// ... other imports and functions
+// Hàm helper để xử lý response
+const handleResponse = async (response) => {
+  const data = await response.json();
+  if (!response.ok) {
+    const error = (data && data.message) || response.statusText;
+    return Promise.reject(error);
+  }
+  return data;
+};
+
+// Thêm hàm forgotPassword
+export const forgotPassword = async (email) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.forgotPassword, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error in forgotPassword:', error);
+    throw error;
+  }
+};
+
+// Thêm hàm resetPassword
+export const resetPassword = async (email, otp, newPassword) => {
+  try {
+    const response = await fetch(API_ENDPOINTS.resetPassword, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, otp, newPassword }),
+    });
+    return handleResponse(response);
+  } catch (error) {
+    console.error('Error in resetPassword:', error);
+    throw error;
+  }
+};
+
+export const changePassword = async (currentPassword, newPassword) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    const response = await fetch(`${API_BASE_URL}/api/users/change-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ currentPassword, newPassword })
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to change password');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error changing password:', error);
+    throw error;
+  }
+};
 
 export const getAllTravelPosts = async () => {
   try {

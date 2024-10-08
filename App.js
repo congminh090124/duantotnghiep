@@ -12,7 +12,7 @@ import DangKiDulichScreen from './screens/DangKiDuLichScreen';
 import DangBaiScreen from './screens/DangBaiScreen';
 import DangKy from './screens/auth/Dangky';
 import DangNhap from './screens/auth/DangNhap';
-import DoiMk from './screens/auth/DoiMk';
+
 import TimKiemBanDuLich from './screens/TimKiemBanDuLich';
 import ThongTinCaNhan from './screens/ThongTinCaNhan';
 import TimKiem from './screens/TimKiem';
@@ -42,6 +42,8 @@ import Settings  from './screens/menuProfile/setting';
 import ChatScreen from './screens/chat/ChatScreen';
 import ProfileMapScreen from './screens/profile/ProfileMapScreen';
 import TaoTrangTimBanDuLich from './screens/Feed/TaoTrangTimBanDuLich';
+import ChangePassword from './screens/menuProfile/ChangePassword';
+
 // Tạo Stack Navigator
 const Stack = createStackNavigator();
 
@@ -109,7 +111,7 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="DangNhap">
         {/* Các màn hình trong Stack Navigator */}
-        
+        <Stack.Screen name="ChangePassword" component={ChangePassword}options={{ headerShown: false }} />
         <Stack.Screen name="Settings" component={Settings} options={{ headerShown: false }} />
         <Stack.Screen name="TaoTrangTimBanDuLich" component={TaoTrangTimBanDuLich} options={{ headerShown: false }} />
         <Stack.Screen name="ProfileMapScreen" component={ProfileMapScreen} options={{ headerShown: false }} />
@@ -132,7 +134,7 @@ const App = () => {
         <Stack.Screen name="DangBai" component={DangBaiScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangKy" component={DangKy} options={{ headerShown: false }} />
         <Stack.Screen name="DangNhap" component={DangNhap} options={{ headerShown: false }} />
-        <Stack.Screen name="DoiMK" component={DoiMk} options={{ headerShown: false }} />
+        <Stack.Screen name="QuenMatKhauScreen" component={QuenMatKhauScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TimKiemBanDuLich" component={TimKiemBanDuLich} options={{ headerShown: false }} />
         <Stack.Screen name="ThongTinCaNhan" component={ThongTinCaNhan} options={{ headerShown: false }} />
         <Stack.Screen name="Blog" component={Blog} options={{ headerShown: false }} />

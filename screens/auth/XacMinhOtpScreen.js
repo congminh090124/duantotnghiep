@@ -1,25 +1,41 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { resetPassword } from '../../apiConfig'; // Đảm bảo đường dẫn này chính xác
 
 const XacMinhOtpScreen = () => {
-  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { email } = route.params;
+
   const handleBack = () => {
     navigation.goBack();
   };
-  const handleGetOTP = () => {
-    if (!email) {
-      Alert.alert('Thông báo', 'Vui lòng nhập mã OTP');
+
+  const handleVerifyOTP = async () => {
+    if (!otp || !newPassword) {
+      setError('Vui lòng nhập mã OTP và mật khẩu mới.');
       return;
     }
 
     setLoading(true);
+    setError('');
 
-    // Giả lập việc gửi OTP (thực tế bạn sẽ thực hiện API call ở đây)
-    setTimeout(() => {
+    try {
+      const result = await resetPassword(email, otp, newPassword);
+     
+      Alert.alert('Thành công', 'Mật khẩu đã được đặt lại thành công.');
+      navigation.navigate('DangNhap'); // Chuyển hướng đến màn hình đăng nhập
+    } catch (error) {
+      console.error('Error in handleVerifyOTP:', error);
+      setError(error.message || 'Đã xảy ra lỗi khi xác minh OTP.');
+    } finally {
       setLoading(false);
-      Alert.alert('Thông báo', 'Mã OTP đã được gửi đến email của bạn.');
-    }, 2000);
+    }
   };
 
   return (
@@ -39,18 +55,27 @@ const XacMinhOtpScreen = () => {
         <Text style={styles.description}>
           Vui lòng xác minh OPT gồm 4 ký tự được gửi đến gmail
         </Text>
-        <Text style={styles.xacMinh}>Mã  OTP</Text>
+        <Text style={styles.xacMinh}>Mã OTP</Text>
         <TextInput
           style={styles.input}
           placeholder="Nhập mã OTP"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
+          keyboardType="numeric"
+          value={otp}
+          onChangeText={setOtp}
         />
-        <Text style={styles.textValidate}>Mã không hợp lệ vui lòng thử lại!</Text>
-
-        <TouchableOpacity style={styles.button} onPress={handleGetOTP} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? 'Đang gửi...' : 'Nhận OTP'}</Text>
+        <Text style={styles.xacMinh}>Mật khẩu mới</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Nhập mật khẩu mới"
+          secureTextEntry
+          value={newPassword}
+          onChangeText={setNewPassword}
+        />
+        
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        
+        <TouchableOpacity style={styles.button} onPress={handleVerifyOTP} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? 'Đang xử lý...' : 'Xác nhận'}</Text>
         </TouchableOpacity>
         <Text style={styles.textNhanOtp}>Nhận OTP  </Text>
 
@@ -135,7 +160,11 @@ const styles = StyleSheet.create({
     color:'#5B6D72',
     marginTop: '5%',
   },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginBottom: 10,
+  },
 });
-
 
 export default XacMinhOtpScreen;
