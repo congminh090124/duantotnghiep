@@ -5,55 +5,39 @@ const multer = require('multer');
 const path = require('path');
 const auth = require('../middleware/auth')
 const User = require('../models/User');
+const { upload } = require('../config/cloudinaryConfig');
 
-// Cấu hình multer cho việc upload file
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function(req, file, cb) {
-    cb(null, Date.now() + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ storage: storage });
-
+// Hàm helper để lấy URL Cloudinary
+const getCloudinaryUrl = (path) => {
+  return path; // Cloudinary đã trả về URL đầy đủ, không cần thêm gì
+};
 
 router.post('/create-post', auth, upload.array('image', 5), async (req, res) => {
-  const { title, latitude, longitude, like, comment } = req.body;
-
-  if (!title || !latitude || !longitude) {
-    return res.status(400).json({ message: 'Vui lòng nhập đủ tiêu đề, vị trí!' });
-  }
-
-  const post = new Post({
-    title,
-    location: {
-      type: 'Point',
-      coordinates: [parseFloat(longitude), parseFloat(latitude)]
-    },
-    images: req.files ? req.files.map(file => `/uploads/${file.filename}`) : [],
-    like,
-    comment,
-    user: req.user.id  // Thêm ID của người dùng vào bài viết
-  });
-
   try {
-    const savedPost = await post.save();
-    
-    // Cập nhật mảng Post của người dùng
-    await User.findByIdAndUpdate(
-      req.user.id,
-      { $push: { Post: savedPost._id } },
-      { new: true }
-    );
+    const { title, latitude, longitude } = req.body;
 
+    if (!title || !latitude || !longitude) {
+      return res.status(400).json({ message: 'Vui lòng nhập đủ tiêu đề, vị trí!' });
+    }
+
+    const imageUrls = req.files ? req.files.map(file => file.path) : [];
+
+    const post = new Post({
+      title,
+      location: {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)]
+      },
+      images: imageUrls,
+      user: req.user.id
+    });
+
+    const savedPost = await post.save();
     res.status(201).json(savedPost);
   } catch (err) {
     res.status(500).json({ message: 'Lỗi khi lưu bài viết!', error: err.message });
   }
 });
-
 router.get('/user/:userId', auth, async (req, res) => {
   try {
     const userId = req.params.userId;
@@ -77,7 +61,7 @@ router.get('/my-posts', auth, async (req, res) => {
     
     const postsWithFullImageUrls = posts.map(post => ({
       ...post.toObject(),
-      images: post.images.map(image => `${req.protocol}://${req.get('host')}${image}`)
+      images: post.images.map(getCloudinaryUrl)
     }));
 
     res.status(200).json(postsWithFullImageUrls);
@@ -97,11 +81,11 @@ router.get('/post/:id', auth, async (req, res) => {
     // Tạo URL đầy đủ cho hình ảnh và avatar
     const postWithFullInfo = {
       ...post.toObject(),
-      images: post.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
+      images: post.images.map(getCloudinaryUrl),
       user: post.user ? {
         _id: post.user._id,
         username: post.user.username,
-        avatar: post.user.avatar ? `${req.protocol}://${req.get('host')}${post.user.avatar}` : null
+        avatar: post.user.avatar ? getCloudinaryUrl(post.user.avatar) : null
       } : null
     };
 
@@ -122,10 +106,10 @@ router.get('/all-posts', auth, async (req, res) => {
       const postObject = post.toObject();
       return {
         ...postObject,
-        images: postObject.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
+        images: postObject.images.map(getCloudinaryUrl),
         user: postObject.user ? {
           ...postObject.user,
-          avatar: postObject.user.avatar ? `${req.protocol}://${req.get('host')}${postObject.user.avatar}` : null
+          avatar: postObject.user.avatar ? getCloudinaryUrl(postObject.user.avatar) : null
         } : null
       };
     });
@@ -221,10 +205,10 @@ router.get('/feed', auth, async (req, res) => {
       const postObject = post.toObject();
       return {
         ...postObject,
-        images: postObject.images.map(image => `${req.protocol}://${req.get('host')}${image}`),
+        images: postObject.images.map(getCloudinaryUrl),
         user: postObject.user ? {
           ...postObject.user,
-          avatar: postObject.user.avatar ? `${req.protocol}://${req.get('host')}${postObject.user.avatar}` : null
+          avatar: postObject.user.avatar ? getCloudinaryUrl(postObject.user.avatar) : null
         } : null
       };
     });
@@ -324,5 +308,4 @@ router.get('/:postId/comments', async (req, res) => {
   }
 });
 
-module.exports = router;
 module.exports = router;

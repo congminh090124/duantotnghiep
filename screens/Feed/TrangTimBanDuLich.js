@@ -4,7 +4,7 @@ import Swiper from 'react-native-swiper';
 import { Heart, MessageCircle, Users, Search } from 'react-native-feather';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { getAllTravelPosts, API_ENDPOINTS } from '../../apiConfig';
-
+import BlogPage  from '../blog/Blog'
 const TopTab = createMaterialTopTabNavigator();
 const { width, height } = Dimensions.get('window');
 const ITEM_HEIGHT = height * 0.98;
@@ -230,7 +230,7 @@ const TrangTimBanDuLich = () => (
       }}
     >
       <TopTab.Screen name="Trang chủ" component={MainScreen} />
-      <TopTab.Screen name="Feed" component={AllTravelPosts} />
+      <TopTab.Screen name="Feed" component={BlogPage} />
     </TopTab.Navigator>
     <SearchButton />
   </SafeAreaView>
