@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,10 @@ import {
   TextInput,
   StyleSheet,
   FlatList,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Alert
+  Alert,
+  Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -22,92 +20,79 @@ import * as Location from 'expo-location';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 const PostCreationScreen = () => {
   const [title, setTitle] = useState('');
-
   const [image, setImages] = useState([]);
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [location, setLocation] = useState(null);
-  const [locationError, setLocationError] = useState(null);
-  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
-
+  const [locationDisplay, setLocationDisplay] = useState('');
+  
   const navigation = useNavigation();
 
-  const getLocation = async () => {
-    setIsLoadingLocation(true);
-    setLocationError(null);
-  
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationError('Permission to access location was denied');
-        return;
-      }
-  
-      const isLocationServicesEnabled = await Location.hasServicesEnabledAsync();
-      if (!isLocationServicesEnabled) {
-        setLocationError('Location services are disabled');
-        return;
-      }
-  
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-        timeout: 15000,
-      });
-  
-      setLocation(location.coords);
-    } catch (error) {
-      console.error('Error getting location:', error);
-      setLocationError('Error getting location. Please try again.');
-    } finally {
-      setIsLoadingLocation(false);
-    }
-  };
-  
   useEffect(() => {
-    const fetchUserProfileAndLocation = async () => {
+    const fetchUserProfile = async () => {
       try {
-        const [profileData] = await Promise.all([
-          getUserProfile(),
-          getLocation(),
-        ]);
-        setProfileData(profileData);
+        const data = await getUserProfile();
+        console.log('User profile data:', data);
+        setProfileData(data);
       } catch (error) {
-        console.error('Error fetching user profile or location:', error);
+        console.error('Error fetching user profile:', error);
       } finally {
         setLoading(false);
       }
     };
-  
-    fetchUserProfileAndLocation();
+
+    fetchUserProfile();
+    getCurrentLocation();
   }, []);
+
+  const getCurrentLocation = useCallback(async () => {
+    let { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission denied', 'Permission to access location was denied');
+      return;
+    }
   
-  
-  const avatarUri = useMemo(() => {
-    return profileData?.anh_dai_dien
-      ? `${API_BASE_URL}${profileData.anh_dai_dien}`
-      : null;
-  }, [profileData?.anh_dai_dien]);
-  const optimizeImage = async (uri) => {
+    try {
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(`${location.coords.latitude},${location.coords.longitude}`);
+      
+      let address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      });
+      
+      if (address[0]) {
+        setLocationDisplay(`${address[0].city}, ${address[0].country}`);
+      } else {
+        setLocationDisplay(`${location.coords.latitude.toFixed(2)}, ${location.coords.longitude.toFixed(2)}`);
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+      Alert.alert('Error', 'Unable to get current location');
+    }
+  }, []);
+
+  const avatarUri = useMemo(() => profileData?.anh_dai_dien || null, [profileData?.anh_dai_dien]);
+
+  const optimizeImage = useCallback(async (uri) => {
     try {
       const manipulatedImage = await manipulateAsync(
         uri,
-        [{ resize: { width: 1080 } }], // Resize to 1080px width
-        { compress: 0.7, format: SaveFormat.JPEG } // Compress to 70% quality
+        [{ resize: { width: 1080 } }],
+        { compress: 0.7, format: SaveFormat.JPEG }
       );
       return manipulatedImage.uri;
     } catch (error) {
       console.error('Error optimizing image:', error);
-      return uri; // Return original URI if optimization fails
+      return uri;
     }
-  };
+  }, []);
 
-
-  const handleAddImages = async () => {
+  const handleAddImages = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.image,
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       aspect: [4, 3],
       quality: 1,
@@ -115,23 +100,24 @@ const PostCreationScreen = () => {
   
     if (!result.canceled && result.assets) {
       const optimizedImages = await Promise.all(
-        result.assets.map(async (asset) => await optimizeImage(asset.uri))
+        result.assets.map(asset => optimizeImage(asset.uri))
       );
-      setImages([...image, ...optimizedImages]);
+      setImages(prevImages => [...prevImages, ...optimizedImages]);
     }
-  };
-  const handleRemoveImage = (index) => {
-    setImages(image.filter((_, i) => i !== index));
-  };
+  }, [optimizeImage]);
 
-  const handlePost = async () => {
+  const handleRemoveImage = useCallback((index) => {
+    setImages(prevImages => prevImages.filter((_, i) => i !== index));
+  }, []);
+
+  const handlePost = useCallback(async () => {
     if (!title.trim()) {
       Alert.alert('Lỗi', 'Vui lòng nhập tiêu đề bài viết.');
       return;
     }
   
     if (!location) {
-      Alert.alert('Lỗi', 'Không thể lấy vị trí. Vui lòng thử lại.');
+      Alert.alert('Lỗi', 'Không thể lấy vị trí hiện tại. Vui lòng thử lại.');
       return;
     }
   
@@ -147,13 +133,14 @@ const PostCreationScreen = () => {
         })
       );
   
+      const [latitude, longitude] = location.split(',').map(coord => parseFloat(coord.trim()));
+  
       const postData = {
         title: title.trim(),
         location: {
-          type: "Point",
-          coordinates: [location.longitude, location.latitude]
+          coordinates: [longitude, latitude] // Note: GeoJSON format uses [longitude, latitude]
         },
-        image: optimizedImages,
+        image: optimizedImages
       };
   
       console.log('Sending post data:', postData);
@@ -166,80 +153,73 @@ const PostCreationScreen = () => {
       console.error('Error creating post:', error);
       Alert.alert('Lỗi', `Không thể tạo bài viết: ${error.message}`);
     }
-  };
-  const renderImageItem = ({ item, index }) => (
+  }, [title, location, image, optimizeImage, navigation]);
+
+  const renderImageItem = useCallback(({ item, index }) => (
     <View style={styles.imageItem}>
       <Image source={{ uri: item }} style={styles.postImage} />
       <TouchableOpacity style={styles.removeImageButton} onPress={() => handleRemoveImage(index)}>
         <Ionicons name="close-circle" size={24} color="white" />
       </TouchableOpacity>
     </View>
-  );
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
-    );
-  }
+  ), [handleRemoveImage]);
 
   return (
     <SafeAreaView style={styles.container}>
-    
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.inner}>
-            <View style={styles.header}>
-              <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-                <Text style={styles.closeButtonText}>×</Text>
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Tạo bài viết</Text>
-              <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-                <Text style={styles.postButtonText}>Đăng</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.userInfo}>
-              {avatarUri ? (
-                <Image
-                  source={{ uri: avatarUri }}
-                  style={styles.profilePic}
-                />
-              ) : (
-                <View style={[styles.profilePic, styles.placeholderImage]}>
-                  <Text style={styles.placeholderText}>
-                    {profileData?.username ? profileData.username[0].toUpperCase() : '?'}
-                  </Text>
-                </View>
-              )}
-              <Text style={styles.userName}>{profileData?.username || 'User'}</Text>
-            </View>
-
-            <TextInput
-              style={styles.titleInput}
-              placeholder="Tiêu đề bài viết"
-              value={title}
-              onChangeText={setTitle}
-            />
-
-
-
-            <FlatList
-              data={image}
-              renderItem={renderImageItem}
-              keyExtractor={(item, index) => index.toString()}
-              numColumns={3}
-              style={styles.imageList}
-              ListFooterComponent={
-                <TouchableOpacity style={styles.addImageButton} onPress={handleAddImages}>
-                  <Ionicons name="image-outline" size={24} color="#1877f2" />
-                  <Text style={styles.addImageText}>Thêm hình ảnh</Text>
-                </TouchableOpacity>
-              }
-            />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={styles.inner}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+              <Text style={styles.closeButtonText}>×</Text>
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Tạo bài viết</Text>
+            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
+              <Text style={styles.postButtonText}>Đăng</Text>
+            </TouchableOpacity>
           </View>
-        </TouchableWithoutFeedback>
-     
+
+          <View style={styles.userInfo}>
+            {avatarUri ? (
+              <Image source={{ uri: avatarUri }} style={styles.profilePic} />
+            ) : (
+              <View style={[styles.profilePic, styles.placeholderImage]}>
+                <Text style={styles.placeholderText}>
+                  {profileData?.username ? profileData.username[0].toUpperCase() : '?'}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.userName}>{profileData?.username || 'User'}</Text>
+          </View>
+
+          {locationDisplay && (
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={16} color="#1877f2" />
+              <Text style={styles.locationText}>{locationDisplay}</Text>
+            </View>
+          )}
+
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Tiêu đề bài viết"
+            value={title}
+            onChangeText={setTitle}
+          />
+
+          <FlatList
+            data={image}
+            renderItem={renderImageItem}
+            keyExtractor={(item, index) => index.toString()}
+            numColumns={3}
+            style={styles.imageList}
+            ListFooterComponent={
+              <TouchableOpacity style={styles.addImageButton} onPress={handleAddImages}>
+                <Ionicons name="image-outline" size={24} color="#1877f2" />
+                <Text style={styles.addImageText}>Thêm hình ảnh</Text>
+              </TouchableOpacity>
+            }
+          />
+        </View>
+      </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 };
@@ -312,16 +292,6 @@ const styles = StyleSheet.create({
   userName: {
     fontWeight: 'bold',
   },
-  postInput: {
-    minHeight: 100,
-    padding: 10,
-    fontSize: 16,
-    textAlignVertical: 'top',
-    borderColor: '#e0e0e0',
-    borderWidth: 1,
-    borderRadius: 5,
-    margin: 10,
-  },
   imageList: {
     flex: 1,
   },
@@ -353,11 +323,17 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 16,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
+  locationContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingBottom: 5,
+  },
+  locationText: {
+    marginLeft: 5,
+    color: '#1877f2',
+    fontSize: 14,
   },
 });
 
-export default PostCreationScreen;
+export default React.memo(PostCreationScreen);

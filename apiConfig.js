@@ -338,15 +338,15 @@ export const getUserProfileTravel = async () => {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`, // Thay đổi ở đây
     };
-    console.log('Request headers:', headers);
+    // console.log('Request headers:', headers);
 
     const response = await fetch(API_ENDPOINTS.showProfile, {
       method: 'GET',
       headers: headers,
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers.map);
+    // console.log('Response status:', response.status);
+    // console.log('Response headers:', response.headers.map);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -355,7 +355,7 @@ export const getUserProfileTravel = async () => {
     }
 
     const data = await response.json();
-    console.log('User profile data:', data);
+    
     return data;
   } catch (error) {
     console.error('Lỗi khi lấy thông tin cá nhân:', error);
@@ -365,7 +365,7 @@ export const getUserProfileTravel = async () => {
 export const getUserProfile = async () => {
   try {
     const token = await getToken();
-    console.log('Token for getUserProfile:', token);
+    console.log('Token for getUserProfile:', token); 
 
     if (!token) {
       throw new Error('No token found');
@@ -378,12 +378,13 @@ export const getUserProfile = async () => {
     console.log('Request headers:', headers);
 
     const response = await fetch(API_ENDPOINTS.showProfile, {
+      
       method: 'GET',
       headers: headers,
     });
 
-    console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers.map);
+    // console.log('Response status:', response.status);
+    // console.log('Response headers:', response.headers.map);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -392,7 +393,7 @@ export const getUserProfile = async () => {
     }
 
     const data = await response.json();
-    console.log('User profile data:', data);
+    // console.log('User profile data:', data);
     return data;
   } catch (error) {
     console.error('Lỗi khi lấy thông tin cá nhân:', error);

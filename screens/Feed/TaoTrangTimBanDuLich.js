@@ -45,6 +45,7 @@ const TaoTrangTimBanDuLich = () => {
     const fetchUserProfile = async () => {
       try {
         const data = await getUserProfile();
+        console.log('User profile data:', data);
         setProfileData(data);
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -91,9 +92,11 @@ const TaoTrangTimBanDuLich = () => {
   };
 
   const avatarUri = useMemo(() => {
-    return profileData?.anh_dai_dien
-      ? `${API_ENDPOINTS.socketURL}${profileData.anh_dai_dien}`
-      : null;
+    if (profileData?.anh_dai_dien) {
+      // Sử dụng trực tiếp URL từ Cloudinary
+      return profileData.anh_dai_dien;
+    }
+    return null;
   }, [profileData?.anh_dai_dien]);
 
   const optimizeImage = async (uri) => {
