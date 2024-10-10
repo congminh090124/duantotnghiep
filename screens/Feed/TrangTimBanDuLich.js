@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, RefreshControl } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { Heart, MessageCircle, Users, Search } from 'react-native-feather';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
@@ -46,19 +46,22 @@ const UserImages = React.memo(({ post }) => {
 
   return (
     <View style={styles.imageContainer}>
-      <Swiper loop={false} style={styles.wrapper} containerStyle={styles.swiperContainer}>
+      <Swiper
+        loop={false}
+        style={styles.wrapper}
+        containerStyle={styles.swiperContainer}
+        loadMinimal={true}
+        loadMinimalSize={1}
+      >
         {post.images && post.images.length > 0 ? (
           post.images.map((image, index) => (
             <View key={index} style={styles.slide}>
               <Image
                 source={{ uri: image }}
                 style={styles.image}
-                resizeMode="cover"
+                resizeMode="contain"
                 onError={(e) => console.error('Image load error:', e.nativeEvent.error)}
               />
-              <View style={styles.overlay}>
-                <UserInfo post={post} />
-              </View>
             </View>
           ))
         ) : (
@@ -67,6 +70,9 @@ const UserImages = React.memo(({ post }) => {
           </View>
         )}
       </Swiper>
+      <View style={styles.overlay}>
+        <UserInfo post={post} />
+      </View>
       <View style={styles.actionButtonsContainer}>
         <ActionButtons
           isLiked={isLiked}
@@ -75,7 +81,7 @@ const UserImages = React.memo(({ post }) => {
           onTravelTogether={handleTravelTogether}
         />
       </View>
-</View>
+    </View>
   );
 });
 
@@ -157,24 +163,31 @@ const ActionButtons = React.memo(({ isLiked, onLike, onMessage, onTravelTogether
 const MainScreen = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef(null);
-const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       const fetchedPosts = await getAllTravelPosts();
-      console.log('Fetched travel posts:', fetchedPosts);
+      // console.log('Fetched travel posts:', fetchedPosts);
       setPosts(fetchedPosts);
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchPosts();
+  }, [fetchPosts]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems.length > 0) {
@@ -213,6 +226,18 @@ const [currentIndex, setCurrentIndex] = useState(0);
           offset: height * index,
           index,
         })}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="white"
+          />
+        }
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={3}
+        updateCellsBatchingPeriod={100}
+        windowSize={5}
+        initialNumToRender={2}
       />
     </View>
   );
@@ -274,7 +299,7 @@ const TrangTimBanDuLich = () => (
       screenOptions={{
         tabBarStyle: styles.topNav,
         tabBarIndicatorStyle: styles.tabBarIndicator,
-tabBarLabelStyle: styles.tabBarLabel,
+        tabBarLabelStyle: styles.tabBarLabel,
         swipeEnabled: false,
       }}
     >
@@ -284,7 +309,6 @@ tabBarLabelStyle: styles.tabBarLabel,
     <SearchButton />
   </SafeAreaView>
 );
-
 
 const styles = StyleSheet.create({
   container: {
@@ -308,10 +332,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#000', // Add a background color
   },
   image: {
     width: '100%',
     height: '100%',
+    borderRadius: 10,
   },
   noImageText: {
     color: '#fff',
@@ -416,28 +442,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
   },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#000',
-  },
-  errorText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  retryButton: {
-    backgroundColor: '#333',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-  },
-  retryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-  },
 });
+
 
 export default TrangTimBanDuLich;
