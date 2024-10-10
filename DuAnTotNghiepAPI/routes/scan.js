@@ -102,7 +102,7 @@ router.post('/update-cccd', auth, async (req, res) => {
 
         // Update CCCD information
         user.cccd = cccd;
-        user.name = name;
+        user.name = name;ư
         user.dob = dob;
         user.sex = sex;
         user.nationality = nationality;

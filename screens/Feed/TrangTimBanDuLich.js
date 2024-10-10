@@ -6,6 +6,7 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 import { getAllTravelPosts, API_ENDPOINTS } from '../../apiConfig';
 import Blog from '../blog/Blog';
 import * as Location from 'expo-location';
+import { useNavigation } from '@react-navigation/native';
 
 const TopTab = createMaterialTopTabNavigator();
 const { width, height } = Dimensions.get('window');
@@ -13,9 +14,16 @@ const { width, height } = Dimensions.get('window');
 const UserImages = React.memo(({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false);
+  const navigation = useNavigation();
 
   const handleLike = useCallback(() => setIsLiked(prev => !prev), []);
-  const handleMessage = useCallback(() => console.log('Gửi tin nhắn cho', post.author.username), [post.author.username]);
+  const handleMessage = useCallback(() => {
+    navigation.navigate('ChatScreen', {
+      receiverId: post.author._id,
+      receiverName: post.author.username,
+      receiverAvatar: post.author.avatar
+    });
+  }, [navigation, post.author]);
   const handleTravelTogether = useCallback(() => console.log('Muốn đi du lịch cùng', post.author.username), [post.author.username]);
 
   useEffect(() => {
@@ -67,7 +75,7 @@ const UserImages = React.memo(({ post }) => {
           onTravelTogether={handleTravelTogether}
         />
       </View>
-    </View>
+</View>
   );
 });
 
@@ -150,7 +158,7 @@ const MainScreen = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const flatListRef = useRef(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
+const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     fetchPosts();
@@ -266,7 +274,7 @@ const TrangTimBanDuLich = () => (
       screenOptions={{
         tabBarStyle: styles.topNav,
         tabBarIndicatorStyle: styles.tabBarIndicator,
-        tabBarLabelStyle: styles.tabBarLabel,
+tabBarLabelStyle: styles.tabBarLabel,
         swipeEnabled: false,
       }}
     >
@@ -276,6 +284,7 @@ const TrangTimBanDuLich = () => (
     <SearchButton />
   </SafeAreaView>
 );
+
 
 const styles = StyleSheet.create({
   container: {
@@ -407,7 +416,28 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
   },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000',
+  },
+  errorText: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#333',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+  },
 });
-
 
 export default TrangTimBanDuLich;

@@ -74,7 +74,7 @@ router.get('/', async (req, res) => {
       ...post._doc,
       author: {
         ...post.author._doc,
-        age: post.author.dob ? calculateAge(post.author.dob) : null
+        age: post.author.dob && typeof post.author.dob.getTime === 'function' ? calculateAge(post.author.dob) : null
       }
     }));
 
