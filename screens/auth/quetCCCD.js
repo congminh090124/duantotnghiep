@@ -1,10 +1,9 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { CameraView, Camera } from 'expo-camera';
 import { scanCCCD } from '../service/api';
 import { useNavigation } from '@react-navigation/native';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const VerifyIDScreen = () => {
     const navigation = useNavigation();
@@ -14,6 +13,7 @@ const VerifyIDScreen = () => {
     const [hasCameraPermission, setHasCameraPermission] = useState(null);
     const [frontData, setFrontData] = useState(null);
     const cameraRef = useRef(null);
+
     useEffect(() => {
         (async () => {
             const { status } = await Camera.requestCameraPermissionsAsync();
@@ -51,7 +51,6 @@ const VerifyIDScreen = () => {
                     setImage(null);
                     Alert.alert('Thành công', 'Đã quét xong mặt trước. Vui lòng quét mặt sau.');
                 } else {
-                    // Chỉ sử dụng dữ liệu mặt trước
                     if (frontData) {
                         console.log('Dữ liệu mặt trước trước khi chuyển màn hình:', frontData);
                         navigation.navigate('ConfirmCCCDScreen', { cccdData: frontData });
@@ -62,19 +61,20 @@ const VerifyIDScreen = () => {
             } catch (error) {
                 console.error('Lỗi khi quét CCCD:', error);
                 Alert.alert('Lỗi', 'Không thể quét CCCD. Vui lòng thử lại.');
+                setImage(null);  // Reset image to allow retaking
             }
         }
     };
 
     if (hasCameraPermission === null) {
-        return <View style={styles.container}><ActivityIndicator size="large" /></View>;
+        return <SafeAreaView style={styles.container}><ActivityIndicator size="large" /></SafeAreaView>;
     }
     if (hasCameraPermission === false) {
-        return <Text>No access to camera</Text>;
+        return <SafeAreaView style={styles.container}><Text>No access to camera</Text></SafeAreaView>;
     }
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <Text style={styles.header}>Xác minh ID</Text>
             <Text style={styles.subHeader}>
                 Vui lòng chụp một bức ảnh rõ ràng của {isFront ? 'mặt trước' : 'mặt sau'} của thẻ ID của bạn.
@@ -119,15 +119,10 @@ const VerifyIDScreen = () => {
                     <Text style={styles.buttonText}>Gửi ảnh {isFront ? 'mặt trước' : 'mặt sau'}</Text>
                 </TouchableOpacity>
             )}
-
-            {!image && (
-                <TouchableOpacity style={styles.nextButton} onPress={() => setIsFront(prev => !prev)}>
-                    <Text style={styles.buttonText}>Chuyển sang {isFront ? 'mặt sau' : 'mặt trước'}</Text>
-                </TouchableOpacity>
-            )}
-        </View>
+        </SafeAreaView>
     );
 };
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,

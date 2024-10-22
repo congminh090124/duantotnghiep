@@ -56,7 +56,9 @@ const MyProfile = () => {
 
   const handleEditProfile = useCallback(() => {
     navigation.navigate('UpdateProfile', {
-      profileData,
+      profileData
+    });
+    navigation.setOptions({
       onProfileUpdate: fetchData
     });
   }, [navigation, profileData, fetchData]);
@@ -171,6 +173,8 @@ const MyProfile = () => {
     return <Text style={styles.errorText}>No profile data available</Text>;
   }
 
+  
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -179,10 +183,13 @@ const MyProfile = () => {
         }
       >
         <View style={styles.header}>
-         
-          <Text style={styles.username}>{profileData.username}</Text>
+          <View style={styles.usernameContainer}>
+            <Text style={styles.username}>{profileData.username}</Text>
+            {profileData.xacMinhDanhTinh && (
+              <Ionicons name="checkmark-circle" size={20} color="#1DA1F2" style={styles.verifiedIcon} />
+            )}
+          </View>
           <View style={styles.headerIcons}>
-          
             <TouchableOpacity style={styles.iconButton} onPress={handleMenuPress}>
               <Ionicons name="menu-outline" size={24} color="black" />
             </TouchableOpacity>
@@ -366,9 +373,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, // Thêm padding ngang cho header
    
   },
+  usernameContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   username: {
     fontSize: 18,
     fontWeight: 'bold',
+    marginRight: 5, // Add some space between the username and the checkmark
+  },
+  verifiedIcon: {
+    marginLeft: 5, // Add some space between the username and the checkmark
   },
   headerIcons: {
     flexDirection: 'row',

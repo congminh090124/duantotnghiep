@@ -20,7 +20,7 @@ const Settings = () => {
   };
 
   const handleManagePosts = () => {
-    navigation.navigate('ManagePosts');
+    navigation.navigate('PostManager');
   };
 
   return (

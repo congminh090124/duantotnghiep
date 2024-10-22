@@ -26,6 +26,52 @@ export const API_ENDPOINTS = {
   following: `${API_BASE_URL}/api/users/following`,
   forgotPassword: `${API_BASE_URL}/api/users/forgot-password`,
   resetPassword: `${API_BASE_URL}/api/users/reset-password`,
+  editPost: `${API_BASE_URL}/api/posts/edit-post/:postId`, // New endpoint for editing a post
+  deletePost: `${API_BASE_URL}/api/posts/delete-post/:postId`, // New endpoint for deleting a post
+};
+export const editPost = async (postId, { title, images, newImages }) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const formData = new FormData();
+    formData.append('title', title);
+    
+    // Append existing images
+    images.forEach((imageUrl, index) => {
+      formData.append('existingImages', imageUrl);
+    });
+
+    // Append new images
+    newImages.forEach((image, index) => {
+      formData.append('newImages', {
+        uri: image.uri,
+        type: 'image/jpeg',
+        name: `new_image_${index}.jpg`,
+      });
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/posts/edit-post/${postId}`, {
+      method: 'PUT',
+      body: formData,
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error editing post');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in editPost:', error);
+    throw error;
+  }
 };
 
 // Hàm helper để xử lý response
@@ -276,7 +322,7 @@ export const getToken = async () => {
 // Hàm đăng nhập
 export const login = async (credentials) => {
   try {
-    console.log('Sending login request to:', API_ENDPOINTS.login);
+   
     const response = await fetch(API_ENDPOINTS.login, {
       method: 'POST',
       headers: {
@@ -286,7 +332,7 @@ export const login = async (credentials) => {
     });
     
     const data = await response.json();
-    console.log('Login API response:', data);
+   
     
     if (!response.ok) {
       throw new Error(data.message || 'Đăng nhập không thành công');
@@ -313,7 +359,7 @@ export const register = async (userData) => {
     const data = await response.json();
     
     if (!response.ok) {
-      throw new Error(data.message || 'Đăng ký không thành công');
+      throw new Error(data.message || 'Đng ký không thành công');
     }
     
     if (data.token) {
@@ -328,7 +374,7 @@ export const register = async (userData) => {
 export const getUserProfileTravel = async () => {
   try {
     const token = await getToken();
-    console.log('Token for getUserProfile:', token);
+    
 
     if (!token) {
       throw new Error('No token found');
@@ -365,7 +411,6 @@ export const getUserProfileTravel = async () => {
 export const getUserProfile = async () => {
   try {
     const token = await getToken();
-    console.log('Token for getUserProfile:', token); 
 
     if (!token) {
       throw new Error('No token found');
@@ -373,18 +418,13 @@ export const getUserProfile = async () => {
 
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`, // Thay đổi ở đây
+      'Authorization': `Bearer ${token}`,
     };
-    console.log('Request headers:', headers);
 
     const response = await fetch(API_ENDPOINTS.showProfile, {
-      
       method: 'GET',
       headers: headers,
     });
-
-    // console.log('Response status:', response.status);
-    // console.log('Response headers:', response.headers.map);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -393,8 +433,11 @@ export const getUserProfile = async () => {
     }
 
     const data = await response.json();
-    // console.log('User profile data:', data);
-    return data;
+    // API trả về xac_minh_danh_tinh, chúng ta sẽ đổi tên thành xacMinhDanhTinh để thống nhất
+    return {
+      ...data,
+      xacMinhDanhTinh: data.xac_minh_danh_tinh
+    };
   } catch (error) {
     console.error('Lỗi khi lấy thông tin cá nhân:', error);
     throw error;
@@ -528,7 +571,7 @@ export const toggleLikePost = async (postId) => {
     }
     
     const data = await response.json();
-    console.log('Toggle like response:', data);
+  
     return data;
   } catch (error) {
     console.error('Error toggling like:', error);
@@ -592,7 +635,7 @@ export const getUserProfileById = async (userId) => {
     });
 
     const responseText = await response.text();
-    console.log('Raw response:', responseText); // Log the raw response
+  
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
@@ -743,3 +786,4 @@ export const getFollowing = async () => {
   }
 };
 export default API_ENDPOINTS;
+

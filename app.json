@@ -14,8 +14,13 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.anonymous.APP"
+      ,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Chúng tôi cần quyền truy cập vị trí của bạn để tìm kiếm địa điểm."
+      }
 
-    },
+    }
+    ,
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Image, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Image, SafeAreaView, StatusBar, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
 import { format } from 'date-fns';
@@ -7,6 +7,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { API_ENDPOINTS, getToken } from '../../apiConfig';
 
 const socket = io(API_ENDPOINTS.socketURL);
+const windowWidth = Dimensions.get('window').width;
+const imageSize = (windowWidth - 45) / 2;
 
 export default function ChatScreen({ route, navigation }) {
   const { receiverId, receiverName, receiverAvatar } = route.params;
@@ -170,6 +172,15 @@ export default function ChatScreen({ route, navigation }) {
     </View>
   );
 
+  const handleOpenUserProfile = useCallback(() => {
+    if (!receiverId) {
+      Alert.alert('Lỗi', 'Không thể mở trang cá nhân người dùng.');
+      return;
+    }
+
+    navigation.navigate('UserProfile', { userId: receiverId });
+  }, [receiverId, navigation]);
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -182,25 +193,42 @@ export default function ChatScreen({ route, navigation }) {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Image
-            source={{ uri: receiverAvatar ? `${API_ENDPOINTS.socketURL}${receiverAvatar}` : 'https://via.placeholder.com/50' }}
-            style={styles.headerAvatar}
-          />
+        <TouchableOpacity 
+          style={styles.headerInfo} 
+          onPress={handleOpenUserProfile}
+          disabled={!receiverId}
+        >
+          <View style={styles.avatarContainer}>
+            {receiverAvatar ? (
+              <Image
+                source={{ uri: `${API_ENDPOINTS.socketURL}${receiverAvatar}` }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <View style={[styles.profileImage, styles.placeholderImage]}>
+                <Text style={styles.placeholderText}>No Image</Text>
+              </View>
+            )}
+          </View>
           <View>
-            <Text style={styles.headerName}>{receiverName}</Text>
+            <Text style={styles.headerName}>{receiverName || 'Người dùng không xác định'}</Text>
             <Text style={styles.headerStatus}>Online</Text>
           </View>
+        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.headerButton}>
+            <Icon name="call-outline" size={24} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <Icon name="videocam-outline" size={24} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerButton}>
+            <Icon name="ellipsis-vertical" size={24} color="#000" />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity>
-          <Icon name="call-outline" size={24} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <Icon name="videocam-outline" size={24} color="#000" />
-        </TouchableOpacity>
       </View>
       <FlatList
         ref={flatListRef}
@@ -225,9 +253,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#EFEFEF',
+  },
+  headerButton: {
+    padding: 5,
   },
   headerInfo: {
     flex: 1,
@@ -235,19 +267,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: 10,
   },
-  headerAvatar: {
+  avatarContainer: {
+    marginRight: 10,
+  },
+  profileImage: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    marginRight: 10,
+  },
+  placeholderImage: {
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    color: '#fff',
+    fontSize: 12,
   },
   headerName: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#000',
   },
   headerStatus: {
-    fontSize: 14,
-    color: '#4CD964',
+    fontSize: 12,
+    color: '#666',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   messageList: {
     paddingVertical: 10,

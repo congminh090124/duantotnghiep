@@ -31,6 +31,11 @@ import ChatScreen from './screens/chat/ChatScreen';
 
 import Settings from './screens/menuProfile/setting';
 import ChangePassword from './screens/menuProfile/ChangePassword';
+import PostManager from './screens/menuProfile/Post-manager';
+import Map from './screens/menuProfile/map';
+import EditPost from './screens/menuProfile/EditPost';
+
+
 
 import DangKiTinhNguyenVienScreen from './screens/DangKiTinhNguyenVienScreen';
 import DKTinhNguyenVien from './screens/DKTinhNguyenVien';
@@ -73,6 +78,10 @@ const App = () => {
         {/* Settings Screens */}
         <Stack.Screen name="Settings" component={Settings} options={{ headerShown: false }} />
         <Stack.Screen name="ChangePassword" component={ChangePassword} options={{ headerShown: false }} />
+        <Stack.Screen name="PostManager" component={PostManager} options={{ headerShown: false }} />
+        <Stack.Screen name="Map" component={Map} options={{ headerShown: false }} />
+        <Stack.Screen name="EditPost" component={EditPost} options={{ headerShown: false }} />
+        
 
         {/* Other Screens */}
         <Stack.Screen name="DangKiTinhNguyenVienScreen" component={DangKiTinhNguyenVienScreen} options={{ headerShown: false }} />

@@ -43,7 +43,7 @@ const BlogPage = () => {
     }
   }, [currentUserId]);
   useEffect(() => {
-    console.log('Images:', posts.map(post => post.images));
+   
   }, [posts]);
 
 

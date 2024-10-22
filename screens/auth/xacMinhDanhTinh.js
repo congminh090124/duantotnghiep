@@ -6,7 +6,6 @@ const XacMinhDanhTinh = () => {
   const navigation = useNavigation();
 
   const handleVerify = () => {
-    
     navigation.navigate('VerifyIDScreen');
   };
 
@@ -21,7 +20,7 @@ const XacMinhDanhTinh = () => {
         },
         {
           text: 'Đồng ý',
-          onPress: () => navigation.navigate('DangNhap'),
+          onPress: () => navigation.goBack(),
         },
       ]
     );

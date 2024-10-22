@@ -1,9 +1,55 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser } from '../../apiConfig';
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+
+const windowWidth = Dimensions.get('window').width;
+const imageSize = (windowWidth - 45) / 2;
+
+const PersonalInfo = ({ userProfile }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const toggleExpand = () => {
+    setExpanded(!expanded);
+  };
+
+  const infoItems = [
+    { icon: 'mail-outline', value: userProfile.email },
+    { icon: 'person-outline', value: userProfile.sex },
+    { icon: 'call-outline', value: userProfile.sdt },
+    { icon: 'heart-outline', value: userProfile.tinhtranghonnhan },
+    { icon: 'calendar-outline', value: userProfile.ngaysinh },
+    { icon: 'location-outline', value: userProfile.diachi },
+    { icon: 'globe-outline', value: userProfile.website },
+  ].filter(item => item.value); // Chỉ giữ lại các mục có giá trị
+
+  const displayItems = expanded ? infoItems : infoItems.slice(0, 3);
+
+  return (
+    <View style={styles.personalInfoContainer}>
+      <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
+      {displayItems.map((item, index) => (
+        <View key={index} style={styles.infoItem}>
+          <Ionicons name={item.icon} size={20} color="black" />
+          <Text style={styles.infoText}>{item.value || 'Chưa cập nhật'}</Text>
+        </View>
+      ))}
+      {infoItems.length > 3 && (
+        <TouchableOpacity onPress={toggleExpand} style={styles.expandButton}>
+          <Text style={styles.expandButtonText}>
+            {expanded ? 'Thu gọn' : 'Xem thêm'}
+          </Text>
+          <Ionicons 
+            name={expanded ? 'chevron-up-outline' : 'chevron-down-outline'} 
+            size={20} 
+            color="#0095f6"
+          />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+};
 
 const UserProfile = ({ route }) => {
   const { userId } = route.params;
@@ -13,7 +59,6 @@ const UserProfile = ({ route }) => {
   const [error, setError] = useState(null);
   const navigation = useNavigation();
   const [isFollowing, setIsFollowing] = useState(false);
-
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -90,11 +135,11 @@ const UserProfile = ({ route }) => {
       }
     }
   };
-  const avatarUri = useMemo(() => {
-    return userProfile?.anh_dai_dien
-      ? `${API_BASE_URL}${userProfile.anh_dai_dien}`
-      : null;
-  }, [userProfile?.anh_dai_dien]);
+  const avatarUri = useMemo(() => userProfile?.anh_dai_dien || null, [userProfile?.anh_dai_dien]);
+
+  const handlePostPress = useCallback((post) => {
+    navigation.navigate('PostDetailScreen', { postId: post._id });
+  }, [navigation]);
 
   if (loading) {
     return (
@@ -120,13 +165,15 @@ const UserProfile = ({ route }) => {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="black" />
           </TouchableOpacity>
-          <Text style={styles.username}>{userProfile.username}</Text>
+          <View style={styles.usernameContainer}>
+            <Text style={styles.username}>{userProfile.username}</Text>
+            {userProfile.xacMinhDanhTinh && (
+              <Ionicons name="checkmark-circle" size={20} color="#1DA1F2" style={styles.verifiedIcon} />
+            )}
+          </View>
           <View style={styles.headerIcons}>
             <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="notifications-outline" size={24} color="black" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="more-vertical" size={24} color="black" />
+              <Ionicons name="ellipsis-vertical" size={24} color="black" />
             </TouchableOpacity>
           </View>
         </View>
@@ -159,7 +206,7 @@ const UserProfile = ({ route }) => {
           </View>
         </View>
 
-        <Text style={styles.bioText}>{userProfile.bio}</Text>
+        <Text style={styles.bioText}>{userProfile.bio || 'No bio available'}</Text>
 
         {/* Follow/Message Buttons */}
         <View style={styles.buttonContainer}>
@@ -176,16 +223,23 @@ const UserProfile = ({ route }) => {
           </TouchableOpacity>
         </View>
 
+        {/* Personal Information */}
+        <PersonalInfo userProfile={userProfile} />
+
         {/* Posts */}
         <View style={styles.postsContainer}>
           <Text style={styles.sectionTitle}>Bài viết</Text>
           {posts.length > 0 ? (
             <View style={styles.postGrid}>
               {posts.map((post) => (
-                <TouchableOpacity key={post._id} style={styles.postItem}>
+                <TouchableOpacity 
+                  key={post._id} 
+                  style={styles.postItem}
+                  onPress={() => handlePostPress(post)}
+                >
                   {post.images && post.images.length > 0 ? (
                     <Image
-                      source={{ uri: `${API_BASE_URL}${post.images[0]}` }}
+                      source={{ uri: post.images[0] }}
                       style={styles.postImage}
                     />
                   ) : (
@@ -193,6 +247,9 @@ const UserProfile = ({ route }) => {
                       <Text style={styles.placeholderText}>No Image</Text>
                     </View>
                   )}
+                  <View style={styles.postInfo}>
+                    <Text style={styles.postTitle} numberOfLines={1}>{post.title || 'Untitled'}</Text>
+                  </View>
                 </TouchableOpacity>
               ))}
             </View>
@@ -204,9 +261,6 @@ const UserProfile = ({ route }) => {
     </SafeAreaView>
   );
 };
-
-const windowWidth = Dimensions.get('window').width;
-const imageSize = (windowWidth - 40) / 3;
 
 const styles = StyleSheet.create({
   container: {
@@ -320,12 +374,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   sectionTitle: {
-    color: 'black',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
-    marginLeft: 10,
-    marginTop: 10,
   },
   postsContainer: {
     marginTop: 20,
@@ -337,14 +388,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   postItem: {
-    width: imageSize,
-    height: imageSize,
-    marginBottom: 5,
+    width: (windowWidth - 45) / 2,
+    marginBottom: 15,
+    borderRadius: 10,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: 'hidden',
   },
   postImage: {
     width: '100%',
-    height: '100%',
-    borderRadius: 5,
+    height: imageSize,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  postInfo: {
+    padding: 10,
+  },
+  postTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
   },
   noPostsText: {
     textAlign: 'center',
@@ -362,6 +429,43 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 20,
+  },
+  personalInfoContainer: {
+    marginTop: 20,
+    paddingHorizontal: 15,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  infoText: {
+    marginLeft: 10,
+    fontSize: 16,
+    flex: 1,
+  },
+  expandButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+  },
+  expandButtonText: {
+    color: '#0095f6',
+    fontSize: 16,
+    marginRight: 5,
+    fontWeight: 'bold',
   },
 });
 

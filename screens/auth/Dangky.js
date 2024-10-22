@@ -32,7 +32,7 @@ const SignUpScreen = () => {
                 await AsyncStorage.setItem('userData', JSON.stringify(response.user));
                 console.log('register successful, token saved');
                 Alert.alert('Thành công', 'Đăng ký thành công!');
-                navigation.navigate('IdentityVerification');
+                navigation.goBack();
               
             } else {
                 Alert.alert('Lỗi', 'Đăng ký không thành công. Vui lòng thử lại.');

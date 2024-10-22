@@ -59,7 +59,7 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
 
           if (response.ok) {
               Alert.alert('Success', 'Cập nhật thông tin CCCD thành công');
-              navigation.navigate('DangNhap'); // Hoặc màn hình phù hợp sau khi cập nhật
+              navigation.goBack(); 
           } else {
               Alert.alert('Error', data.message || 'Failed to update CCCD information');
           }

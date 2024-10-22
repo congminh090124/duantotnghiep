@@ -32,39 +32,7 @@ const LoginScreen = () => {
       
         await AsyncStorage.setItem('userID', response.user.id);
     
-  
-        if (response.user.xacMinhDanhTinh) {
-          console.log('Identity verified, navigating to TrangChu');
-          navigation.navigate('TrangChu');
-        } else {
-          
-          console.log('Identity not verified, showing alert');
-          Alert.alert(
-            'Xác minh danh tính',
-            'Bạn cần xác minh danh tính để tiếp tục sử dụng ứng dụng.',
-            [
-              {
-                text: 'Xác minh ngay',
-                onPress: () => {
-                  console.log('Navigating to IdentityVerification');
-                  navigation.navigate('VerifyIDScreen');
-                },
-              },
-              {
-                text: 'Từ chối',
-                onPress: () => {
-                  console.log('User refused identity verification, logging out');
-                  AsyncStorage.removeItem('userData');
-                  AsyncStorage.removeItem('token');
-                  setEmail('');
-                  setPassword('');
-                },
-                style: 'cancel',
-              },
-            ],
-            { cancelable: false }
-          );
-        }
+        navigation.navigate('TrangChu');
       } else {
         console.log('Login failed: No token or user data in response');
         Alert.alert('Lỗi', 'Đăng nhập không thành công. Vui lòng thử lại.');
