@@ -34,6 +34,7 @@ import ChangePassword from './screens/menuProfile/ChangePassword';
 import PostManager from './screens/menuProfile/Post-manager';
 import Map from './screens/menuProfile/map';
 import EditPost from './screens/menuProfile/EditPost';
+import EditTravelPost from './screens/menuProfile/EditTravelPost';
 
 
 
@@ -81,8 +82,8 @@ const App = () => {
         <Stack.Screen name="PostManager" component={PostManager} options={{ headerShown: false }} />
         <Stack.Screen name="Map" component={Map} options={{ headerShown: false }} />
         <Stack.Screen name="EditPost" component={EditPost} options={{ headerShown: false }} />
+        <Stack.Screen name="EditTravelPost" component={EditTravelPost} options={{ headerShown: false }} />
         
-
         {/* Other Screens */}
         <Stack.Screen name="DangKiTinhNguyenVienScreen" component={DangKiTinhNguyenVienScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />

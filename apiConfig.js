@@ -28,6 +28,7 @@ export const API_ENDPOINTS = {
   resetPassword: `${API_BASE_URL}/api/users/reset-password`,
   editPost: `${API_BASE_URL}/api/posts/edit-post/:postId`, // New endpoint for editing a post
   deletePost: `${API_BASE_URL}/api/posts/delete-post/:postId`, // New endpoint for deleting a post
+  editTravelPost: `${API_BASE_URL}/api/travel-posts/edit`, // Thêm endpoint này
 };
 export const editPost = async (postId, { title, images, newImages }) => {
   try {
@@ -70,6 +71,105 @@ export const editPost = async (postId, { title, images, newImages }) => {
     return await response.json();
   } catch (error) {
     console.error('Error in editPost:', error);
+    throw error;
+  }
+};
+export const deletePost = async (postId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/posts/delete-post/${postId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to delete travel post');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in deleteTravelPost:', error);
+    throw error;
+  }
+};
+export const editTravelPost = async (postId, postData) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const formData = new FormData();
+
+    formData.append('title', postData.title);
+    formData.append('startDate', postData.startDate.toISOString());
+    formData.append('endDate', postData.endDate.toISOString());
+    formData.append('destinationLat', postData.destinationLat.toString());
+    formData.append('destinationLng', postData.destinationLng.toString());
+    formData.append('destinationName', postData.destinationName);
+
+    // Append existing images
+    postData.images.forEach((image, index) => {
+      if (image.startsWith('http')) {
+        formData.append('existingImages', image);
+      } else {
+        formData.append('images', {
+          uri: image,
+          type: 'image/jpeg',
+          name: `image_${index}.jpg`
+        });
+      }
+    });
+
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts/edit/${postId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json',
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Không thể cập nhật bài viết');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error in editTravelPost:', error);
+    throw error;
+  }
+};
+// Delete Travel Post
+export const deleteTravelPost = async (postId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts/delete/${postId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to delete travel post');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in deleteTravelPost:', error);
     throw error;
   }
 };

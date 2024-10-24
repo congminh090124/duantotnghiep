@@ -1,29 +1,13 @@
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import TravelPostManager from './TravelPostManager';
 import BlogPostManager from './BlogPostManager';
 
 const PostManager = () => {
   const [activeTab, setActiveTab] = useState('travel');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const travelManagerRef = useRef(null);
-  const blogManagerRef = useRef(null);
 
-  const handleTabChange = useCallback(async (tab) => {
-    setIsRefreshing(true);
+  const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
-    try {
-      if (tab === 'travel') {
-        await travelManagerRef.current?.refreshPosts();
-      } else {
-        await blogManagerRef.current?.refreshPosts();
-      }
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-      // Hiển thị thông báo lỗi nếu cần
-    } finally {
-      setIsRefreshing(false);
-    }
   }, []);
 
   const renderTopNav = () => (
@@ -31,19 +15,17 @@ const PostManager = () => {
       <TouchableOpacity
         style={[styles.tabButton, activeTab === 'travel' && styles.activeTab]}
         onPress={() => handleTabChange('travel')}
-        disabled={isRefreshing}
       >
         <Text style={[styles.tabText, activeTab === 'travel' && styles.activeTabText]}>
-          {isRefreshing && activeTab === 'travel' ? 'Đang tải...' : 'Quản lý Travel'}
+          Quản lý Travel
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.tabButton, activeTab === 'blog' && styles.activeTab]}
         onPress={() => handleTabChange('blog')}
-        disabled={isRefreshing}
       >
         <Text style={[styles.tabText, activeTab === 'blog' && styles.activeTabText]}>
-          {isRefreshing && activeTab === 'blog' ? 'Đang tải...' : 'Quản lý Blog'}
+          Quản lý Blog
         </Text>
       </TouchableOpacity>
     </View>
@@ -51,9 +33,9 @@ const PostManager = () => {
 
   const renderContent = () => {
     if (activeTab === 'travel') {
-      return <TravelPostManager ref={travelManagerRef} />;
+      return <TravelPostManager />;
     } else {
-      return <BlogPostManager ref={blogManagerRef} />;
+      return <BlogPostManager />;
     }
   };
 

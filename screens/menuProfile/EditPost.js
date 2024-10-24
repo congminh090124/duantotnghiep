@@ -1,18 +1,19 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { 
   View, 
   Text, 
   TextInput, 
-  StyleSheet, 
-  Image, 
   TouchableOpacity, 
-  Alert, 
+  Image, 
+  ScrollView, 
+  StyleSheet, 
+  Alert,
   ActivityIndicator,
-  ScrollView,
-  SafeAreaView
+  SafeAreaView,
+  Platform
 } from 'react-native';
-import { editPost, getPostDetails } from '../../apiConfig';
 import * as ImagePicker from 'expo-image-picker';
+import { editPost } from '../../apiConfig';
 
 const EditPost = ({ route, navigation }) => {
   const { postId, initialData } = route.params;
@@ -23,7 +24,7 @@ const EditPost = ({ route, navigation }) => {
 
   const handleEditPost = async () => {
     if (!title.trim()) {
-      Alert.alert('Error', 'Title cannot be empty');
+      Alert.alert('Lỗi', 'Tiêu đề không được để trống');
       return;
     }
 
@@ -34,31 +35,30 @@ const EditPost = ({ route, navigation }) => {
         images,
         newImages
       });
+      Alert.alert('Thành công', 'Bài viết đã được cập nhật');
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to edit post. Please try again.');
+      Alert.alert('Lỗi', 'Không thể cập nhật bài viết. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
   };
   
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
+  const pickImages = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsMultipleSelection: true,
       aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      setNewImages(prevImages => [
-        ...prevImages,
-        { 
-          uri: result.assets[0].uri,
-          type: 'image/jpeg', 
-          name: `new_image_${prevImages.length + 1}.jpg` 
-        },
-      ]);
+      const newSelectedImages = result.assets.map((asset, index) => ({
+        uri: asset.uri,
+        type: 'image/jpeg',
+        name: `new_image_${newImages.length + index + 1}.jpg`
+      }));
+      setNewImages(prevImages => [...prevImages, ...newSelectedImages]);
     }
   };
   
@@ -70,48 +70,47 @@ const EditPost = ({ route, navigation }) => {
     }
   };
 
-  const renderImageItem = (imageUri, index, isNewImage) => (
-    <View key={`${isNewImage ? 'new-' : ''}${index}`} style={styles.imageWrapper}>
-      <Image source={{ uri: imageUri }} style={styles.image} />
-      <TouchableOpacity onPress={() => removeImage(index, isNewImage)} style={styles.removeButton}>
-        <Text style={styles.removeButtonText}>X</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
-        <Text style={styles.header}>Edit Post</Text>
-
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={styles.input}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Enter title"
-          />
-        </View>
-
-        <TouchableOpacity style={styles.button} onPress={pickImage}>
-          <Text style={styles.buttonText}>Select Images</Text>
-        </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
+        <TextInput
+          style={styles.input}
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Tiêu đề"
+        />
 
         <View style={styles.imageContainer}>
-          {images.map((imageUrl, index) => renderImageItem(imageUrl, index, false))}
-          {newImages.map((image, index) => renderImageItem(image.uri, index, true))}
+          {images.map((img, index) => (
+            <View key={index} style={styles.imageWrapper}>
+              <Image source={{ uri: img }} style={styles.image} />
+              <TouchableOpacity style={styles.removeButton} onPress={() => removeImage(index)}>
+                <Text style={styles.removeButtonText}>X</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          {newImages.map((img, index) => (
+            <View key={`new-${index}`} style={styles.imageWrapper}>
+              <Image source={{ uri: img.uri }} style={styles.image} />
+              <TouchableOpacity style={styles.removeButton} onPress={() => removeImage(index, true)}>
+                <Text style={styles.removeButtonText}>X</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+          <TouchableOpacity style={styles.addButton} onPress={pickImages}>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity 
-          style={[styles.button, styles.saveButton, isLoading && styles.disabledButton]} 
+          style={styles.updateButton} 
           onPress={handleEditPost}
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color="#ffffff" />
           ) : (
-            <Text style={styles.buttonText}>Save Changes</Text>
+            <Text style={styles.updateButtonText}>Cập nhật bài viết</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
@@ -120,85 +119,75 @@ const EditPost = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollViewContent: {
-    flexGrow: 1,
     padding: 20,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#333',
-  },
-  inputGroup: {
-    marginBottom: 15,
-  },
-  label: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 5,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#ddd',
     padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#fff',
-    fontSize: 16,
-  },
-  button: {
-    backgroundColor: '#3498db',
-    paddingVertical: 15,
-    borderRadius: 8,
     marginBottom: 20,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  saveButton: {
-    backgroundColor: '#2ecc71',
-  },
-  disabledButton: {
-    opacity: 0.7,
+    borderRadius: 5,
   },
   imageContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
     marginBottom: 20,
   },
   imageWrapper: {
-    position: 'relative',
-    marginRight: 10,
-    marginBottom: 10,
-  },
-  image: {
     width: 100,
     height: 100,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
+    margin: 5,
+    position: 'relative',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 5,
   },
   removeButton: {
     position: 'absolute',
     top: 5,
     right: 5,
-    backgroundColor: '#e74c3c',
-    borderRadius: 15,
-    padding: 5,
+    backgroundColor: 'rgba(255, 0, 0, 0.7)',
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   removeButtonText: {
-    color: '#fff',
+    color: 'white',
     fontWeight: 'bold',
-    fontSize: 12,
+  },
+  addButton: {
+    width: 100,
+    height: 100,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 5,
+    borderRadius: 5,
+  },
+  addButtonText: {
+    fontSize: 30,
+    color: '#888',
+  },
+  updateButton: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  updateButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
