@@ -4,7 +4,7 @@ import { Image, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getUserProfile } from '../apiConfig'; // Đảm bảo import này chính xác
 import AddOptionsModal from '../screens/modal/AddOptionsModal';
-import TrangTimBanDuLich from '../screens/Feed/TrangTimBanDuLich';
+import TrangTimBanDuLich from './TrangChu/TrangTimBanDuLich';
 import UserListScreen from '../screens/chat/UserListScreen';
 import ThongBao from '../screens/ThongBao';
 import MyProfile from '../screens/profile/MyProfile';

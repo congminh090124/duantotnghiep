@@ -4,6 +4,7 @@ import Swiper from 'react-native-swiper';
 import { Heart, MessageCircle, Users, Search } from 'react-native-feather';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { getAllTravelPosts, API_ENDPOINTS } from '../../apiConfig';
+import MapScreen from './MapScreen';
 import Blog from '../blog/Blog';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
@@ -160,6 +161,7 @@ const ActionButtons = React.memo(({ isLiked, onLike, onMessage, onTravelTogether
   </View>
 ));
 
+
 const MainScreen = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -305,8 +307,8 @@ const TrangTimBanDuLich = () => (
     >
       <TopTab.Screen name="Trang chủ" component={MainScreen} />
       <TopTab.Screen name="Feed" component={Blog} />
+      <TopTab.Screen name="Bản đồ" component={MapScreen} />
     </TopTab.Navigator>
-    <SearchButton />
   </SafeAreaView>
 );
 
