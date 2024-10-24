@@ -24,7 +24,8 @@ import Following from './screens/profile/Following';
 import UserProfile from './screens/profile/UserProfile';
 import ProfileMapScreen from './screens/profile/ProfileMapScreen';
 
-import TaoTrangTimBanDuLich from './screens/Feed/TaoTrangTimBanDuLich';
+import TaoTrangTimBanDuLich from './screens/TrangChu/TaoTrangTimBanDuLich';
+import MapScreen from './screens/TrangChu/MapScreen'
 
 import UserListScreen from './screens/chat/UserListScreen';
 import ChatScreen from './screens/chat/ChatScreen';
@@ -58,6 +59,7 @@ const App = () => {
         <Stack.Screen name="ConfirmCCCDScreen" component={ConfirmCCCDScreen} options={{ headerShown: false }} />
 
         {/* Main Screens */}
+        <Stack.Screen name="MapScreen" component={MapScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TrangChu" component={BottomTabs} options={{ headerShown: false }} />
         <Stack.Screen name="Blog" component={Blog} options={{ headerShown: false }} />
         <Stack.Screen name="CreatePost" component={CreatePost} options={{ headerShown: false }} />
