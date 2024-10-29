@@ -1,5 +1,6 @@
 {
   "expo": {
+    
     "name": "APP",
     "slug": "APP",
     "version": "1.0.0",
@@ -13,24 +14,25 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.APP"
-      ,
+      "bundleIdentifier": "com.anonymous.APP",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Chúng tôi cần quyền truy cập vị trí của bạn để tìm kiếm địa điểm."
       }
-
-    }
-    ,
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.APP"
-      
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f8b16585-bf36-4410-af4b-68a2d0f57a53"
+      }
     }
   }
 }

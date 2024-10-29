@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
-
+const API_BASE_URL = 'lacewing-evolving-generally.ngrok-free.app';
+import messaging from '@react-native-firebase/messaging';
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
   login: `${API_BASE_URL}/api/users/login`,
@@ -30,6 +30,39 @@ export const API_ENDPOINTS = {
   deletePost: `${API_BASE_URL}/api/posts/delete-post/:postId`, // New endpoint for deleting a post
   editTravelPost: `${API_BASE_URL}/api/travel-posts/edit`, // Thêm endpoint này
 };
+
+export const getFCMToken = async () => {
+  try {
+    const token = await messaging().getToken();
+    return token;
+  } catch (error) {
+    console.error('Error getting FCM token:', error);
+    return null;
+  }
+};
+
+// Function to save the FCM token to your backend
+export const saveFCMToken = async (userId, token) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/users/save-fcm-token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await getToken()}`,
+      },
+      body: JSON.stringify({ userId, fcmToken: token }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to save FCM token');
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Error saving FCM token:', error);
+    throw error;
+  }
+};
+
+
 export const editPost = async (postId, { title, images, newImages }) => {
   try {
     const token = await getToken();
