@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Image, TextInput, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const SOCKET_URL = 'https://lobster-upward-sunbeam.ngrok-free.app'; // Thay thế bằng URL server của bạn
+import { API_ENDPOINTS } from '../apiConfig';
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
@@ -114,7 +113,7 @@ export default function NotificationsScreen() {
         socket.disconnect();
       }
 
-      const newSocket = io(SOCKET_URL, {
+      const newSocket = io(API_ENDPOINTS.socketURL, {
         transports: ['websocket'],
         auth: { token },
         query: { userId }
@@ -156,7 +155,7 @@ export default function NotificationsScreen() {
 
       console.log('Loading notifications for user:', userData);
 
-      const response = await fetch(`${SOCKET_URL}/api/notifications`, {
+      const response = await fetch(`${API_ENDPOINTS.socketURL}/api/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -211,7 +210,7 @@ export default function NotificationsScreen() {
       const token = await AsyncStorage.getItem('userToken');
       if (!token) return;
 
-      const response = await fetch(`${SOCKET_URL}/api/notifications/${notificationId}`, {
+      const response = await fetch(`${API_ENDPOINTS.socketURL}/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
