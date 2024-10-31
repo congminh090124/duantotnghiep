@@ -51,7 +51,7 @@ const Stack = createStackNavigator();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="VideoCallScreen">
+      <Stack.Navigator initialRouteName="DangNhap">
         {/* Auth Screens */}
         <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangNhap" component={DangNhap} options={{ headerShown: false }} />
