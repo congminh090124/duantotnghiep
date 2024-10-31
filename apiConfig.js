@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'lacewing-evolving-generally.ngrok-free.app';
-import messaging from '@react-native-firebase/messaging';
+const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
+
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
   login: `${API_BASE_URL}/api/users/login`,

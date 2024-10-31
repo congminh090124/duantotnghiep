@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://cdn.agora.io/sdk/release/AgoraRTC_N.js"></script>
+    <title>Agora Video Call</title>
+    <style>
+        #local-video, #remote-video {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="local-video"></div>
+    <div id="remote-video"></div>
+    <script>
+        const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+
+        client.init("47d2012f336d49d1bfedc3d2401ae99c", () => {
+            console.log("AgoraRTC client initialized");
+            client.join(null, "test-channel", null, (uid) => {
+                console.log("User " + uid + " joined channel successfully");
+
+                const localStream = AgoraRTC.createStream({
+                    video: true,
+                    audio: true,
+                });
+
+                localStream.init(() => {
+                    localStream.play("local-video");
+                    client.publish(localStream);
+                });
+
+                client.on("stream-added", (evt) => {
+                    const remoteStream = evt.stream;
+                    client.subscribe(remoteStream);
+                });
+
+                client.on("stream-subscribed", (evt) => {
+                    const remoteStream = evt.stream;
+                    remoteStream.play("remote-video");
+                });
+            });
+        });
+
+        // Thêm đoạn mã này để bỏ qua cảnh báo ngrok
+        fetch('https://enhanced-remotely-bobcat.ngrok-free.app', {
+            headers: {
+                'ngrok-skip-browser-warning': 'true'
+            }
+        });
+    </script>
+</body>
+</html>

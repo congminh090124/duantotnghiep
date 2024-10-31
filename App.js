@@ -29,6 +29,8 @@ import MapScreen from './screens/TrangChu/MapScreen'
 
 import UserListScreen from './screens/chat/UserListScreen';
 import ChatScreen from './screens/chat/ChatScreen';
+import VideoCallScreen from './screens/chat/VideoCallScreen';
+
 
 import Settings from './screens/menuProfile/setting';
 import ChangePassword from './screens/menuProfile/ChangePassword';
@@ -49,8 +51,9 @@ const Stack = createStackNavigator();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="DangNhap">
+      <Stack.Navigator initialRouteName="VideoCallScreen">
         {/* Auth Screens */}
+        <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DangNhap" component={DangNhap} options={{ headerShown: false }} />
         <Stack.Screen name="DangKy" component={DangKy} options={{ headerShown: false }} />
         <Stack.Screen name="QuenMatKhau" component={QuenMatKhauScreen} options={{ headerShown: false }} />
