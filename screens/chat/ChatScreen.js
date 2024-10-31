@@ -17,6 +17,8 @@ export default function ChatScreen({ route, navigation }) {
   const [userId, setUserId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const flatListRef = useRef(null);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockedBy, setIsBlockedBy] = useState(false);
 
   useEffect(() => {
     navigation.setOptions({ headerShown: false });
@@ -65,6 +67,14 @@ export default function ChatScreen({ route, navigation }) {
   const fetchMessages = async (senderId) => {
     try {
       setIsLoading(true);
+      
+      // Kiểm tra block status trước khi fetch messages
+      const blockStatus = await checkBlockStatus();
+      if (blockStatus?.isBlocked || blockStatus?.isBlockedBy) {
+        setIsLoading(false);
+        return;
+      }
+
       const token = await getToken();
       const response = await fetch(`${API_ENDPOINTS.messages}/${senderId}/${receiverId}`, {
         headers: { 'Authorization': `Bearer ${token}` },
@@ -76,7 +86,6 @@ export default function ChatScreen({ route, navigation }) {
 
       const data = await response.json();
       setMessages(data);
-      setIsLoading(false);
 
       // Mark messages as read
       data.forEach((message) => {
@@ -88,12 +97,13 @@ export default function ChatScreen({ route, navigation }) {
       scrollToBottom();
     } catch (error) {
       console.error('Error fetching messages:', error);
+    } finally {
       setIsLoading(false);
     }
   };
 
   const sendMessage = useCallback(() => {
-    if (inputMessage.trim() === '') return; // Prevent sending empty messages
+    if (inputMessage.trim() === '' || isBlocked || isBlockedBy) return;
 
     const messageData = {
       senderId: userId,
@@ -102,8 +112,8 @@ export default function ChatScreen({ route, navigation }) {
     };
 
     socket.emit('sendMessage', messageData);
-    setInputMessage(''); // Clear input field after sending
-  }, [inputMessage, userId, receiverId]);
+    setInputMessage('');
+  }, [inputMessage, userId, receiverId, isBlocked, isBlockedBy]);
 
   const renderMessage = ({ item }) => {
     const isOwnMessage = item.senderId._id === userId;
@@ -186,6 +196,66 @@ export default function ChatScreen({ route, navigation }) {
     }
   }, [receiverId, userId, navigation]);
 
+  const checkBlockStatus = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_ENDPOINTS.checkBlockStatus}/${receiverId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setIsBlocked(data.isBlocked);
+      setIsBlockedBy(data.isBlockedBy);
+      return data;
+    } catch (error) {
+      console.error('Error checking block status:', error);
+      return null;
+    }
+  };
+
+  const handleUnblock = async () => {
+    try {
+      const token = await getToken();
+      const response = await fetch(`${API_ENDPOINTS.unblockUser}/${receiverId}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      setIsBlocked(false);
+      fetchMessages(userId);
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      Alert.alert('Lỗi', 'Không thể bỏ chặn người dùng này');
+    }
+  };
+
+  const BlockedMessage = () => (
+    <View style={styles.blockedContainer}>
+      <Icon name="ban-outline" size={50} color="#666" />
+      <Text style={styles.blockedText}>
+        {isBlockedBy 
+          ? "Bạn đã bị người dùng này chặn"
+          : "Bạn đã chặn người dùng này"}
+      </Text>
+      {isBlocked && (
+        <TouchableOpacity 
+          style={styles.unblockButton}
+          onPress={handleUnblock}
+        >
+          <Text style={styles.unblockButtonText}>Bỏ chặn</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -235,16 +305,20 @@ export default function ChatScreen({ route, navigation }) {
           </TouchableOpacity>
         </View>
       </View>
-      <FlatList
-        ref={flatListRef}
-        data={messages}
-        renderItem={renderMessage}
-        keyExtractor={(item) => item._id.toString()}
-        contentContainerStyle={styles.messageList}
-        onContentSizeChange={scrollToBottom}
-        initialNumToRender={10} // Optimize rendering for larger lists
-        removeClippedSubviews={true} // Performance optimization for large lists
-      />
+      {isBlocked || isBlockedBy ? (
+        <BlockedMessage />
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item._id.toString()}
+          contentContainerStyle={styles.messageList}
+          onContentSizeChange={scrollToBottom}
+          initialNumToRender={10} // Optimize rendering for larger lists
+          removeClippedSubviews={true} // Performance optimization for large lists
+        />
+      )}
       {renderInputBar()}
     </SafeAreaView>
   );
@@ -382,6 +456,28 @@ const styles = StyleSheet.create({
   },
   sendButtonText: {
     color: '#3897F0',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  blockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  blockedText: {
+    fontSize: 18,
+    color: '#666',
+    marginVertical: 10,
+  },
+  unblockButton: {
+    backgroundColor: '#3897F0',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  unblockButtonText: {
+    color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
   },

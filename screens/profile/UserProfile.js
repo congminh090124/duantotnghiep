@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
+import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator, Modal, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser, getUserTravelPosts } from '../../apiConfig';
-
+import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser, getUserTravelPosts, blockUser, unblockUser, getBlockStatus } from '../../apiConfig';
+import{API_ENDPOINTS,getToken} from '../../apiConfig'
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 45) / 2;
 
@@ -109,6 +109,51 @@ const UserProfile = ({ route }) => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isFollowingMe, setIsFollowingMe] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [slideAnim] = useState(new Animated.Value(0));
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [isBlockedBy, setIsBlockedBy] = useState(false);
+
+  const checkBlockStatus = async () => {
+    try {
+      const response = await fetch(`${API_ENDPOINTS.checkBlockStatus}/${userId}`, {
+        headers: { 'Authorization': `Bearer ${await getToken()}` }
+      });
+      const data = await response.json();
+      setIsBlocked(data.isBlocked);
+      setIsBlockedBy(data.isBlockedBy);
+      return data;
+    } catch (error) {
+      console.error('Error checking block status:', error);
+    }
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Kiểm tra block status trước
+        const blockStatus = await checkBlockStatus();
+        
+        if (!blockStatus?.isBlocked && !blockStatus?.isBlockedBy) {
+          const data = await getUserProfileById(userId);
+          setUserProfile(data);
+          setIsFollowing(data.isFollowing);
+          setIsFollowingMe(data.isFollowingMe);
+          setIsFriend(data.isFollowing && data.isFollowingMe);
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        setError('Không thể tải thông tin người dùng');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId) {
+      fetchData();
+    }
+  }, [userId]);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -319,11 +364,165 @@ const UserProfile = ({ route }) => {
     });
   }, [navigation, userId, userProfile]);
 
+  const handleMenuPress = () => {
+    setIsMenuVisible(true);
+    Animated.timing(slideAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleMenuClose = () => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsMenuVisible(false);
+    });
+  };
+
+  const handleBlockUser = async () => {
+    try {
+      if (isBlocked) {
+        await unblockUser(userId);
+        setIsBlocked(false);
+        // Fetch lại profile sau khi unblock
+        const data = await getUserProfileById(userId);
+        setUserProfile(data);
+      } else {
+        await blockUser(userId);
+        setIsBlocked(true);
+        // Tự động unfollow và cập nhật UI
+        setIsFollowing(false);
+        setIsFriend(false);
+        setUserProfile(prevProfile => ({
+          ...prevProfile,
+          thong_ke: {
+            ...prevProfile.thong_ke,
+            nguoi_theo_doi: Math.max(0, prevProfile.thong_ke.nguoi_theo_doi - 1)
+          }
+        }));
+      }
+      handleMenuClose();
+      Alert.alert('Thành công', 
+        isBlocked ? 'Đã bỏ chặn người dùng này' : 'Đã chặn người dùng này'
+      );
+    } catch (error) {
+      console.error('Block/unblock error:', error);
+      Alert.alert('Lỗi', 'Không thể thực hiện thao tác này');
+    }
+  };
+
+  const handleReportUser = () => {
+    Alert.alert(
+      "Báo cáo người dùng",
+      "Bạn có chắc chắn muốn báo cáo người dùng này?",
+      [
+        {
+          text: "Hủy",
+          style: "cancel"
+        },
+        {
+          text: "Báo cáo",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              // Gọi API báo cáo người dùng ở đây
+              // await reportUser(userId);
+              Alert.alert("Thành công", "Đã gửi báo cáo về người dùng này");
+              handleMenuClose();
+            } catch (error) {
+              Alert.alert("Lỗi", "Không thể báo cáo người dùng này");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const BlockedProfileView = () => (
+    <View style={styles.blockedContainer}>
+      <Ionicons name="ban-outline" size={64} color="#666" />
+      <Text style={styles.blockedTitle}>Không thể hiển thị trang cá nhân</Text>
+      <Text style={styles.blockedMessage}>
+        {isBlockedBy 
+          ? "Bạn đã bị người dùng này chặn"
+          : "Bạn đã chặn người dùng này"}
+      </Text>
+      {isBlocked && (
+        <TouchableOpacity
+          style={styles.unblockButton}
+          onPress={handleUnblock}
+        >
+          <Text style={styles.unblockButtonText}>Bỏ chặn</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  const handleUnblock = async () => {
+    try {
+      await unblockUser(userId);
+      setIsBlocked(false);
+      // Fetch lại profile sau khi unblock
+      const data = await getUserProfileById(userId);
+      setUserProfile(data);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể bỏ chặn người dùng này');
+    }
+  };
+
+  // Thêm function xác nhận block
+  const confirmBlock = () => {
+    Alert.alert(
+      'Xác nhận chặn người dùng',
+      `Khi chặn ${userProfile?.username}:\n\n` +
+      '• Họ sẽ không thể xem trang cá nhân của bạn\n' +
+      '• Họ sẽ không thể nhắn tin cho bạn\n' +
+      '• Các lượt theo dõi giữa hai bên sẽ bị hủy\n' +
+      '• Họ sẽ không thấy bài viết và bình luận của bạn\n\n' +
+      'Bạn có chắc chắn muốn chặn không?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel'
+        },
+        {
+          text: 'Chặn',
+          style: 'destructive',
+          onPress: handleBlockUser
+        }
+      ],
+      { cancelable: true }
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#0095f6" />
       </View>
+    );
+  }
+
+  if (isBlocked || isBlockedBy) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Ionicons name="arrow-back" size={24} color="black" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Trang cá nhân</Text>
+          {!isBlockedBy && (
+            <TouchableOpacity onPress={handleMenuPress}>
+              <Ionicons name="ellipsis-vertical" size={24} color="black" />
+            </TouchableOpacity>
+          )}
+        </View>
+        <BlockedProfileView />
+      </SafeAreaView>
     );
   }
 
@@ -349,11 +548,9 @@ const UserProfile = ({ route }) => {
               <Ionicons name="checkmark-circle" size={20} color="#1DA1F2" style={styles.verifiedIcon} />
             )}
           </View>
-          <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="ellipsis-vertical" size={24} color="black" />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={handleMenuPress}>
+            <Ionicons name="ellipsis-vertical" size={24} color="black" />
+          </TouchableOpacity>
         </View>
 
         {/* Profile Info */}
@@ -455,6 +652,67 @@ const UserProfile = ({ route }) => {
           </View>
         </View>
       </ScrollView>
+      <Modal
+        visible={isMenuVisible}
+        transparent={true}
+        animationType="none"
+        onRequestClose={handleMenuClose}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={handleMenuClose}
+        >
+          <Animated.View 
+            style={[
+              styles.menuContainer,
+              {
+                transform: [
+                  {
+                    translateY: slideAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [300, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <View style={styles.menuHeader}>
+              <View style={styles.menuIndicator} />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={confirmBlock}
+            >
+              <Ionicons 
+                name={isBlocked ? "person-add-outline" : "ban-outline"} 
+                size={24} 
+                color="#FF3B30" 
+              />
+              <Text style={[styles.menuText, styles.menuTextDanger]}>
+                {isBlocked ? 'Bỏ chặn người dùng' : 'Chặn người dùng'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={handleReportUser}
+            >
+              <Ionicons name="flag-outline" size={24} color="#FF3B30" />
+              <Text style={[styles.menuText, styles.menuTextDanger]}>Báo cáo người dùng</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.menuItem, styles.menuItemCancel]}
+              onPress={handleMenuClose}
+            >
+              <Text style={styles.menuTextCancel}>Hủy</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -476,10 +734,7 @@ const styles = StyleSheet.create({
     fontSize: 23,
     fontWeight: 'bold',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
+  
   followingButton: {
     backgroundColor: '#E0E0E0',
   },
@@ -517,6 +772,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     flex: 1,
+
   },
   statItem: {
     alignItems: 'center',
@@ -764,6 +1020,90 @@ const styles = StyleSheet.create({
   },
   lastItem: {
     borderBottomWidth: 0,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+  },
+  menuHeader: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  menuIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#DEDEDE',
+    borderRadius: 2,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
+  },
+  menuItemCancel: {
+    justifyContent: 'center',
+    borderBottomWidth: 0,
+    marginTop: 8,
+  },
+  menuText: {
+    fontSize: 16,
+    marginLeft: 12,
+  },
+  menuTextDanger: {
+    color: '#FF3B30',
+  },
+  menuTextCancel: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  blockedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  blockedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 10,
+    color: '#262626',
+  },
+  blockedMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  unblockButton: {
+    backgroundColor: '#0095f6',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  unblockButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
   },
 });
 

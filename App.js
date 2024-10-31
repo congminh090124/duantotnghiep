@@ -42,6 +42,7 @@ import ChangePassword from './screens/menuProfile/ChangePassword';
 import PostManager from './screens/menuProfile/Post-manager';
 import EditPost from './screens/menuProfile/EditPost';
 import EditTravelPost from './screens/menuProfile/EditTravelPost';
+import BlockedUsers from './screens/menuProfile/BlockedUsers';
 
 
 
@@ -57,7 +58,7 @@ const App = () => {
     <NavigationContainer>
       <Stack.Navigator initialRouteName="DangNhap">
         {/* Auth Screens */}
-        
+
         <Stack.Screen name="DangNhap" component={DangNhap} options={{ headerShown: false }} />
         <Stack.Screen name="DangKy" component={DangKy} options={{ headerShown: false }} />
         <Stack.Screen name="QuenMatKhauScreen" component={QuenMatKhauScreen} options={{ headerShown: false }} />
@@ -93,7 +94,7 @@ const App = () => {
         <Stack.Screen name="PostManager" component={PostManager} options={{ headerShown: false }} />
         <Stack.Screen name="EditPost" component={EditPost} options={{ headerShown: false }} />
         <Stack.Screen name="EditTravelPost" component={EditTravelPost} options={{ headerShown: false }} />
-        
+        <Stack.Screen  name="BlockedUsers" component={BlockedUsers}  options={{ headerShown: false }}    />
         {/* Other Screens */}
         <Stack.Screen name="DangKiTinhNguyenVienScreen" component={DangKiTinhNguyenVienScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />

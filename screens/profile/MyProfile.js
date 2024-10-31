@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, state } from 'react';
 import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator, RefreshControl, Modal, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -22,7 +22,7 @@ const MyProfile = () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [travelPosts, setTravelPosts] = useState([]);
 
-  const normalPosts = useMemo(() => 
+  const normalPosts = useMemo(() =>
     posts.filter(post => post.type !== 'travel'), [posts]
   );
 
@@ -122,12 +122,12 @@ const MyProfile = () => {
 
     // Kiểm tra loại bài viết và điều hướng đến màn hình tương ứng
     if (activeTab === 'travel') {
-      navigation.navigate('TravelPostDetail', { 
+      navigation.navigate('TravelPostDetail', {
         postId: post._id,
         title: post.title || 'Chi tiết bài viết',
       });
     } else {
-      navigation.navigate('PostDetailScreen', { 
+      navigation.navigate('PostDetailScreen', {
         postId: post._id,
         title: post.title || 'Chi tiết bài viết',
       });
@@ -135,9 +135,9 @@ const MyProfile = () => {
   }, [navigation, activeTab]);
 
   const renderStatItem = useCallback(({ label, value, onPress }) => (
-    <TouchableOpacity 
-      style={styles.statItem} 
-      onPress={onPress} 
+    <TouchableOpacity
+      style={styles.statItem}
+      onPress={onPress}
       disabled={!onPress}
     >
       <Text style={styles.statLabel}>{label}</Text>
@@ -171,14 +171,16 @@ const MyProfile = () => {
           "Bạn có chắc chắn muốn đăng xuất?",
           [
             { text: "Hủy", style: "cancel" },
-            { text: "Đăng xuất", onPress: () => {
-              // Thực hiện đăng xuất ở đây
-              // Ví dụ: clearToken() và điều hướng về màn hình đăng nhập
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'DangNhap' }],
-              });
-            }}
+            {
+              text: "Đăng xuất", onPress: () => {
+                // Thực hiện đăng xuất ở đây
+                // Ví dụ: clearToken() và điều hướng về màn hình đăng nhập
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'DangNhap' }],
+                });
+              }
+            }
           ]
         );
         break;
@@ -224,7 +226,7 @@ const MyProfile = () => {
             </View>
           )}
         </View>
-        
+
         <View style={styles.postInfo}>
           <Text style={styles.postTitle} numberOfLines={1}>
             {post.title || 'Untitled'}
@@ -234,7 +236,7 @@ const MyProfile = () => {
           </Text>
           {activeTab === 'travel' && post.startDate && post.endDate && (
             <Text style={styles.travelDate}>
-              {new Date(post.startDate).toLocaleDateString()} - 
+              {new Date(post.startDate).toLocaleDateString()} -
               {new Date(post.endDate).toLocaleDateString()}
             </Text>
           )}
@@ -255,9 +257,12 @@ const MyProfile = () => {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0095F6" />
+          <Text style={styles.loadingText}>Đang tải...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -265,13 +270,18 @@ const MyProfile = () => {
     return <Text style={styles.errorText}>No profile data available</Text>;
   }
 
-  
+
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#0095F6']} // Android
+            tintColor="#0095F6" // iOS
+          />
         }
       >
         <View style={styles.header}>
@@ -314,17 +324,28 @@ const MyProfile = () => {
           </View>
 
           <View style={styles.statsContainer}>
-            <View style={styles.statsLabels}>
-              <Text style={styles.statLabel}>Người theo dõi</Text>
-              <Text style={styles.statLabel}>Đang theo dõi</Text>
-            </View>
             <View style={styles.statsNumbers}>
-              <TouchableOpacity onPress={() => navigation.navigate('Follower', { followers })}>
-                <Text style={styles.statNumber}>{profileData.thong_ke?.nguoi_theo_doi || 0}</Text>
+              <View style={styles.statNumberContainer}>
+                <Text style={styles.statNumber}>
+                  {(normalPosts?.length || 0) + (travelPosts?.length || 0)}
+                </Text>
+              </View>
+              <TouchableOpacity style={styles.statNumberContainer}>
+                <Text style={styles.statNumber}>
+                  {profileData.thong_ke?.nguoi_theo_doi || 0}
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Following', { following })}>
-                <Text style={styles.statNumber}>{profileData.thong_ke?.dang_theo_doi || 0}</Text>
+              <TouchableOpacity style={styles.statNumberContainer}>
+                <Text style={styles.statNumber}>
+                  {profileData.thong_ke?.dang_theo_doi || 0}
+                </Text>
               </TouchableOpacity>
+            </View>
+
+            <View style={styles.statsLabels}>
+              <Text style={styles.statLabel}>bài viết</Text>
+              <Text style={styles.statLabel}>người theo dõi</Text>
+              <Text style={styles.statLabel}>đang theo dõi</Text>
             </View>
           </View>
         </View>
@@ -341,41 +362,41 @@ const MyProfile = () => {
         </View>
 
         {profileData && (
-          <PersonalInfo 
-            profileData={profileData} 
+          <PersonalInfo
+            profileData={profileData}
           />
         )}
 
         <View style={styles.postsContainer}>
           <View style={styles.tabBar}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
               onPress={() => setActiveTab('posts')}
             >
-              <Ionicons 
-                name="grid-outline" 
-                size={24} 
-                color={activeTab === 'posts' ? '#0095F6' : '#262626'} 
+              <Ionicons
+                name="grid-outline"
+                size={24}
+                color={activeTab === 'posts' ? '#0095F6' : '#262626'}
               />
               <Text style={[
-                styles.tabText, 
+                styles.tabText,
                 activeTab === 'posts' && styles.activeTabText
               ]}>
                 Bài viết
               </Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.tab, activeTab === 'travel' && styles.activeTab]}
               onPress={() => setActiveTab('travel')}
             >
-              <Ionicons 
-                name="airplane-outline" 
-                size={24} 
-                color={activeTab === 'travel' ? '#0095F6' : '#262626'} 
+              <Ionicons
+                name="airplane-outline"
+                size={24}
+                color={activeTab === 'travel' ? '#0095F6' : '#262626'}
               />
               <Text style={[
-                styles.tabText, 
+                styles.tabText,
                 activeTab === 'travel' && styles.activeTabText
               ]}>
                 Du lịch
@@ -439,53 +460,53 @@ const PersonalInfo = ({ profileData }) => {
   const [expanded, setExpanded] = useState(false);
 
   const infoItems = [
-    { 
-      icon: 'mail-outline', 
-      label: 'Email', 
+    {
+      icon: 'mail-outline',
+      label: 'Email',
       value: profileData?.email,
       priority: 1
     },
-    { 
-      icon: 'call-outline', 
-      label: 'Số điện thoại', 
+    {
+      icon: 'call-outline',
+      label: 'Số điện thoại',
       value: profileData?.sdt,
       priority: 2
     },
-    { 
-      icon: 'person-outline', 
-      label: 'Giới tính', 
+    {
+      icon: 'person-outline',
+      label: 'Giới tính',
       value: profileData?.sex,
       priority: 3
     },
-    { 
-      icon: 'heart-outline', 
-      label: 'Tình trạng hôn nhân', 
+    {
+      icon: 'heart-outline',
+      label: 'Tình trạng hôn nhân',
       value: profileData?.tinhtranghonnhan,
       priority: 4
     },
-    { 
-      icon: 'calendar-outline', 
-      label: 'Ngày sinh', 
+    {
+      icon: 'calendar-outline',
+      label: 'Ngày sinh',
       value: profileData?.ngaysinh,
       priority: 5
     },
-    { 
-      icon: 'location-outline', 
-      label: 'Địa chỉ', 
+    {
+      icon: 'location-outline',
+      label: 'Địa chỉ',
       value: profileData?.diachi,
       priority: 6
     },
   ]
-  .filter(item => item.value) // Lọc các mục có giá trị
-  .sort((a, b) => a.priority - b.priority); // Sắp xếp theo độ ưu tiên
+    .filter(item => item.value) // Lọc các mục có giá trị
+    .sort((a, b) => a.priority - b.priority); // Sắp xếp theo độ ưu tiên
 
   // Chỉ hiển thị 3 items đầu tiên khi thu gọn
   const displayedItems = expanded ? infoItems : infoItems.slice(0, 3);
   const hasMoreItems = infoItems.length > 3;
 
   const renderInfoItem = (item, index) => (
-    <View 
-      key={index} 
+    <View
+      key={index}
       style={[
         styles.infoItem,
         index === displayedItems.length - 1 && styles.lastItem
@@ -496,7 +517,7 @@ const PersonalInfo = ({ profileData }) => {
       </View>
       <View style={styles.infoTextContainer}>
         <Text style={styles.infoLabel}>{item.label}</Text>
-        <Text 
+        <Text
           style={styles.infoValue}
           numberOfLines={1}
           ellipsizeMode="tail"
@@ -529,9 +550,9 @@ const PersonalInfo = ({ profileData }) => {
           <Text style={styles.expandButtonText}>
             {expanded ? 'Thu gọn' : `Xem thêm (${infoItems.length - 3})`}
           </Text>
-          <Ionicons 
-            name={expanded ? 'chevron-up' : 'chevron-down'} 
-            size={16} 
+          <Ionicons
+            name={expanded ? 'chevron-up' : 'chevron-down'}
+            size={16}
             color="#0095f6"
             style={styles.expandIcon}
           />
@@ -557,8 +578,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  bioText:{
-    marginLeft:"5%"
+  bioText: {
+    marginLeft: "5%"
   },
 
   infoItem: {
@@ -583,7 +604,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15, // Thêm padding dọc cho header
     paddingHorizontal: 10, // Thêm padding ngang cho header
-   
+
   },
   usernameContainer: {
     flexDirection: 'row',
@@ -606,11 +627,10 @@ const styles = StyleSheet.create({
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20, // Thêm padding dọc
-    marginLeft:"2%"
+    paddingVertical: 20,
   },
   avatarContainer: {
-    marginRight: 20, // Tăng khoảng cách giữa avatar và stats
+    marginLeft: 15,
   },
   profileImage: {
     width: 80,
@@ -640,29 +660,35 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flex: 1,
-    marginLeft: 20,
+    
   },
-
-  statsLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 8,
-  },
-
+  
   statsNumbers: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    paddingHorizontal: 5,
+    marginBottom: 8,
   },
-
-  statLabel: {
-    fontSize: 14,
-    color: '#262626',
+  statsLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 5,
   },
-
+  statNumberContainer: {
+    width: '33%',  // Chia đều không gian
+    alignItems: 'center', // Căn giữa theo chiều ngang
+  },
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#262626',
+    textAlign: 'center', // Đảm bảo text căn giữa
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#666',
+    width: '33%', // Chia đều không gian
+    textAlign: 'center', // Căn giữa text
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -673,10 +699,28 @@ const styles = StyleSheet.create({
   editButton: {
     flex: 1,
     backgroundColor: '#f0f0f0',
-    paddingVertical: 10, // Tăng padding dọc cho button
-    paddingHorizontal: 15, // Tăng padding ngang cho button
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderRadius: 5,
     marginRight: 5,
+  },
+  editButtonText: {
+    color: 'black',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  shareButton: {
+    flex: 1,
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    marginLeft: 5,
+  },
+  shareButtonText: {
+    color: 'black',
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   personalInfoContainer: {
     backgroundColor: 'white',
@@ -690,7 +734,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  
+
   infoHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -751,35 +795,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  expandButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    marginTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
+  
 
-  expandButtonText: {
-    color: '#0095f6',
-    fontSize: 14,
-    fontWeight: '500',
-    marginRight: 4,
-  },
-  shareButton: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 10, // Tăng padding dọc cho button
-    paddingHorizontal: 15, // Tăng padding ngang cho button
-    borderRadius: 5,
-    marginLeft: 5,
-  },
-  shareButtonText: {
-    color: 'black',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
+  
   addFriendButton: {
     backgroundColor: '#f0f0f0',
     padding: 8,
@@ -851,7 +869,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 15, // Thêm padding dọc
   },
-  
+
   postGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1053,19 +1071,8 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 5,
   },
-  expandButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-    marginTop: 8,
-  },
-  expandButtonText: {
-    color: '#0095f6',
-    marginRight: 4,
-    fontSize: 14,
-    fontWeight: '500',
-  },
+ 
+
   personalInfoContainer: {
     padding: 16,
     backgroundColor: 'white',
@@ -1153,7 +1160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    marginTop: 4,
+    marginTop: 6,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
   },
@@ -1167,6 +1174,37 @@ const styles = StyleSheet.create({
 
   expandIcon: {
     marginTop: 2,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666666',
+  },
+
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+
+  loadingOverlayText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FFFFFF',
   },
 });
 

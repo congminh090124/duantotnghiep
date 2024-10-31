@@ -10,6 +10,7 @@ import {
   Alert,
   SafeAreaView,
   Dimensions,
+  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTravelPostDetail, toggleLikeTravelPost } from '../../apiConfig';
@@ -17,6 +18,19 @@ import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
+
+const Header = ({ navigation }) => (
+  <View style={styles.header}>
+    <TouchableOpacity 
+      style={styles.backButton}
+      onPress={() => navigation.goBack()}
+    >
+      <Ionicons name="arrow-back" size={24} color="#000" />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>Chi tiết bài viết</Text>
+    <View style={styles.rightPlaceholder} />
+  </View>
+);
 
 const TravelPostDetail = ({ route, navigation }) => {
   const { postId } = route.params;
@@ -170,6 +184,8 @@ const TravelPostDetail = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <Header navigation={navigation} />
       <ScrollView>
         <View style={styles.imageContainer}>
           <ScrollView
@@ -389,6 +405,26 @@ const styles = StyleSheet.create({
   },
   interestText: {
     color: '#666',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  backButton: {
+    padding: 8,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  rightPlaceholder: {
+    width: 40, // Để cân bằng với backButton
   },
 });
 

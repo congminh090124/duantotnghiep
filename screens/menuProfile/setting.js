@@ -23,6 +23,10 @@ const Settings = () => {
     navigation.navigate('PostManager');
   };
 
+  const handleBlockedUsers = () => {
+    navigation.navigate('BlockedUsers');
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Cài đặt</Text>
@@ -46,6 +50,12 @@ const Settings = () => {
       <TouchableOpacity style={styles.option} onPress={handleManagePosts}>
         <Ionicons name="document-text-outline" size={24} color="black" style={styles.icon} />
         <Text style={styles.optionText}>Quản lý bài viết</Text>
+        <Ionicons name="chevron-forward-outline" size={24} color="gray" />
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.option} onPress={handleBlockedUsers}>
+        <Ionicons name="ban-outline" size={24} color="black" style={styles.icon} />
+        <Text style={styles.optionText}>Danh sách chặn</Text>
         <Ionicons name="chevron-forward-outline" size={24} color="gray" />
       </TouchableOpacity>
     </View>

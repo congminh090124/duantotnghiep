@@ -31,6 +31,10 @@ export const API_ENDPOINTS = {
   editPost: `${API_BASE_URL}/api/posts/edit-post/:postId`, // New endpoint for editing a post
   deletePost: `${API_BASE_URL}/api/posts/delete-post/:postId`, // New endpoint for deleting a post
   editTravelPost: `${API_BASE_URL}/api/travel-posts/edit`, // Thêm endpoint này
+  blockUser: `${API_BASE_URL}/api/users/block`,
+  unblockUser: `${API_BASE_URL}/api/users/unblock`,
+  getBlockedUsers: `${API_BASE_URL}/api/users/blocked-users`,
+  checkBlockStatus: `${API_BASE_URL}/api/users/check-block-status`,
 };
 
 
@@ -600,7 +604,7 @@ export const getUserProfile = async () => {
     }
 
     const data = await response.json();
-    // API trả về xac_minh_danh_tinh, chúng ta sẽ đổi tên thành xacMinhDanhTinh để thống nhất
+    // API trả về xac_minh_danh_tinh, chúng ta sẽ đi tên thành xacMinhDanhTinh để thống nhất
     return {
       ...data,
       xacMinhDanhTinh: data.xac_minh_danh_tinh
@@ -1080,6 +1084,116 @@ export const getUserTravelPosts = async (userId) => {
     return data.posts; // Trả về mảng posts từ response
   } catch (error) {
     console.error('Error fetching user travel posts:', error);
+    throw error;
+  }
+};
+// Thêm vào apiConfig.js
+export const blockUser = async (userId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_ENDPOINTS.blockUser}/${userId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to block user');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error blocking user:', error);
+    throw error;
+  }
+};
+
+export const unblockUser = async (userId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_ENDPOINTS.unblockUser}/${userId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to unblock user');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error unblocking user:', error);
+    throw error;
+  }
+};
+
+// Thêm function để lấy danh sách người dùng bị chặn
+export const getBlockedUsers = async () => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.getBlockedUsers, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to get blocked users');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error getting blocked users:', error);
+    throw error;
+  }
+};
+
+// Thêm function kiểm tra trạng thái block
+export const getBlockStatus = async (userId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_ENDPOINTS.checkBlockStatus}/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to check block status');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error checking block status:', error);
     throw error;
   }
 };
