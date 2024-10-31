@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const API_BASE_URL = 'https://lobster-upward-sunbeam.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -36,7 +36,6 @@ export const API_ENDPOINTS = {
   getBlockedUsers: `${API_BASE_URL}/api/users/blocked-users`,
   checkBlockStatus: `${API_BASE_URL}/api/users/check-block-status`,
 };
-
 
 
 export const editPost = async (postId, { title, images, newImages }) => {

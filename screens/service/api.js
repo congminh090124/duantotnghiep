@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
+const API_URL = 'http://20.2.67.63';
 
 export const scanCCCD = async (imageUri) => {
   try {

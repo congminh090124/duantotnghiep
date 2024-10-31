@@ -3,7 +3,7 @@ import { View, Text, Image, TextInput, FlatList, StyleSheet, TouchableOpacity, A
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SOCKET_URL = 'https://lacewing-evolving-generally.ngrok-free.app'; // Thay thế bằng URL server của bạn
+const SOCKET_URL = 'https://lobster-upward-sunbeam.ngrok-free.app'; // Thay thế bằng URL server của bạn
 
 export default function NotificationsScreen() {
   const [notifications, setNotifications] = useState([]);
