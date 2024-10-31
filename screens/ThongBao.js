@@ -24,9 +24,80 @@ export default function NotificationsScreen() {
     };
   }, []);
 
+  // Thêm useEffect mới để lắng nghe socket events
+  useEffect(() => {
+    if (socket) {
+      // Lắng nghe thông báo mới
+      socket.on('personalNotification', (notification) => {
+        console.log('Received personal notification:', notification);
+        // Cập nhật danh sách thông báo
+        setNotifications(prev => {
+          const newNotifications = [notification, ...prev];
+          // Cập nhật filtered notifications dựa trên tab hiện tại
+          filterNotifications(newNotifications, activeTab);
+          return newNotifications;
+        });
+        
+        // Hiển thị thông báo
+        Alert.alert(
+          'Thông báo mới',
+          notification.content,
+          [
+            {
+              text: 'Xem',
+              onPress: () => handleMarkAsRead(notification._id)
+            },
+            {
+              text: 'Đóng',
+              style: 'cancel'
+            }
+          ]
+        );
+      });
+
+      // Lắng nghe thông báo chung
+      socket.on('newNotification', (notification) => {
+        console.log('Received broadcast notification:', notification);
+        setNotifications(prev => {
+          const newNotifications = [notification, ...prev];
+          filterNotifications(newNotifications, activeTab);
+          return newNotifications;
+        });
+      });
+
+      // Lắng nghe cập nhật thông báo
+      socket.on('notificationUpdated', (updatedNotification) => {
+        console.log('Notification updated:', updatedNotification);
+        setNotifications(prev => {
+          const updatedNotifications = prev.map(notif => 
+            notif._id === updatedNotification._id ? updatedNotification : notif
+          );
+          filterNotifications(updatedNotifications, activeTab);
+          return updatedNotifications;
+        });
+      });
+
+      // Lắng nghe xóa thông báo
+      socket.on('notificationDeleted', (deletedId) => {
+        console.log('Notification deleted:', deletedId);
+        setNotifications(prev => {
+          const filteredNotifications = prev.filter(notif => notif._id !== deletedId);
+          filterNotifications(filteredNotifications, activeTab);
+          return filteredNotifications;
+        });
+      });
+
+      return () => {
+        socket.off('personalNotification');
+        socket.off('newNotification');
+        socket.off('notificationUpdated');
+        socket.off('notificationDeleted');
+      };
+    }
+  }, [socket, activeTab]); // Thêm activeTab vào dependencies
+
   const initializeSocket = async () => {
     try {
-      // Lấy userToken và userData từ AsyncStorage
       const token = await AsyncStorage.getItem('userToken');
       const userDataString = await AsyncStorage.getItem('userData');
       
@@ -36,37 +107,35 @@ export default function NotificationsScreen() {
       }
 
       const userData = JSON.parse(userDataString);
-      const userId = userData.id; // hoặc userData._id
+      const userId = userData.id;
 
-      console.log('Loaded userData:', userData); // Debug
-      console.log('Loaded userId:', userId);
-      console.log('Loaded token:', token);
-
-      if (!userId) {
-        console.log('Missing userId in userData');
-        return;
+      // Đóng socket cũ nếu có
+      if (socket) {
+        socket.disconnect();
       }
 
       const newSocket = io(SOCKET_URL, {
         transports: ['websocket'],
-        auth: { token } // Sử dụng userToken
+        auth: { token },
+        query: { userId }
       });
 
       newSocket.on('connect', () => {
-        console.log('Socket connected');
-        if (userId) {
-          newSocket.emit('userConnected', userId);
-        }
+        console.log('Socket connected successfully');
+        newSocket.emit('userConnected', userId);
+        // Load lại thông báo khi kết nối thành công
+        loadNotifications();
       });
 
-      newSocket.on('newNotification', (notification) => {
-        setNotifications(prev => [notification, ...prev]);
-        Alert.alert('Thông báo mới', notification.content);
+      newSocket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        Alert.alert('Lỗi kết nối', 'Không thể kết nối đến server thông báo');
       });
 
       setSocket(newSocket);
     } catch (error) {
       console.error('Socket initialization error:', error);
+      Alert.alert('Lỗi', 'Không thể khởi tạo kết nối socket');
     }
   };
 
@@ -83,16 +152,11 @@ export default function NotificationsScreen() {
       }
 
       const userData = JSON.parse(userDataString);
-      const userId = userData.id; // hoặc userData._id
+      const userId = userData.id;
 
       console.log('Loading notifications for user:', userData);
 
-      if (!userId) {
-        Alert.alert('Lỗi', 'Thông tin người dùng không hợp lệ');
-        return;
-      }
-
-      const response = await fetch(`${SOCKET_URL}/api/notification/${userId}`, {
+      const response = await fetch(`${SOCKET_URL}/api/notifications`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -115,46 +179,29 @@ export default function NotificationsScreen() {
     }
   };
 
-  // Hiển thị toast message
-  const showToast = (message) => {
-    Alert.alert(
-      "Thông báo mới",
-      message,
-      [
-        { text: "OK", onPress: () => console.log("OK Pressed") }
-      ]
-    );
-  };
-
   // Xử lý đánh dấu đã đọc
   const handleMarkAsRead = async (notificationId) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        Alert.alert('Lỗi', 'Vui lòng đăng nhập lại');
-        return;
-      }
+      if (!token) return;
 
-      const response = await fetch(`${SOCKET_URL}/api/notifications/${notificationId}/read`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(notif =>
-            notif._id === notificationId
-              ? { ...notif, read: true }
-              : notif
-          )
-        );
-      }
+      socket?.emit('markAsRead', notificationId);
     } catch (error) {
       console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Xử lý đánh dấu tất cả là đã đọc
+  const handleMarkAllAsRead = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const userDataString = await AsyncStorage.getItem('userData');
+      if (!token || !userDataString) return;
+      
+      const userData = JSON.parse(userDataString);
+      socket?.emit('markAllRead', userData.id);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
     }
   };
 
@@ -162,43 +209,42 @@ export default function NotificationsScreen() {
   const handleDelete = async (notificationId) => {
     try {
       const token = await AsyncStorage.getItem('userToken');
-      
-      if (!token) {
-        Alert.alert('Lỗi', 'Vui lòng đăng nhập lại');
-        return;
-      }
+      if (!token) return;
 
       const response = await fetch(`${SOCKET_URL}/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
-      if (response.ok) {
-        setNotifications(prev => prev.filter(notif => notif._id !== notificationId));
+      if (!response.ok) {
+        throw new Error('Failed to delete notification');
       }
+
+      setNotifications(prev => prev.filter(n => n._id !== notificationId));
     } catch (error) {
       console.error('Error deleting notification:', error);
+      Alert.alert('Lỗi', 'Không thể xóa thông báo');
     }
   };
 
   // Lọc thông báo theo tab
   const filterNotifications = (notifs, tab) => {
-    let filtered = notifs;
+    let filtered = [...notifs];
     switch (tab) {
       case 'unread':
-        filtered = notifs.filter(n => !n.read);
+        filtered = filtered.filter(n => !n.read);
         break;
       case 'mentions':
-        filtered = notifs.filter(n => n.type === 'mention');
+        filtered = filtered.filter(n => n.type === 'mention');
         break;
       case 'requests':
-        filtered = notifs.filter(n => n.type === 'request');
+        filtered = filtered.filter(n => n.type === 'request');
         break;
     }
     
-    // Áp dụng search filter nếu có
     if (searchQuery) {
       filtered = filtered.filter(n => 
         n.content.toLowerCase().includes(searchQuery.toLowerCase())
