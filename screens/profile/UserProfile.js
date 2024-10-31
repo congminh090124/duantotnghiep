@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser } from '../../apiConfig';
+import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser, getUserTravelPosts } from '../../apiConfig';
 
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 45) / 2;
@@ -10,35 +10,81 @@ const imageSize = (windowWidth - 45) / 2;
 const PersonalInfo = ({ userProfile }) => {
   const [expanded, setExpanded] = useState(false);
 
-  const toggleExpand = () => {
-    setExpanded(!expanded);
-  };
-
   const infoItems = [
-    { icon: 'mail-outline', value: userProfile.email },
-    { icon: 'person-outline', value: userProfile.sex },
-    { icon: 'call-outline', value: userProfile.sdt },
-    { icon: 'heart-outline', value: userProfile.tinhtranghonnhan },
-    { icon: 'calendar-outline', value: userProfile.ngaysinh },
-    { icon: 'location-outline', value: userProfile.diachi },
-    { icon: 'globe-outline', value: userProfile.website },
-  ].filter(item => item.value); // Chỉ giữ lại các mục có giá trị
+    { 
+      icon: 'mail-outline', 
+      label: 'Email', 
+      value: userProfile?.email,
+      priority: 1
+    },
+    { 
+      icon: 'call-outline', 
+      label: 'Số điện thoại', 
+      value: userProfile?.sdt,
+      priority: 2
+    },
+    { 
+      icon: 'person-outline', 
+      label: 'Giới tính', 
+      value: userProfile?.sex,
+      priority: 3
+    },
+    { 
+      icon: 'heart-outline', 
+      label: 'Tình trạng hôn nhân', 
+      value: userProfile?.tinhtranghonnhan,
+      priority: 4
+    },
+    { 
+      icon: 'calendar-outline', 
+      label: 'Ngày sinh', 
+      value: userProfile?.ngaysinh,
+      priority: 5
+    },
+    { 
+      icon: 'location-outline', 
+      label: 'Địa chỉ', 
+      value: userProfile?.diachi,
+      priority: 6
+    },
+  ]
+  .filter(item => item.value)
+  .sort((a, b) => a.priority - b.priority);
 
-  const displayItems = expanded ? infoItems : infoItems.slice(0, 3);
+  const displayedItems = expanded ? infoItems : infoItems.slice(0, 3);
+  const hasMoreItems = infoItems.length > 3;
 
   return (
     <View style={styles.personalInfoContainer}>
       <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
-      {displayItems.map((item, index) => (
-        <View key={index} style={styles.infoItem}>
-          <Ionicons name={item.icon} size={20} color="black" />
-          <Text style={styles.infoText}>{item.value || 'Chưa cập nhật'}</Text>
-        </View>
-      ))}
-      {infoItems.length > 3 && (
-        <TouchableOpacity onPress={toggleExpand} style={styles.expandButton}>
+      <View style={styles.infoContent}>
+        {displayedItems.map((item, index) => (
+          <View 
+            key={index} 
+            style={[
+              styles.infoItem,
+              index === displayedItems.length - 1 && styles.lastItem
+            ]}
+          >
+            <View style={styles.iconContainer}>
+              <Ionicons name={item.icon} size={20} color="#666" />
+            </View>
+            <View style={styles.infoTextContainer}>
+              <Text style={styles.infoLabel}>{item.label}</Text>
+              <Text style={styles.infoValue}>{item.value}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+
+      {hasMoreItems && (
+        <TouchableOpacity
+          style={styles.expandButton}
+          onPress={() => setExpanded(!expanded)}
+          activeOpacity={0.7}
+        >
           <Text style={styles.expandButtonText}>
-            {expanded ? 'Thu gọn' : 'Xem thêm'}
+            {expanded ? 'Thu gọn' : `Xem thêm (${infoItems.length - 3})`}
           </Text>
           <Ionicons 
             name={expanded ? 'chevron-up-outline' : 'chevron-down-outline'} 
@@ -54,41 +100,49 @@ const PersonalInfo = ({ userProfile }) => {
 const UserProfile = ({ route }) => {
   const { userId } = route.params;
   const [userProfile, setUserProfile] = useState(null);
-  const [posts, setPosts] = useState([]);
+  const [normalPosts, setNormalPosts] = useState([]);
+  const [travelPosts, setTravelPosts] = useState([]);
+  const [activeTab, setActiveTab] = useState('posts');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigation = useNavigation();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowingMe, setIsFollowingMe] = useState(false);
+  const [isFriend, setIsFriend] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        setLoading(true);
-        const [profile, userPosts] = await Promise.all([
+        const [profileData, postsData, travelPostsData] = await Promise.all([
           getUserProfileById(userId),
-          getUserPostsWithID(userId)
+          getUserPostsWithID(userId),
+          getUserTravelPosts(userId)
         ]);
-
-        setUserProfile(profile);
-        setPosts(userPosts);
-        setIsFollowing(profile.isFollowing);
+        
+        setUserProfile(profileData);
+        setNormalPosts(postsData);
+        setTravelPosts(travelPostsData);
+        setIsFollowing(profileData.isFollowing || false);
+        setIsFollowingMe(profileData.isFollowingMe || false);
+        setIsFriend(profileData.isFollowing && profileData.isFollowingMe);
+        setLoading(false);
       } catch (error) {
         console.error('Error fetching user data:', error);
-        setError(error.message || 'Failed to fetch user data');
-        Alert.alert('Error', 'Failed to load user data. Please try again.');
-      } finally {
+        setError('Failed to load profile');
         setLoading(false);
       }
     };
 
     fetchUserData();
   }, [userId]);
+
   const handleFollowToggle = async () => {
     if (isFollowing) {
-      // Show confirmation dialog for unfollowing
       Alert.alert(
         "Xác nhận hủy theo dõi",
-        "Bạn có chắc chắn muốn hủy theo dõi người dùng này?",
+        isFriend ? 
+          "Bạn có chắc chắn muốn hủy kết bạn với người dùng này?" :
+          "Bạn có chắc chắn muốn hủy theo dõi người dùng này?",
         [
           {
             text: "Hủy",
@@ -100,6 +154,7 @@ const UserProfile = ({ route }) => {
               try {
                 const result = await unfollowUser(userId);
                 setIsFollowing(false);
+                setIsFriend(false);
                 setUserProfile(prevProfile => ({
                   ...prevProfile,
                   thong_ke: {
@@ -117,10 +172,11 @@ const UserProfile = ({ route }) => {
         ]
       );
     } else {
-      // Follow user without confirmation
       try {
         const result = await followUser(userId);
         setIsFollowing(true);
+        const newIsFriend = isFollowingMe;
+        setIsFriend(newIsFriend);
         setUserProfile(prevProfile => ({
           ...prevProfile,
           thong_ke: {
@@ -128,18 +184,140 @@ const UserProfile = ({ route }) => {
             nguoi_theo_doi: prevProfile.thong_ke.nguoi_theo_doi + 1
           }
         }));
-        Alert.alert('Thành công', result.message);
+        Alert.alert('Thành công', 
+          newIsFriend ? 'Các bạn đã trở thành bạn bè!' : 'Đã theo dõi thành công!'
+        );
       } catch (error) {
         console.error('Error following user:', error);
         Alert.alert('Lỗi', 'Không thể theo dõi người dùng này');
       }
     }
   };
+
   const avatarUri = useMemo(() => userProfile?.anh_dai_dien || null, [userProfile?.anh_dai_dien]);
 
   const handlePostPress = useCallback((post) => {
-    navigation.navigate('PostDetailScreen', { postId: post._id });
-  }, [navigation]);
+    if (!post?._id) {
+      Alert.alert('Lỗi', 'Không thể mở bài viết này');
+      return;
+    }
+
+    if (activeTab === 'travel') {
+      navigation.navigate('TravelPostDetail', { 
+        postId: post._id,
+        title: post.title || 'Chi tiết bài viết du lịch'
+      });
+    } else {
+      navigation.navigate('PostDetailScreen', { 
+        postId: post._id,
+        title: post.title || 'Chi tiết bài viết'
+      });
+    }
+  }, [navigation, activeTab]);
+
+  const renderFollowButton = useCallback(() => {
+    if (isFriend) {
+      return (
+        <TouchableOpacity
+          style={[styles.followButton, styles.friendButton]}
+          onPress={handleFollowToggle}
+        >
+          <Text style={styles.followButtonText}>Bạn bè</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    if (isFollowingMe && !isFollowing) {
+      return (
+        <TouchableOpacity
+          style={[styles.followButton, styles.followBackButton]}
+          onPress={handleFollowToggle}
+        >
+          <Text style={styles.followButtonText}>Theo dõi lại</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={[styles.followButton, isFollowing && styles.followingButton]}
+        onPress={handleFollowToggle}
+      >
+        <Text style={styles.followButtonText}>
+          {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+        </Text>
+      </TouchableOpacity>
+    );
+  }, [isFriend, isFollowingMe, isFollowing, handleFollowToggle]);
+
+  const renderPostItem = useCallback((post) => {
+    return (
+      <TouchableOpacity 
+        key={post._id} 
+        style={styles.postItem}
+        onPress={() => handlePostPress(post)}
+      >
+        <View style={styles.postImageContainer}>
+          {post.images && post.images.length > 0 ? (
+            <Image
+              source={{ uri: post.images[0] }}
+              style={styles.postImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={[styles.postImage, styles.noImageContainer]}>
+              <Ionicons name="image-outline" size={24} color="#666" />
+            </View>
+          )}
+          {post.images && post.images.length > 1 && (
+            <View style={styles.multipleImagesIndicator}>
+              <Ionicons name="copy-outline" size={16} color="#fff" />
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.postInfo}>
+          <Text style={styles.postTitle} numberOfLines={1}>
+            {post.title || 'Untitled'}
+          </Text>
+          
+          {activeTab === 'travel' && (
+            <>
+              <Text style={styles.postLocation} numberOfLines={1}>
+                <Ionicons name="location-outline" size={12} color="#666" />
+                {post.destinationName || 'No location'}
+              </Text>
+              {post.startDate && (
+                <Text style={styles.travelDate}>
+                  <Ionicons name="calendar-outline" size={12} color="#666" />
+                  {new Date(post.startDate).toLocaleDateString()}
+                </Text>
+              )}
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  }, [activeTab, handlePostPress]);
+
+  const handleMessagePress = useCallback(() => {
+    if (!userId) {
+      Alert.alert('Lỗi', 'Không thể tạo cuộc trò chuyện vào lúc này');
+      return;
+    }
+
+    console.log('Receiver Info:', {
+      receiverId: userId,
+      receiverName: userProfile?.username,
+      receiverAvatar: userProfile?.anh_dai_dien
+    });
+
+    navigation.navigate('ChatScreen', {
+      receiverId: userId,
+      receiverName: userProfile?.username || 'Người dùng',
+      receiverAvatar: userProfile?.anh_dai_dien || null
+    });
+  }, [navigation, userId, userProfile]);
 
   if (loading) {
     return (
@@ -192,7 +370,7 @@ const UserProfile = ({ route }) => {
 
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{posts.length}</Text>
+              <Text style={styles.statNumber}>{normalPosts.length + travelPosts.length}</Text>
               <Text style={styles.statLabel}>bài viết</Text>
             </View>
             <View style={styles.statItem}>
@@ -210,15 +388,11 @@ const UserProfile = ({ route }) => {
 
         {/* Follow/Message Buttons */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.followButton, isFollowing && styles.followingButton]}
-            onPress={handleFollowToggle}
+          {renderFollowButton()}
+          <TouchableOpacity 
+            style={styles.messageButton}
+            onPress={handleMessagePress}
           >
-            <Text style={styles.followButtonText}>
-              {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.messageButton}>
             <Text style={styles.messageButtonText}>Nhắn tin</Text>
           </TouchableOpacity>
         </View>
@@ -226,36 +400,59 @@ const UserProfile = ({ route }) => {
         {/* Personal Information */}
         <PersonalInfo userProfile={userProfile} />
 
-        {/* Posts */}
+        {/* Posts Section with Tabs */}
         <View style={styles.postsContainer}>
-          <Text style={styles.sectionTitle}>Bài viết</Text>
-          {posts.length > 0 ? (
-            <View style={styles.postGrid}>
-              {posts.map((post) => (
-                <TouchableOpacity 
-                  key={post._id} 
-                  style={styles.postItem}
-                  onPress={() => handlePostPress(post)}
-                >
-                  {post.images && post.images.length > 0 ? (
-                    <Image
-                      source={{ uri: post.images[0] }}
-                      style={styles.postImage}
-                    />
-                  ) : (
-                    <View style={[styles.postImage, styles.placeholderImage]}>
-                      <Text style={styles.placeholderText}>No Image</Text>
-                    </View>
-                  )}
-                  <View style={styles.postInfo}>
-                    <Text style={styles.postTitle} numberOfLines={1}>{post.title || 'Untitled'}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : (
-            <Text style={styles.noPostsText}>Không có bài viết nào.</Text>
-          )}
+          <View style={styles.tabBar}>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'posts' && styles.activeTab]}
+              onPress={() => setActiveTab('posts')}
+            >
+              <Ionicons 
+                name="grid-outline" 
+                size={24} 
+                color={activeTab === 'posts' ? '#0095F6' : '#262626'} 
+              />
+              <Text style={[
+                styles.tabText, 
+                activeTab === 'posts' && styles.activeTabText
+              ]}>
+                Bài viết
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'travel' && styles.activeTab]}
+              onPress={() => setActiveTab('travel')}
+            >
+              <Ionicons 
+                name="airplane-outline" 
+                size={24} 
+                color={activeTab === 'travel' ? '#0095F6' : '#262626'} 
+              />
+              <Text style={[
+                styles.tabText, 
+                activeTab === 'travel' && styles.activeTabText
+              ]}>
+                Du lịch
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.postGrid}>
+            {activeTab === 'posts' ? (
+              normalPosts.length > 0 ? (
+                normalPosts.map(post => renderPostItem(post))
+              ) : (
+                <Text style={styles.emptyText}>Chưa có bài viết nào</Text>
+              )
+            ) : (
+              travelPosts.length > 0 ? (
+                travelPosts.map(post => renderPostItem(post))
+              ) : (
+                <Text style={styles.emptyText}>Chưa có bài viết du lịch nào</Text>
+              )
+            )}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -456,16 +653,117 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
+    paddingVertical: 12,
+    marginTop: 4,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
+
   expandButtonText: {
     color: '#0095f6',
-    fontSize: 16,
-    marginRight: 5,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  friendButton: {
+    backgroundColor: '#34B7F1',
+  },
+  followBackButton: {
+    backgroundColor: '#FF6B6B',
+  },
+  defaultButton: {
+    backgroundColor: '#0095f6',
+  },
+  followingButton: {
+    backgroundColor: '#ddd',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderBottomWidth: 1,
+    borderBottomColor: '#DBDBDB',
+    marginBottom: 15,
+  },
+  tab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    gap: 8,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#0095F6',
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#262626',
+  },
+  activeTabText: {
+    color: '#0095F6',
+    fontWeight: '600',
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    fontSize: 14,
+    marginTop: 20,
+  },
+  postImageContainer: {
+    position: 'relative',
+    width: '100%',
+    aspectRatio: 1,
+  },
+  multipleImagesIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  postLocation: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  travelDate: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  noImageContainer: {
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoContent: {
+    overflow: 'hidden',
+  },
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#f8f8f8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  infoTextContainer: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: '#262626',
+    fontWeight: '500',
+  },
+  lastItem: {
+    borderBottomWidth: 0,
   },
 });
 

@@ -1,25 +1,101 @@
-import React from 'react';
-import { width,View, Text, Image, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { width,View, Text, Image, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { getUserProfileById, followUser, unfollowUser } from '../../apiConfig';
 const Follower = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { followers } = route.params;
+  const [followersList, setFollowersList] = useState([]);
 
-  const renderUserItem = ({ item }) => (
+  useEffect(() => {
+    const getInitialFollowStatus = async () => {
+      try {
+        const followStatusPromises = followers.map(async (user) => {
+          const userProfile = await getUserProfileById(user.id);
+          return {
+            ...user,
+            isFollowing: userProfile.isFollowing || false,
+            isFollowingMe: true
+          };
+        });
+        
+        const updatedFollowers = await Promise.all(followStatusPromises);
+        setFollowersList(updatedFollowers);
+      } catch (error) {
+        console.error('Error getting follow status:', error);
+      }
+    };
+
+    getInitialFollowStatus();
+  }, [followers]);
+
+  const handleFollow = useCallback(async (userId) => {
+    try {
+      await followUser(userId);
+      setFollowersList(prevList =>
+        prevList.map(user =>
+          user.id === userId ? { ...user, isFollowing: true } : user
+        )
+      );
+      Alert.alert('Thành công', 'Các bạn đã trở thành bạn bè!');
+    } catch (error) {
+      console.error('Error following user:', error);
+      Alert.alert('Lỗi', `Không thể theo dõi người dùng: ${error.message}`);
+    }
+  }, []);
+
+  const handleUnfollow = useCallback(async (userId, username) => {
+    Alert.alert(
+      'Xác nhận hủy theo dõi',
+      `Bạn có chắc chắn muốn hủy theo dõi ${username}?`,
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đồng ý',
+          onPress: async () => {
+            try {
+              await unfollowUser(userId);
+              setFollowersList(prevList =>
+                prevList.map(user =>
+                  user.id === userId ? { ...user, isFollowing: false } : user
+                )
+              );
+            } catch (error) {
+              console.error('Error unfollowing user:', error);
+              Alert.alert('Lỗi', `Không thể hủy theo dõi người dùng: ${error.message}`);
+            }
+          }
+        }
+      ]
+    );
+  }, []);
+
+  const renderUserItem = useCallback(({ item }) => (
     <View style={styles.userItem}>
       <Image source={{ uri: item.avatar }} style={styles.avatar} />
       <View style={styles.userInfo}>
         <Text style={styles.userName}>{item.username}</Text>
       </View>
-      <TouchableOpacity style={styles.followButton}>
-        <Text style={styles.followButtonText}>Theo dõi</Text>
+      <TouchableOpacity
+        style={[
+          styles.followButton,
+          item.isFollowing ? styles.friendButton : styles.followBackButton
+        ]}
+        onPress={() => 
+          item.isFollowing 
+            ? handleUnfollow(item.id, item.username)
+            : handleFollow(item.id)
+        }
+      >
+        <Text style={styles.followButtonText}>
+          {item.isFollowing ? 'Bạn bè' : 'Theo dõi lại'}
+        </Text>
       </TouchableOpacity>
     </View>
-  );
+  ), [handleFollow, handleUnfollow]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -31,7 +107,7 @@ const Follower = () => {
         <View style={{ width: 24 }} />
       </View>
       <FlatList
-        data={followers}
+        data={followersList}
         renderItem={renderUserItem}
         keyExtractor={(item) => item.id.toString()}
       />
@@ -115,6 +191,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  friendButton: {
+    backgroundColor: '#34B7F1',
+  },
+  followBackButton: {
+    backgroundColor: '#FF6B6B',
+  }
 });
 
 export default Follower;

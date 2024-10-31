@@ -336,7 +336,7 @@ const TaoTrangTimBanDuLich = () => {
       const options = {
         method: 'GET',
         headers: {
-          'x-rapidapi-key': '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f',
+          'x-rapidapi-key': 'f2a097fff0mshc9e7deae19d8053p11d780jsn906b698f08d0',
           'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
         }
       };

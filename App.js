@@ -27,15 +27,19 @@ import ProfileMapScreen from './screens/profile/ProfileMapScreen';
 import TaoTrangTimBanDuLich from './screens/TrangChu/TaoTrangTimBanDuLich';
 import MapScreen from './screens/TrangChu/MapScreen'
 
+//travel
+import TravelPostDetail from './screens/travel/TravelPostDetail'
+import TravelSearch from './screens/travel/TravelSearch'
+
+
 import UserListScreen from './screens/chat/UserListScreen';
 import ChatScreen from './screens/chat/ChatScreen';
-import VideoCallScreen from './screens/chat/VideoCallScreen';
+
 
 
 import Settings from './screens/menuProfile/setting';
 import ChangePassword from './screens/menuProfile/ChangePassword';
 import PostManager from './screens/menuProfile/Post-manager';
-import Map from './screens/menuProfile/map';
 import EditPost from './screens/menuProfile/EditPost';
 import EditTravelPost from './screens/menuProfile/EditTravelPost';
 
@@ -51,12 +55,12 @@ const Stack = createStackNavigator();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator initialRouteName="VideoCallScreen">
+      <Stack.Navigator initialRouteName="DangNhap">
         {/* Auth Screens */}
-        <Stack.Screen name="VideoCallScreen" component={VideoCallScreen} options={{ headerShown: false }} />
+        
         <Stack.Screen name="DangNhap" component={DangNhap} options={{ headerShown: false }} />
         <Stack.Screen name="DangKy" component={DangKy} options={{ headerShown: false }} />
-        <Stack.Screen name="QuenMatKhau" component={QuenMatKhauScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="QuenMatKhauScreen" component={QuenMatKhauScreen} options={{ headerShown: false }} />
         <Stack.Screen name="XacMinhOTP" component={XacMinhOtpScreen} options={{ headerShown: false }} />
         <Stack.Screen name="IdentityVerification" component={IdentityVerification} options={{ headerShown: false }} />
         <Stack.Screen name="VerifyIDScreen" component={VerifyIDScreen} options={{ headerShown: false }} />
@@ -69,6 +73,8 @@ const App = () => {
         <Stack.Screen name="CreatePost" component={CreatePost} options={{ headerShown: false }} />
         <Stack.Screen name="PostDetailScreen" component={PostDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TaoTrangTimBanDuLich" component={TaoTrangTimBanDuLich} options={{ headerShown: false }} />
+        <Stack.Screen name="TravelPostDetail" component={TravelPostDetail} options={{ headerShown: false }} />
+        <Stack.Screen name="TravelSearch" component={TravelSearch} options={{ headerShown: false }} />
 
         {/* Profile Screens */}
         <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ headerShown: false }} />
@@ -85,7 +91,6 @@ const App = () => {
         <Stack.Screen name="Settings" component={Settings} options={{ headerShown: false }} />
         <Stack.Screen name="ChangePassword" component={ChangePassword} options={{ headerShown: false }} />
         <Stack.Screen name="PostManager" component={PostManager} options={{ headerShown: false }} />
-        <Stack.Screen name="Map" component={Map} options={{ headerShown: false }} />
         <Stack.Screen name="EditPost" component={EditPost} options={{ headerShown: false }} />
         <Stack.Screen name="EditTravelPost" component={EditTravelPost} options={{ headerShown: false }} />
         

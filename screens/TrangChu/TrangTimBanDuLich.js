@@ -1,23 +1,88 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, RefreshControl, Alert, PixelRatio } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { Heart, MessageCircle, Users, Search } from 'react-native-feather';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { getAllTravelPosts, API_ENDPOINTS } from '../../apiConfig';
+import { getAllTravelPosts, API_ENDPOINTS, toggleLikeTravelPost } from '../../apiConfig';
 import MapScreen from './MapScreen';
 import Blog from '../blog/Blog';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TopTab = createMaterialTopTabNavigator();
-const { width, height } = Dimensions.get('window');
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// Tính toán tỷ lệ scale dựa trên màn hình
+const scale = SCREEN_WIDTH / 320; // Sử dụng 320 làm chuẩn
+const normalize = (size) => {
+  const newSize = size * scale;
+  if (Platform.OS === 'ios') {
+    return Math.round(PixelRatio.roundToNearestPixel(newSize));
+  }
+  return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 2;
+};
+
+// Tính toán vị trí bottom cho actionButtonsContainer
+const getBottomPosition = () => {
+  if (Platform.OS === 'ios') {
+    return SCREEN_HEIGHT > 800 ? '35%' : '30%'; // iPhone Plus vs Regular
+  }
+  return SCREEN_HEIGHT > 700 ? '40%' : '35%'; // Android Large vs Regular
+};
 
 const UserImages = React.memo(({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(post.likes?.length || 0);
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const navigation = useNavigation();
+  const [currentUserId, setCurrentUserId] = useState(null);
 
-  const handleLike = useCallback(() => setIsLiked(prev => !prev), []);
+  useEffect(() => {
+    const getCurrentUser = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const { id } = JSON.parse(userData);
+          setCurrentUserId(id);
+          setIsLiked(post.likes?.includes(id));
+        }
+      } catch (error) {
+        console.error('Error getting user data:', error);
+      }
+    };
+    getCurrentUser();
+  }, [post.likes]);
+
+  const handleLike = async () => {
+    if (isLikeLoading || !currentUserId) return;
+
+    try {
+      setIsLikeLoading(true);
+      const newIsLiked = !isLiked;
+      setIsLiked(newIsLiked);
+      setLikeCount(prev => newIsLiked ? prev + 1 : prev - 1);
+
+      const response = await toggleLikeTravelPost(post._id);
+      
+      if (response.success) {
+        setIsLiked(response.isLiked);
+        setLikeCount(response.likesCount);
+      } else {
+        setIsLiked(!newIsLiked);
+        setLikeCount(prev => newIsLiked ? prev - 1 : prev + 1);
+        Alert.alert('Thông báo', response.message || 'Không thể thực hiện thao tác này');
+      }
+    } catch (error) {
+      setIsLiked(!isLiked);
+      setLikeCount(prev => isLiked ? prev + 1 : prev - 1);
+      Alert.alert('Lỗi', 'Không thể thực hiện thao tác này');
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
+
   const handleMessage = useCallback(() => {
     navigation.navigate('ChatScreen', {
       receiverId: post.author._id,
@@ -77,9 +142,11 @@ const UserImages = React.memo(({ post }) => {
       <View style={styles.actionButtonsContainer}>
         <ActionButtons
           isLiked={isLiked}
+          likeCount={likeCount}
           onLike={handleLike}
           onMessage={handleMessage}
           onTravelTogether={handleTravelTogether}
+          isLikeLoading={isLikeLoading}
         />
       </View>
     </View>
@@ -147,16 +214,47 @@ const UserInfo = React.memo(({ post }) => {
   );
 });
 
-const ActionButtons = React.memo(({ isLiked, onLike, onMessage, onTravelTogether }) => (
+const ActionButtons = React.memo(({ 
+  isLiked, 
+  likeCount, 
+  onLike, 
+  onMessage, 
+  onTravelTogether, 
+  isLikeLoading 
+}) => (
   <View style={styles.actionButtons}>
-    <TouchableOpacity style={styles.actionButton} onPress={onLike}>
-      <Heart stroke={isLiked ? "red" : "white"} fill={isLiked ? "red" : "none"} width={30} height={30} />
-    </TouchableOpacity>
+    <View style={styles.actionButtonContainer}>
+      <TouchableOpacity 
+        style={styles.actionButton} 
+        onPress={onLike}
+        disabled={isLikeLoading}
+      >
+        {isLikeLoading ? (
+          <ActivityIndicator size="small" color="white" />
+        ) : (
+          <Heart 
+            stroke={isLiked ? "red" : "white"} 
+            fill={isLiked ? "red" : "none"} 
+            width={normalize(22)}
+            height={normalize(22)}
+          />
+        )}
+      </TouchableOpacity>
+      <Text style={styles.likeCount}>{likeCount}</Text>
+    </View>
     <TouchableOpacity style={styles.actionButton} onPress={onMessage}>
-      <MessageCircle stroke="white" width={30} height={30} />
+      <MessageCircle 
+        stroke="white" 
+        width={normalize(22)}
+        height={normalize(22)}
+      />
     </TouchableOpacity>
     <TouchableOpacity style={styles.actionButton} onPress={onTravelTogether}>
-      <Users stroke="white" width={30} height={30} />
+      <Users 
+        stroke="white" 
+        width={normalize(22)}
+        height={normalize(22)}
+      />
     </TouchableOpacity>
   </View>
 ));
@@ -218,14 +316,14 @@ const MainScreen = () => {
         keyExtractor={(item) => item._id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={height}
+        snapToInterval={SCREEN_HEIGHT}
         snapToAlignment="start"
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         getItemLayout={(data, index) => ({
-          length: height,
-          offset: height * index,
+          length: SCREEN_HEIGHT,
+          offset: SCREEN_HEIGHT * index,
           index,
         })}
         refreshControl={
@@ -295,22 +393,56 @@ const SearchButton = React.memo(() => (
   </TouchableOpacity>
 ));
 
-const TrangTimBanDuLich = () => (
-  <SafeAreaView style={styles.container}>
-    <TopTab.Navigator
-      screenOptions={{
-        tabBarStyle: styles.topNav,
-        tabBarIndicatorStyle: styles.tabBarIndicator,
-        tabBarLabelStyle: styles.tabBarLabel,
-        swipeEnabled: false,
-      }}
-    >
-      <TopTab.Screen name="Trang chủ" component={MainScreen} />
-      <TopTab.Screen name="Feed" component={Blog} />
-      <TopTab.Screen name="Bản đồ" component={MapScreen} />
-    </TopTab.Navigator>
-  </SafeAreaView>
-);
+const TrangTimBanDuLich = () => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    try {
+      const fetchedPosts = await getAllTravelPosts();
+      setPosts(fetchedPosts);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Thêm listener cho thay đổi orientation
+  useEffect(() => {
+    const updateLayout = () => {
+      const { width, height } = Dimensions.get('window');
+      // Cập nhật lại các giá trị khi xoay màn hình
+    };
+
+    const dimensionsHandler = Dimensions.addEventListener('change', updateLayout);
+
+    return () => {
+      dimensionsHandler.remove();
+    };
+  }, []);
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <TopTab.Navigator
+        screenOptions={{
+          tabBarStyle: styles.topNav,
+          tabBarIndicatorStyle: styles.tabBarIndicator,
+          tabBarLabelStyle: styles.tabBarLabel,
+          swipeEnabled: false,
+        }}
+      >
+        <TopTab.Screen name="Trang chủ" component={MainScreen} />
+        <TopTab.Screen name="Feed" component={Blog} />
+        <TopTab.Screen name="Bản đồ" component={MapScreen} />
+      </TopTab.Navigator>
+    </SafeAreaView>
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -320,8 +452,10 @@ const styles = StyleSheet.create({
   imageContainer: {
     flex: 1,
     width: '100%',
-    height: height,
-    bottom: Platform.OS === 'ios' ? '18%' : '8%',
+    height: SCREEN_HEIGHT,
+    bottom: Platform.OS === 'ios' 
+      ? SCREEN_HEIGHT > 800 ? '18%' : '15%'  // iPhone Plus vs Regular
+      : SCREEN_HEIGHT > 700 ? '8%' : '6%',   // Android Large vs Regular
   },
   imageWrapper: {
     width: '100%',
@@ -392,15 +526,33 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     position: 'absolute',
-    right: '5%',
-    bottom: Platform.OS === 'ios' ? '30%' : '35%',
+    right: Platform.OS === 'ios' ? '4%' : '3%',
+    bottom: getBottomPosition(),
     alignItems: 'center',
+    zIndex: 1000,
   },
   actionButton: {
-    marginVertical: 10,
+    width: normalize(38),
+    height: normalize(38),
+    borderRadius: normalize(19),
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: normalize(4),
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   loadingContainer: {
-    height: height,
+    height: SCREEN_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#000', // Black background during loading
@@ -444,7 +596,50 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
   },
+  actionButtonContainer: {
+    alignItems: 'center',
+    marginBottom: normalize(8),
+  },
+  likeCount: {
+    color: 'white',
+    fontSize: normalize(11),
+    fontWeight: '600',
+    marginTop: normalize(2),
+    textAlign: 'center',
+    ...Platform.select({
+      ios: {
+        fontFamily: 'System',
+      },
+      android: {
+        fontFamily: 'Roboto',
+      },
+    }),
+  },
+  actionButtons: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: normalize(6),
+  },
+  '@media (max-width: 320px)': {
+    actionButton: {
+      width: normalize(34),
+      height: normalize(34),
+      borderRadius: normalize(17),
+    },
+    likeCount: {
+      fontSize: normalize(10),
+    },
+  },
+  '@media (min-width: 768px)': {
+    actionButton: {
+      width: normalize(44),
+      height: normalize(44),
+      borderRadius: normalize(22),
+    },
+    likeCount: {
+      fontSize: normalize(13),
+    },
+  },
 });
-
 
 export default TrangTimBanDuLich;

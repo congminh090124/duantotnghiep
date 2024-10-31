@@ -178,8 +178,13 @@ export default function ChatScreen({ route, navigation }) {
       return;
     }
 
-    navigation.navigate('UserProfile', { userId: receiverId });
-  }, [receiverId, navigation]);
+    // Kiểm tra nếu receiverId trùng với userId (tài khoản của mình)
+    if (receiverId === userId) {
+      navigation.navigate('Profile'); // Điều hướng đến trang Profile của mình
+    } else {
+      navigation.navigate('UserProfile', { userId: receiverId }); // Điều hướng đến trang UserProfile của người khác
+    }
+  }, [receiverId, userId, navigation]);
 
   if (isLoading) {
     return (

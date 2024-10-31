@@ -62,6 +62,21 @@ const EditPost = ({ route, navigation }) => {
     }
   };
   
+  const confirmRemoveImage = (index, isNewImage = false) => {
+    Alert.alert(
+      "Xác nhận xóa",
+      "Bạn có chắc chắn muốn xóa hình ảnh này?",
+      [
+        { text: "Hủy", style: "cancel" },
+        { 
+          text: "Xóa", 
+          style: "destructive",
+          onPress: () => removeImage(index, isNewImage)
+        }
+      ]
+    );
+  };
+
   const removeImage = (index, isNewImage = false) => {
     if (isNewImage) {
       setNewImages(prevImages => prevImages.filter((_, i) => i !== index));
@@ -84,7 +99,7 @@ const EditPost = ({ route, navigation }) => {
           {images.map((img, index) => (
             <View key={index} style={styles.imageWrapper}>
               <Image source={{ uri: img }} style={styles.image} />
-              <TouchableOpacity style={styles.removeButton} onPress={() => removeImage(index)}>
+              <TouchableOpacity style={styles.removeButton} onPress={() => confirmRemoveImage(index)}>
                 <Text style={styles.removeButtonText}>X</Text>
               </TouchableOpacity>
             </View>
@@ -92,7 +107,7 @@ const EditPost = ({ route, navigation }) => {
           {newImages.map((img, index) => (
             <View key={`new-${index}`} style={styles.imageWrapper}>
               <Image source={{ uri: img.uri }} style={styles.image} />
-              <TouchableOpacity style={styles.removeButton} onPress={() => removeImage(index, true)}>
+              <TouchableOpacity style={styles.removeButton} onPress={() => confirmRemoveImage(index, true)}>
                 <Text style={styles.removeButtonText}>X</Text>
               </TouchableOpacity>
             </View>

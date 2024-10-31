@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
+import axios from 'axios';
+
+const API_BASE_URL = 'https://lacewing-evolving-generally.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -31,36 +33,6 @@ export const API_ENDPOINTS = {
   editTravelPost: `${API_BASE_URL}/api/travel-posts/edit`, // Thêm endpoint này
 };
 
-export const getFCMToken = async () => {
-  try {
-    const token = await messaging().getToken();
-    return token;
-  } catch (error) {
-    console.error('Error getting FCM token:', error);
-    return null;
-  }
-};
-
-// Function to save the FCM token to your backend
-export const saveFCMToken = async (userId, token) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/users/save-fcm-token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${await getToken()}`,
-      },
-      body: JSON.stringify({ userId, fcmToken: token }),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to save FCM token');
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error saving FCM token:', error);
-    throw error;
-  }
-};
 
 
 export const editPost = async (postId, { title, images, newImages }) => {
@@ -138,25 +110,56 @@ export const editTravelPost = async (postId, postData) => {
     const token = await AsyncStorage.getItem('userToken');
     const formData = new FormData();
 
-    formData.append('title', postData.title);
-    formData.append('startDate', postData.startDate.toISOString());
-    formData.append('endDate', postData.endDate.toISOString());
-    formData.append('destinationLat', postData.destinationLat.toString());
-    formData.append('destinationLng', postData.destinationLng.toString());
-    formData.append('destinationName', postData.destinationName);
+    // Chỉ append các trường có dữ liệu
+    if (postData.title) {
+      formData.append('title', postData.title);
+    }
 
-    // Append existing images
-    postData.images.forEach((image, index) => {
-      if (image.startsWith('http')) {
-        formData.append('existingImages', image);
-      } else {
-        formData.append('images', {
-          uri: image,
-          type: 'image/jpeg',
-          name: `image_${index}.jpg`
+    if (postData.startDate) {
+      formData.append('startDate', postData.startDate.toISOString());
+    }
+
+    if (postData.endDate) {
+      formData.append('endDate', postData.endDate.toISOString());
+    }
+
+    if (postData.destinationLat) {
+      formData.append('destinationLat', postData.destinationLat.toString());
+    }
+
+    if (postData.destinationLng) {
+      formData.append('destinationLng', postData.destinationLng.toString());
+    }
+
+    if (postData.destinationName) {
+      formData.append('destinationName', postData.destinationName);
+    }
+
+    // Xử lý ảnh cần xóa
+    if (postData.imagesToDelete) {
+      if (Array.isArray(postData.imagesToDelete)) {
+        postData.imagesToDelete.forEach(image => {
+          formData.append('imagesToDelete', image);
         });
+      } else {
+        formData.append('imagesToDelete', postData.imagesToDelete);
       }
-    });
+    }
+
+    // Xử lý ảnh hiện có và ảnh mới (nếu có)
+    if (postData.images) {
+      postData.images.forEach((image, index) => {
+        if (image.startsWith('http')) {
+          formData.append('existingImages', image);
+        } else {
+          formData.append('images', {
+            uri: image,
+            type: 'image/jpeg',
+            name: `image_${index}.jpg`
+          });
+        }
+      });
+    }
 
     const response = await fetch(`${API_BASE_URL}/api/travel-posts/edit/${postId}`, {
       method: 'PUT',
@@ -275,6 +278,37 @@ export const changePassword = async (currentPassword, newPassword) => {
     throw error;
   }
 };
+
+// ... existing imports ...
+
+export const getMyTravelPosts = async () => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts/my-posts`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch user travel posts');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching user travel posts:', error);
+    throw error;
+  }
+};
+
+// ... existing code ...
 
 export const getAllTravelPosts = async () => {
   try {
@@ -919,4 +953,134 @@ export const getFollowing = async () => {
   }
 };
 export default API_ENDPOINTS;
+
+// Lấy chi tiết travel post
+export const getTravelPostDetail = async (postId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts/${postId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch travel post detail');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching travel post detail:', error);
+    throw error;
+  }
+};
+
+// Lấy các bài viết liên quan
+export const getRelatedTravelPosts = async (postId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts/${postId}/related`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch related posts');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching related posts:', error);
+    throw error;
+  }
+};
+
+// Toggle like travel post
+export const toggleLikeTravelPost = async (postId) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (!token) {
+      throw new Error('No token found');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts/${postId}/toggle-like`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const data = await response.json();
+    
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to toggle like');
+    }
+
+    return {
+      success: true,
+      isLiked: data.isLiked,
+      likesCount: data.likesCount,
+      message: data.message
+    };
+  } catch (error) {
+    console.error('Error in toggleLikeTravelPost:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to toggle like'
+    };
+  }
+};
+// Tìm kiếm travel posts
+export const searchTravelPosts = async (params) => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    const response = await axios.get(`${API_BASE_URL}/api/travel-posts/search`, {
+      params,
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error searching posts:', error);
+    throw error;
+  }
+};
+
+export const getUserTravelPosts = async (userId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/travel-posts/user/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await getToken()}`
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch user travel posts');
+    }
+    
+    const data = await response.json();
+    return data.posts; // Trả về mảng posts từ response
+  } catch (error) {
+    console.error('Error fetching user travel posts:', error);
+    throw error;
+  }
+};
 

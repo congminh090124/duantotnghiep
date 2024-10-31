@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity, Alert, RefreshControl } from 'react-native';
-import { getAllTravelPosts, deleteTravelPost, editTravelPost } from '../../apiConfig';
+import { getMyTravelPosts, deleteTravelPost, editTravelPost } from '../../apiConfig';
 import * as Location from 'expo-location';
 import { Menu, MenuOptions, MenuOption, MenuTrigger, MenuProvider } from 'react-native-popup-menu';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,7 +15,7 @@ const TravelPostManager = () => {
 
   const fetchTravelPosts = useCallback(async () => {
     try {
-      const data = await getAllTravelPosts();
+      const data = await getMyTravelPosts();
       const postsWithLocationNames = await Promise.all(
         data.map(async (post) => ({
           ...post,
