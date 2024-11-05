@@ -126,16 +126,23 @@ const EditTravelPost = () => {
         const options = {
           method: 'GET',
           headers: {
-            'x-rapidapi-key': 'YOUR_RAPIDAPI_KEY',
+            'x-rapidapi-key': RAPID_API_KEY,
             'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
           }
         };
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         const response = await axios.get(url, options);
         setSearchResults(response.data.predictions);
         setShowSuggestions(true);
       } catch (error) {
-        console.error('Error fetching suggestions:', error);
+        if (error.response?.status === 429) {
+          console.log('Rate limit exceeded, waiting before next request');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } else {
+          console.error('Error fetching suggestions:', error);
+        }
       }
     } else {
       setSearchResults([]);

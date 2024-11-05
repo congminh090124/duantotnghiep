@@ -113,28 +113,40 @@ export default function NotificationsScreen() {
         socket.disconnect();
       }
 
+      // Cấu hình socket mới với kết nối tức thì
       const newSocket = io(API_ENDPOINTS.socketURL, {
-        transports: ['websocket'],
+        transports: ['polling'], // Chỉ dùng polling để kết nối nhanh
+        forceNew: true,
+        reconnection: true,
+        reconnectionAttempts: Infinity,
+        timeout: 5000, // Giảm timeout xuống
         auth: { token },
-        query: { userId }
+        query: { userId },
+        autoConnect: true, // Kết nối ngay lập tức
       });
 
+      // Xử lý các events
       newSocket.on('connect', () => {
-        console.log('Socket connected successfully');
+        console.log('Socket connected:', newSocket.id);
         newSocket.emit('userConnected', userId);
-        // Load lại thông báo khi kết nối thành công
-        loadNotifications();
       });
 
       newSocket.on('connect_error', (error) => {
-        console.error('Socket connection error:', error);
-        Alert.alert('Lỗi kết nối', 'Không thể kết nối đến server thông báo');
+        console.error('Connection error:', error);
+        // Thử kết nối lại ngay lập tức
+        newSocket.connect();
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
+        if (reason === 'io server disconnect') {
+          newSocket.connect(); // Kết nối lại ngay lập tức
+        }
       });
 
       setSocket(newSocket);
     } catch (error) {
       console.error('Socket initialization error:', error);
-      Alert.alert('Lỗi', 'Không thể khởi tạo kết nối socket');
     }
   };
 
@@ -143,17 +155,10 @@ export default function NotificationsScreen() {
     setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem('userToken');
-      const userDataString = await AsyncStorage.getItem('userData');
-      
-      if (!userDataString || !token) {
+      if (!token) {
         Alert.alert('Lỗi', 'Vui lòng đăng nhập lại');
         return;
       }
-
-      const userData = JSON.parse(userDataString);
-      const userId = userData.id;
-
-      console.log('Loading notifications for user:', userData);
 
       const response = await fetch(`${API_ENDPOINTS.socketURL}/api/notifications`, {
         headers: {
@@ -162,17 +167,13 @@ export default function NotificationsScreen() {
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error('Network response was not ok');
 
       const data = await response.json();
-      console.log('Loaded notifications:', data);
       setNotifications(data);
       filterNotifications(data, activeTab);
     } catch (error) {
       console.error('Error loading notifications:', error);
-      Alert.alert('Lỗi', 'Không thể tải thông báo. Vui lòng thử lại sau.');
     } finally {
       setIsLoading(false);
     }
@@ -231,19 +232,16 @@ export default function NotificationsScreen() {
 
   // Lọc thông báo theo tab
   const filterNotifications = (notifs, tab) => {
-    let filtered = [...notifs];
-    switch (tab) {
-      case 'unread':
-        filtered = filtered.filter(n => !n.read);
-        break;
-      case 'mentions':
-        filtered = filtered.filter(n => n.type === 'mention');
-        break;
-      case 'requests':
-        filtered = filtered.filter(n => n.type === 'request');
-        break;
-    }
+    if (!notifs) return;
     
+    let filtered = notifs;
+    
+    // Áp dụng filter dựa trên tab
+    if (tab === 'unread') filtered = filtered.filter(n => !n.read);
+    else if (tab === 'mentions') filtered = filtered.filter(n => n.type === 'mention');
+    else if (tab === 'requests') filtered = filtered.filter(n => n.type === 'request');
+    
+    // Áp dụng search query nếu có
     if (searchQuery) {
       filtered = filtered.filter(n => 
         n.content.toLowerCase().includes(searchQuery.toLowerCase())
