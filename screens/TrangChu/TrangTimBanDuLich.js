@@ -11,12 +11,13 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getStatusBarHeight } from 'react-native-status-bar-height';
 
 const TopTab = createMaterialTopTabNavigator();
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Tính toán tỷ lệ scale dựa trên màn hình
-const scale = SCREEN_WIDTH / 320; // Sử dụng 320 làm chuẩn
+const scale = SCREEN_WIDTH / 320; // Sử dng 320 lm chun
 const normalize = (size) => {
   const newSize = size * scale;
   if (Platform.OS === 'ios') {
@@ -120,6 +121,10 @@ const UserImages = React.memo(({ post }) => {
         containerStyle={styles.swiperContainer}
         loadMinimal={true}
         loadMinimalSize={1}
+        showsPagination={true}
+        paginationStyle={styles.paginationStyle}
+        dotStyle={styles.dotStyle}
+        activeDotStyle={styles.activeDotStyle}
       >
         {post.images && post.images.length > 0 ? (
           post.images.map((image, index) => (
@@ -156,10 +161,19 @@ const UserImages = React.memo(({ post }) => {
 });
 
 const UserInfo = React.memo(({ post }) => {
+  const navigation = useNavigation();
   const [locationNames, setLocationNames] = useState({
     current: 'Đang tải...',
     destination: 'Đang tải...'
   });
+
+  const handleAuthorPress = useCallback(() => {
+    navigation.navigate('UserProfile', {
+      userId: post.author._id,
+      username: post.author.username,
+      avatar: post.author.avatar
+    });
+  }, [navigation, post.author]);
 
   useEffect(() => {
     const getTranslatedLocationName = async (lat, lng, locationType) => {
@@ -212,13 +226,20 @@ const UserInfo = React.memo(({ post }) => {
       />
       <View style={styles.contentWrapper}>
         <View style={styles.headerRow}>
-          <View style={styles.authorContainer}>
+          <TouchableOpacity 
+            style={styles.authorContainer}
+            onPress={handleAuthorPress}
+            activeOpacity={0.7}
+          >
             <Image 
               source={{ uri: post.author.avatar }} 
               style={styles.authorAvatar}
             />
-            <Text style={styles.authorName}>{post.author.username}</Text>
-          </View>
+            <View style={styles.authorInfo}>
+              <Text style={styles.authorName}>{post.author.username}</Text>
+              {post.author.age && <Text style={styles.authorAge}>{post.author.age} tuổi</Text>}
+            </View>
+          </TouchableOpacity>
         </View>
 
         <Text style={styles.postTitle}>{post.title}</Text>
@@ -307,19 +328,12 @@ const SearchHeader = React.memo(() => {
   const navigation = useNavigation();
   
   return (
-    <View style={styles.headerContainer}>
-      <Image 
-        source={require('../../assets/logo.png')} // Đảm bảo bạn có file logo trong thư mục assets
-        style={styles.logoImage}
-        resizeMode="contain"
-      />
-      <TouchableOpacity 
-        style={styles.searchButton}
-        onPress={() => navigation.navigate('TravelSearch')} // Thêm màn hình Search vào navigation của bạn
-      >
-        <Search stroke="white" width={24} height={24} />
-      </TouchableOpacity>
-    </View>
+    <TouchableOpacity 
+      style={styles.searchButton}
+      onPress={() => navigation.navigate('TravelSearch')}
+    >
+      <Search stroke="white" width={24} height={24} />
+    </TouchableOpacity>
   );
 });
 
@@ -584,31 +598,13 @@ const styles = StyleSheet.create({
   },
   actionButtonsContainer: {
     position: 'absolute',
-    right: Platform.OS === 'ios' ? '4%' : '3%',
-    bottom: getBottomPosition(),
+    right: Platform.OS === 'ios' ? 12 : 10,
+    bottom: '30%',
     alignItems: 'center',
+    padding: 0,
     zIndex: 1000,
   },
-  actionButton: {
-    width: normalize(38),
-    height: normalize(38),
-    borderRadius: normalize(19),
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: normalize(4),
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
-  },
+ 
   loadingContainer: {
     height: SCREEN_HEIGHT,
     justifyContent: 'center',
@@ -636,13 +632,30 @@ const styles = StyleSheet.create({
   },
   searchButton: {
     position: 'absolute',
-    right: 20,
-    top: 40,
-    backgroundColor: '#222', // Dark button background
-    borderRadius: 50,
-    padding: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    right: 10,
+    top: Platform.OS === 'ios' 
+      ? getStatusBarHeight() + 5
+      : 0,
+    zIndex: 9999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   topNav: {
     backgroundColor: '#000', // Black top nav background
@@ -656,7 +669,7 @@ const styles = StyleSheet.create({
   },
   actionButtonContainer: {
     alignItems: 'center',
-    marginBottom: normalize(8),
+    marginBottom: 4,
   },
   likeCount: {
     color: 'white',
@@ -698,43 +711,6 @@ const styles = StyleSheet.create({
       fontSize: normalize(13),
     },
   },
-  headerContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingLeft: 16,
-    paddingRight: 8,
-    zIndex: 1000,
-  },
-  logoImage: {
-    width: 100,
-    height: 30,
-    tintColor: 'white', // Nếu logo của bạn cần màu trắng
-  },
-  searchButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 4,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
-  },
   postContent: {
     position: 'absolute',
     bottom: 0,
@@ -749,14 +725,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  authorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
+ 
   authorAvatar: {
     width: 28,
     height: 28,
@@ -777,7 +746,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dateContainer: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+   
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -812,7 +781,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   interestTag: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
+   
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -821,20 +790,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 12,
   },
-  actionButtonsContainer: {
-    position: 'absolute',
-    right: 16,
-    bottom: Platform.OS === 'ios' ? 120 : 100,
-    alignItems: 'center',
-    gap: 16,
-  },
+  
   actionButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
+    margin: 6,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -864,10 +828,10 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 40,
     left: 0,
     right: 0,
-    width: SCREEN_WIDTH, // Use full screen width
+    width: SCREEN_WIDTH,
   },
   gradient: {
     position: 'absolute',
@@ -879,8 +843,9 @@ const styles = StyleSheet.create({
   },
   contentWrapper: {
     width: SCREEN_WIDTH,
-    padding: 16,
-    paddingBottom: 32,
+    padding: 15,
+    paddingBottom: 25,
+    marginBottom: -20,
   },
   headerRow: {
     width: '100%',
@@ -891,81 +856,146 @@ const styles = StyleSheet.create({
   authorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    maxWidth: '80%', // Prevent too long usernames from breaking layout
+    marginBottom: 10,
+    padding: 5,
   },
   authorAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    marginRight: 8,
-    borderWidth: 1,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 10,
+    borderWidth: 2,
     borderColor: '#fff',
   },
   authorName: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10
   },
   postTitle: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 8,
-    width: '100%',
+    marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10
   },
   dateContainer: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   dateText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10
   },
   locationContainer: {
-    width: '100%',
-    marginBottom: 12,
-    gap: 8,
+    marginBottom: 10,
+    gap: 6,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    width: '100%', // Full width for location rows
   },
   locationText: {
     color: '#fff',
-    fontSize: 12,
-    marginLeft: 6,
-    flex: 1, // Take remaining space
+    fontSize: 14,
+    marginLeft: 8,
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10
   },
   interestsContainer: {
-    width: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    marginTop: 12,
+    marginTop: 10,
   },
   interestTag: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   interestText: {
     color: '#fff',
-    fontSize: 12,
-  }
+    fontSize: 13,
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10
+  },
+  overlayGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '60%',
+    background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)',
+  },
+  paginationStyle: {
+    bottom: '15%',
+    right: 0,
+    flexDirection: 'row',
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: 10,
+    paddingLeft: 10,
+    zIndex: 999,
+    width: '100%',
+  },
+  
+  dotStyle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0, 255, 255, 0.5)',
+    marginLeft: 4,
+    marginRight: 4,
+  },
+  
+  activeDotStyle: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#00FFFF',
+    marginLeft: 4,
+    marginRight: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.3,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  authorInfo: {
+    flexDirection: 'column',
+    justifyContent: 'center',
+  },
+  
+  authorAge: {
+    color: '#fff',
+    fontSize: 14,
+    marginTop: 2,
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10
+  },
 });
 
 export default TrangTimBanDuLich;

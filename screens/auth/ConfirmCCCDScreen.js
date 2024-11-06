@@ -37,7 +37,7 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
       }
         
       try {
-          const response = await fetch("https://lacewing-evolving-generally.ngrok-free.app/api/scan/update-cccd", {
+          const response = await fetch("https://lobster-upward-sunbeam.ngrok-free.app/api/scan/update-cccd", {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
