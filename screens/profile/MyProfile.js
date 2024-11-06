@@ -330,15 +330,19 @@ const MyProfile = () => {
                   {(normalPosts?.length || 0) + (travelPosts?.length || 0)}
                 </Text>
               </View>
-              <TouchableOpacity style={styles.statNumberContainer}>
+              <TouchableOpacity style={styles.statNumberContainer}
+               onPress={() => navigation.navigate('Follower', { userId: profileData._id })}>
                 <Text style={styles.statNumber}>
                   {profileData.thong_ke?.nguoi_theo_doi || 0}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.statNumberContainer}>
+              <TouchableOpacity style={styles.statNumberContainer}
+                 onPress={() => navigation.navigate('Following', { userId: profileData._id })}>
                 <Text style={styles.statNumber}>
                   {profileData.thong_ke?.dang_theo_doi || 0}
+                  
                 </Text>
+                
               </TouchableOpacity>
             </View>
 

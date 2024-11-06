@@ -1,202 +1,253 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { width,View, Text, Image, TouchableOpacity, FlatList, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+  Dimensions
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { getUserProfileById, followUser, unfollowUser } from '../../apiConfig';
-const Follower = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
-  const { followers } = route.params;
-  const [followersList, setFollowersList] = useState([]);
+import { getFollowers } from '../../apiConfig';
+
+const { width } = Dimensions.get('window');
+const AVATAR_SIZE = 60;
+
+const Follower = ({ route, navigation }) => {
+  const [followers, setFollowers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { userId } = route.params;
 
   useEffect(() => {
-    const getInitialFollowStatus = async () => {
-      try {
-        const followStatusPromises = followers.map(async (user) => {
-          const userProfile = await getUserProfileById(user.id);
-          return {
-            ...user,
-            isFollowing: userProfile.isFollowing || false,
-            isFollowingMe: true
-          };
-        });
-        
-        const updatedFollowers = await Promise.all(followStatusPromises);
-        setFollowersList(updatedFollowers);
-      } catch (error) {
-        console.error('Error getting follow status:', error);
-      }
-    };
+    fetchFollowers();
+  }, [userId]);
 
-    getInitialFollowStatus();
-  }, [followers]);
-
-  const handleFollow = useCallback(async (userId) => {
+  const fetchFollowers = async () => {
     try {
-      await followUser(userId);
-      setFollowersList(prevList =>
-        prevList.map(user =>
-          user.id === userId ? { ...user, isFollowing: true } : user
-        )
-      );
-      Alert.alert('Thành công', 'Các bạn đã trở thành bạn bè!');
+      setLoading(true);
+      const data = await getFollowers(userId);
+      const formattedData = (data || []).map((item, index) => ({
+        ...item,
+        uniqueId: item.id || item._id || index.toString(),
+        avatar: item.avatar,
+        username: item.username || 'Người dùng',
+        fullName: item.ten_day_du || '',
+        bio: item.bio || ''
+      }));
+      setFollowers(formattedData);
     } catch (error) {
-      console.error('Error following user:', error);
-      Alert.alert('Lỗi', `Không thể theo dõi người dùng: ${error.message}`);
+      console.error('Error fetching followers:', error);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
-  const handleUnfollow = useCallback(async (userId, username) => {
-    Alert.alert(
-      'Xác nhận hủy theo dõi',
-      `Bạn có chắc chắn muốn hủy theo dõi ${username}?`,
-      [
-        { text: 'Hủy', style: 'cancel' },
-        {
-          text: 'Đồng ý',
-          onPress: async () => {
-            try {
-              await unfollowUser(userId);
-              setFollowersList(prevList =>
-                prevList.map(user =>
-                  user.id === userId ? { ...user, isFollowing: false } : user
-                )
-              );
-            } catch (error) {
-              console.error('Error unfollowing user:', error);
-              Alert.alert('Lỗi', `Không thể hủy theo dõi người dùng: ${error.message}`);
-            }
-          }
-        }
-      ]
-    );
-  }, []);
-
-  const renderUserItem = useCallback(({ item }) => (
-    <View style={styles.userItem}>
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
-      <View style={styles.userInfo}>
-        <Text style={styles.userName}>{item.username}</Text>
+  const renderItem = ({ item }) => (
+    <TouchableOpacity 
+      style={styles.userCard}
+      onPress={() => navigation.navigate('UserProfile', { userId: item.uniqueId })}
+      activeOpacity={0.7}
+    >
+      <View style={styles.avatarContainer}>
+        {item.avatar ? (
+          <Image
+            source={{ uri: item.avatar }}
+            style={styles.avatar}
+            defaultSource={require('../../assets/image.png')}
+          />
+        ) : (
+          <View style={[styles.avatar, styles.placeholderAvatar]}>
+            <Text style={styles.placeholderText}>
+              {item.username.charAt(0).toUpperCase()}
+            </Text>
+          </View>
+        )}
       </View>
-      <TouchableOpacity
-        style={[
-          styles.followButton,
-          item.isFollowing ? styles.friendButton : styles.followBackButton
-        ]}
-        onPress={() => 
-          item.isFollowing 
-            ? handleUnfollow(item.id, item.username)
-            : handleFollow(item.id)
-        }
-      >
-        <Text style={styles.followButtonText}>
-          {item.isFollowing ? 'Bạn bè' : 'Theo dõi lại'}
+      <View style={styles.userInfo}>
+        <Text style={styles.username} numberOfLines={1}>
+          {item.username}
         </Text>
-      </TouchableOpacity>
+        {item.fullName && (
+          <Text style={styles.fullName} numberOfLines={1}>
+            {item.fullName}
+          </Text>
+        )}
+        {item.bio && (
+          <Text style={styles.bio} numberOfLines={2}>
+            {item.bio}
+          </Text>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+
+  const ListEmptyComponent = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons name="people-outline" size={48} color="#666" />
+      <Text style={styles.emptyText}>Chưa có người theo dõi</Text>
+      <Text style={styles.emptySubText}>
+        Hãy tương tác nhiều hơn để có thêm người theo dõi
+      </Text>
     </View>
-  ), [handleFollow, handleUnfollow]);
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Người theo dõi</Text>
+          <View style={styles.headerRight} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0095f6" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="black" />
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Người theo dõi</Text>
-        <View style={{ width: 24 }} />
+        <View style={styles.headerRight} />
       </View>
+
       <FlatList
-        data={followersList}
-        renderItem={renderUserItem}
-        keyExtractor={(item) => item.id.toString()}
+        data={followers}
+        renderItem={renderItem}
+        keyExtractor={item => item.uniqueId}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={ListEmptyComponent}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
       />
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#fff',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dbdbdb',
+  },
+  backButton: {
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
   },
-  tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  headerRight: {
+    width: 32,
   },
-  tab: {
+  loadingContainer: {
     flex: 1,
-    paddingVertical: 15,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#0066FF',
+  listContainer: {
+    paddingVertical: 8,
   },
-  tabText: {
-    fontSize: 16,
-    color: 'gray',
-  },
-  activeTabText: {
-    color: '#0066FF',
-    fontWeight: 'bold',
-  },
-  page: {
-    width: width,
-  },
-  userItem: {
+  userCard: {
     flexDirection: 'row',
+    padding: 16,
     alignItems: 'center',
-    padding: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+  },
+  avatarContainer: {
+    marginRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 15,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    backgroundColor: '#f0f0f0',
+  },
+  placeholderAvatar: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  placeholderText: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#666',
   },
   userInfo: {
     flex: 1,
+    marginRight: 8,
   },
-  userName: {
+  username: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#262626',
+    marginBottom: 2,
   },
-  userBio: {
+  fullName: {
     fontSize: 14,
-    color: 'gray',
+    color: '#666',
+    marginBottom: 4,
   },
-  followButton: {
-    backgroundColor: '#0066FF',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
+  bio: {
+    fontSize: 14,
+    color: '#262626',
+    lineHeight: 18,
   },
-  followButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  separator: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginLeft: AVATAR_SIZE + 28,
   },
-  friendButton: {
-    backgroundColor: '#34B7F1',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 60,
   },
-  followBackButton: {
-    backgroundColor: '#FF6B6B',
-  }
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#262626',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });
 
 export default Follower;

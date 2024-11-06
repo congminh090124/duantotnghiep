@@ -261,39 +261,45 @@ const UserProfile = ({ route }) => {
   }, [navigation, activeTab]);
 
   const renderFollowButton = useCallback(() => {
-    if (isFriend) {
-      return (
-        <TouchableOpacity
-          style={[styles.followButton, styles.friendButton]}
-          onPress={handleFollowToggle}
-        >
-          <Text style={styles.followButtonText}>Bạn bè</Text>
-        </TouchableOpacity>
-      );
-    }
-
     if (isFollowingMe && !isFollowing) {
       return (
         <TouchableOpacity
           style={[styles.followButton, styles.followBackButton]}
           onPress={handleFollowToggle}
         >
-          <Text style={styles.followButtonText}>Theo dõi lại</Text>
+          <Text style={styles.followBackButtonText}>Theo dõi lại</Text>
+        </TouchableOpacity>
+      );
+    }
+
+    if (isFriend) {
+      return (
+        <TouchableOpacity
+          style={[styles.followButton, styles.friendButton]}
+          onPress={handleFollowToggle}
+        >
+          <Text style={styles.friendButtonText}>Bạn bè</Text>
         </TouchableOpacity>
       );
     }
 
     return (
       <TouchableOpacity
-        style={[styles.followButton, isFollowing && styles.followingButton]}
+        style={[
+          styles.followButton,
+          isFollowing ? styles.followingButton : styles.notFollowingButton
+        ]}
         onPress={handleFollowToggle}
       >
-        <Text style={styles.followButtonText}>
+        <Text style={[
+          styles.followButtonText,
+          isFollowing ? styles.followingButtonText : styles.notFollowingButtonText
+        ]}>
           {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
         </Text>
       </TouchableOpacity>
     );
-  }, [isFriend, isFollowingMe, isFollowing, handleFollowToggle]);
+  }, [isFriend, isFollowingMe, isFollowing]);
 
   const renderPostItem = useCallback((post) => {
     return (
@@ -801,18 +807,46 @@ const styles = StyleSheet.create({
   },
   followButton: {
     flex: 1,
-    backgroundColor: '#0095F6',
     paddingVertical: 8,
-    borderRadius: 5,
-    marginRight: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  notFollowingButton: {
+    backgroundColor: '#0095f6',
   },
   followingButton: {
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#dbdbdb',
+  },
+  followBackButton: {
+    backgroundColor: '#0095f6',
+    borderWidth: 0,
+  },
+  friendButton: {
+    backgroundColor: '#e8f0fe',
+    borderWidth: 1,
+    borderColor: '#0095f6',
   },
   followButtonText: {
-    color: 'white',
-    textAlign: 'center',
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  notFollowingButtonText: {
+    color: '#fff',
+  },
+  followingButtonText: {
+    color: '#262626',
+  },
+  followBackButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  friendButtonText: {
+    color: '#0095f6',
+    fontWeight: '600',
   },
   messageButton: {
     flex: 1,

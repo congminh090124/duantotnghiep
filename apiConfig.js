@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://20.2.67.63';
+const API_BASE_URL = 'https://lobster-upward-sunbeam.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -35,6 +35,9 @@ export const API_ENDPOINTS = {
   unblockUser: `${API_BASE_URL}/api/users/unblock`,
   getBlockedUsers: `${API_BASE_URL}/api/users/blocked-users`,
   checkBlockStatus: `${API_BASE_URL}/api/users/check-block-status`,
+  searchTravelPosts: `${API_BASE_URL}/api/travel-posts/a/search`,
+  searchTravelPostsByLocation: `${API_BASE_URL}/api/travel-posts/search-by-location`,
+  searchTravelPostsByDate: `${API_BASE_URL}/api/travel-posts/search-by-date`,
 };
 
 
@@ -1050,17 +1053,69 @@ export const toggleLikeTravelPost = async (postId) => {
     };
   }
 };
-// Tìm kiếm travel posts
-export const searchTravelPosts = async (params) => {
+// Function tìm kiếm theo vị trí
+export const searchTravelPostsByLocation = async ({ latitude, longitude, radius }) => {
   try {
-    const token = await AsyncStorage.getItem('userToken');
-    const response = await axios.get(`${API_BASE_URL}/api/travel-posts/search`, {
-      params,
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    return response.data;
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(
+      `${API_ENDPOINTS.searchTravelPostsByLocation}?lat=${latitude}&lng=${longitude}&radius=${radius}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to search travel posts by location');
+    }
+
+    return await response.json();
   } catch (error) {
-    console.error('Error searching posts:', error);
+    console.error('Error searching travel posts by location:', error);
+    throw error;
+  }
+};
+
+// Function tìm kiếm theo ngày
+export const searchTravelPostsByDate = async ({ startDate, endDate }) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const queryParams = new URLSearchParams({
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+    });
+
+    const response = await fetch(
+      `${API_ENDPOINTS.searchTravelPostsByDate}?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to search travel posts by date');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error searching travel posts by date:', error);
     throw error;
   }
 };
@@ -1193,6 +1248,51 @@ export const getBlockStatus = async (userId) => {
     return data;
   } catch (error) {
     console.error('Error checking block status:', error);
+    throw error;
+  }
+};
+
+// Thêm function để gọi API search
+export const searchTravelPosts = async ({ query, page = 1, limit = 10 }) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const safeQuery = query ? query.trim() : '';
+    
+    const queryParams = new URLSearchParams({
+      query: safeQuery,
+      page: page.toString(),
+      limit: limit.toString()
+    });
+
+    const response = await fetch(
+      `${API_ENDPOINTS.searchTravelPosts}?${queryParams}`,
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to search travel posts');
+    }
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to search travel posts');
+    }
+
+    return data;
+
+  } catch (error) {
+    console.error('Error searching travel posts:', error);
     throw error;
   }
 };
