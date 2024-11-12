@@ -26,7 +26,7 @@ import ProfileMapScreen from './screens/profile/ProfileMapScreen';
 
 import TaoTrangTimBanDuLich from './screens/TrangChu/TaoTrangTimBanDuLich';
 import MapScreen from './screens/TrangChu/MapScreen'
-
+import TrangTimBanDuLich from './screens/TrangChu/TrangTimBanDuLich';
 //travel
 import TravelPostDetail from './screens/travel/TravelPostDetail'
 import TravelSearch from './screens/travel/TravelSearch'
@@ -74,6 +74,7 @@ const App = () => {
         <Stack.Screen name="CreatePost" component={CreatePost} options={{ headerShown: false }} />
         <Stack.Screen name="PostDetailScreen" component={PostDetailScreen} options={{ headerShown: false }} />
         <Stack.Screen name="TaoTrangTimBanDuLich" component={TaoTrangTimBanDuLich} options={{ headerShown: false }} />
+        <Stack.Screen name="TrangTimBanDuLich" component={TrangTimBanDuLich} options={{ headerShown: false }} />
         <Stack.Screen name="TravelPostDetail" component={TravelPostDetail} options={{ headerShown: false }} />
         <Stack.Screen name="TravelSearch" component={TravelSearch} options={{ headerShown: false }} />
 
