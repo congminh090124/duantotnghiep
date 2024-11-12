@@ -6,8 +6,9 @@ import { getUserProfile } from '../apiConfig'; // Đảm bảo import này chín
 import AddOptionsModal from '../screens/modal/AddOptionsModal';
 import TrangTimBanDuLich from './TrangChu/TrangTimBanDuLich';
 import UserListScreen from '../screens/chat/UserListScreen';
-import ThongBao from '../screens/ThongBao';
+
 import MyProfile from '../screens/profile/MyProfile';
+import NotificationsScreen from './thongbao/NotificationsScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -127,7 +128,7 @@ const BottomTabs = () => {
         />
         <Tab.Screen 
           name="Notifications" 
-          component={ThongBao} 
+          component={NotificationsScreen} 
           options={{ headerShown: false }}
           listeners={{
             tabPress: (e) => handleTabPress(e, { name: 'Notifications' }),
