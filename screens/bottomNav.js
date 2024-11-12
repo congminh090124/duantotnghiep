@@ -64,6 +64,7 @@ const BottomTabs = () => {
         ]
       );
     } else if (route.name === 'Add') {
+      event.preventDefault();
       toggleModal();
     }
   };
@@ -79,7 +80,10 @@ const BottomTabs = () => {
                 iconPath = require('../assets/home.png');
                 break;
               case 'Search':
-                iconPath = require('../assets/search.png');
+                iconPath = require('../assets/messenger.png');
+                break;
+              case 'Add':
+                iconPath = require('../assets/add.png');
                 break;
               case 'Notifications':
                 iconPath = require('../assets/notifications.png');
@@ -88,12 +92,13 @@ const BottomTabs = () => {
                 iconPath = require('../assets/profile.png');
                 break;
               default:
-                iconPath = require('../assets/home.png');
+                iconPath = require('../assets/home.png'); // Default fallback icon
             }
             return <Image source={iconPath} style={{ width: size, height: size }} />;
           },
           tabBarActiveTintColor: 'tomato',
           tabBarInactiveTintColor: 'gray',
+          tabBarShowLabel: false,
         })}
       >
         <Tab.Screen 
@@ -115,15 +120,9 @@ const BottomTabs = () => {
         <Tab.Screen 
           name="Add" 
           component={EmptyComponent}
-          options={{
-            tabBarButton: (props) => (
-              <TouchableOpacity
-                {...props}
-                onPress={(event) => handleTabPress(event, { name: 'Add' })}
-              >
-                <Image source={require('../assets/add.png')} style={{ width: 30, height: 30 }} />
-              </TouchableOpacity>
-            ),
+          options={{ headerShown: false }}
+          listeners={{
+            tabPress: (e) => handleTabPress(e, { name: 'Add' }),
           }}
         />
         <Tab.Screen 
