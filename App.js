@@ -4,7 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 // Import BottomTabs
 import BottomTabs from './screens/bottomNav';
-
+import TopTabNavigator from './screens/TopTabNavigator';
 // Import screens
 import QuenMatKhauScreen from './screens/auth/QuenMatKhauScreen';
 import XacMinhOtpScreen from './screens/auth/XacMinhOtpScreen';
