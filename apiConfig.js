@@ -18,9 +18,6 @@ export const API_ENDPOINTS = {
   showAllPostsMap: `${API_BASE_URL}/api/posts/map-posts`,
    likePost: `${API_BASE_URL}/api/posts/:postId/like`,
    socketURL: `${API_BASE_URL}`,
-   onlineUsers: `${API_BASE_URL}/api/chat/all-users`,
-   chatHistory: `${API_BASE_URL}/api/chat/chat-history`,
-   messages: `${API_BASE_URL}/api/chat/messages`,
    likePost: `${API_BASE_URL}/api/posts/:postId/like`,
    addComment: `${API_BASE_URL}/api/posts/:postId/comments`,
    getComments: `${API_BASE_URL}/api/posts/:postId/comments`,
@@ -38,6 +35,12 @@ export const API_ENDPOINTS = {
   searchTravelPosts: `${API_BASE_URL}/api/travel-posts/a/search`,
   searchTravelPostsByLocation: `${API_BASE_URL}/api/travel-posts/search-by-location`,
   searchTravelPostsByDate: `${API_BASE_URL}/api/travel-posts/search-by-date`,
+  chat: {
+    history: `${API_BASE_URL}/api/chat/history`,
+    conversations: `${API_BASE_URL}/api/chat/conversations`,
+    sendMessage: `${API_BASE_URL}/api/chat/send`,
+    readStatus: `${API_BASE_URL}/api/chat/read-status`,
+},
 };
 
 

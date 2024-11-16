@@ -1,213 +1,211 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, Image, SafeAreaView, TextInput, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    View,
+    FlatList,
+    TouchableOpacity,
+    Image,
+    Text,
+    StyleSheet,
+    ActivityIndicator,
+    SafeAreaView,
+    TextInput,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import axios from 'axios';
+import { useSocket } from '../../context/SocketContext';
+import { API_ENDPOINTS } from '../../apiConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import io from 'socket.io-client';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { API_ENDPOINTS, getToken } from '../../apiConfig';
-import NetInfo from "@react-native-community/netinfo";
-import { debounce } from 'lodash';
 import moment from 'moment';
 
-const socket = io(API_ENDPOINTS.socketURL);
+const Header = () => (
+    <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton}>
+            <Ionicons name="chevron-back" size={28} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Messages</Text>
+        <TouchableOpacity style={styles.headerAction}>
+            <Ionicons name="create-outline" size={24} color="#000" />
+        </TouchableOpacity>
+    </View>
+);
 
-const getCloudinaryUrl = (publicId, options = {}) => {
-  if (!publicId) return 'https://via.placeholder.com/50';
-  if (publicId.startsWith('http')) return publicId;
-  const baseUrl = "https://res.cloudinary.com/dois3oewd/image/upload/";
-  const optionsString = Object.entries(options)
-    .map(([key, value]) => `${key}_${value}`)
-    .join(',');
-  return `${baseUrl}${optionsString}/${publicId}`;
-};
+const SearchBar = () => (
+    <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
+        <TextInput
+            style={styles.searchInput}
+            placeholder="Search"
+            placeholderTextColor="#8E8E93"
+        />
+    </View>
+);
 
-export default function ListScreen({ navigation }) {
-    const [allUsers, setAllUsers] = useState([]);
-    const [chatHistory, setChatHistory] = useState([]);
-    const [userId, setUserId] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
-    const [isRefreshing, setIsRefreshing] = useState(false);
-    const [isConnected, setIsConnected] = useState(true);
+const UserListScreen = ({ navigation }) => {
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const { socket, userId } = useSocket();
 
-    useEffect(() => {
-        const unsubscribe = NetInfo.addEventListener(state => {
-            setIsConnected(state.isConnected);
-        });
-
-        return () => unsubscribe();
+    const fetchUsers = useCallback(async () => {
+        try {
+            setLoading(true);
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.get(
+                `${API_ENDPOINTS.socketURL}/api/chat/all-users`,
+                {
+                    headers: { Authorization: `Bearer ${token}` }
+                }
+            );
+            setUsers(response.data);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     useEffect(() => {
-        const loadUserData = async () => {
-            try {
-                const storedUserId = await AsyncStorage.getItem('userID');
-                if (storedUserId) {
-                    setUserId(storedUserId);
-                    socket.emit('userConnected', storedUserId);
-                }
-            } catch (error) {
-                // Handle error silently or show an alert if necessary
-            }
-        };
+        fetchUsers();
+        
+        if (socket) {
+            socket.on('onlineUsers', (onlineUsersList) => {
+                setUsers(prev => prev.map(user => ({
+                    ...user,
+                    isOnline: onlineUsersList.includes(user._id)
+                })));
+            });
 
-        loadUserData();
+            socket.on('userStatusChanged', ({ userId, isOnline, lastActive }) => {
+                setUsers(prev => prev.map(user => {
+                    if (user._id === userId) {
+                        return { ...user, isOnline, lastActive };
+                    }
+                    return user;
+                }));
+            });
 
-        socket.on('updateOnlineUsers', handleUpdateOnlineUsers);
+            socket.emit('getOnlineUsers');
+        }
 
         return () => {
-            socket.off('updateOnlineUsers', handleUpdateOnlineUsers);
+            if (socket) {
+                socket.off('onlineUsers');
+                socket.off('userStatusChanged');
+            }
         };
-    }, []);
+    }, [socket]);
 
-    const fetchAllUsers = useCallback(async () => {
-        if (!isConnected) return;
-
-        try {
-            const token = await getToken();
-            const response = await fetch(API_ENDPOINTS.onlineUsers, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setAllUsers(data);
-        } catch (error) {
-            // Handle error
-        }
-    }, [isConnected]);
-
-    const fetchChatHistory = useCallback(async () => {
-        if (!isConnected || !userId) return;
-
-        try {
-            const token = await getToken();
-            const response = await fetch(`${API_ENDPOINTS.chatHistory}/${userId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setChatHistory(data);
-        } catch (error) {
-            // Handle error
-        }
-    }, [isConnected, userId]);
-
-    useEffect(() => {
-        fetchAllUsers();
-        fetchChatHistory();
-    }, [fetchAllUsers, fetchChatHistory]);
-
-    const onRefresh = useCallback(async () => {
-        setIsRefreshing(true);
-        await Promise.all([fetchAllUsers(), fetchChatHistory()]);
-        setIsRefreshing(false);
-    }, [fetchAllUsers, fetchChatHistory]);
-
-    const handleSearch = useMemo(() => debounce((query) => setSearchQuery(query), 300), []);
-
-    const filteredUsers = useMemo(() => {
-        return allUsers.filter(user => 
-            user.username.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [allUsers, searchQuery]);
-
-    const handleUpdateOnlineUsers = useCallback((onlineUserIds) => {
-        setAllUsers(prevUsers => prevUsers.map(user => ({
-            ...user,
-            isOnline: onlineUserIds.some(onlineUser => onlineUser.id === user._id.toString())
-        })));
-    }, []);
-
-    const renderUserItem = useCallback(({ item }) => {
-        const avatarUrl = getCloudinaryUrl(item.avatar, { width: 60, height: 60, crop: 'fill' });
+    const renderOnlineUser = ({ item }) => {
+        if (!item.isOnline) return null;
         
         return (
             <TouchableOpacity
                 style={styles.onlineUserItem}
-                onPress={() => {
-                    navigation.navigate('ChatScreen', { receiverId: item._id, receiverName: item.username, receiverAvatar: item.avatar });
-                }}
+                onPress={() => navigation.navigate('ChatScreen', {
+                    receiverId: item._id,
+                    receiverName: item.username,
+                    receiverAvatar: item.avatar
+                })}
             >
-                <Image source={{ uri: avatarUrl }} style={styles.onlineAvatar} />
-                <Text style={styles.onlineUserName}>{item.username}</Text>
-                {item.isOnline && <View style={styles.onlineIndicator} />}
+                <View style={styles.onlineAvatarContainer}>
+                    <Image
+                        source={{ uri: item.avatar || 'https://via.placeholder.com/50' }}
+                        style={styles.onlineAvatar}
+                    />
+                    <View style={styles.onlineIndicator} />
+                </View>
+                <Text style={styles.onlineUserName} numberOfLines={1}>
+                    {item.username}
+                </Text>
             </TouchableOpacity>
         );
-    }, [navigation]);
+    };
 
-    const renderChatItem = useCallback(({ item }) => {
-        const avatarUrl = getCloudinaryUrl(item.avatar, { width: 50, height: 50, crop: 'fill' });
-        const lastMessageTime = moment(item.lastMessage.createdAt).format('HH:mm');
-    
+    const renderChatUser = ({ item }) => {
+        const lastActiveText = item.lastActive 
+            ? moment(item.lastActive).fromNow()
+            : 'Never';
+
         return (
             <TouchableOpacity
-                style={styles.chatItem}
-                onPress={() => {
-                    navigation.navigate('ChatScreen', { receiverId: item.id, receiverName: item.username, receiverAvatar: item.avatar });
-                }}
+                style={styles.chatUserItem}
+                activeOpacity={0.7}
+                onPress={() => navigation.navigate('ChatScreen', {
+                    receiverId: item._id,
+                    receiverName: item.username,
+                    receiverAvatar: item.avatar
+                })}
             >
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-                <View style={styles.chatInfo}>
+                <View style={styles.avatarContainer}>
+                    <Image
+                        source={{ uri: item.avatar || 'https://via.placeholder.com/50' }}
+                        style={styles.avatar}
+                    />
+                    {item.isOnline && <View style={styles.statusIndicator} />}
+                </View>
+                <View style={styles.userInfo}>
                     <Text style={styles.userName}>{item.username}</Text>
                     <Text style={styles.lastMessage} numberOfLines={1}>
-                        {item.lastMessage.text}
+                        {item.lastMessage || 'No messages yet'}
                     </Text>
                 </View>
-                <Text style={styles.timeStamp}>{lastMessageTime}</Text>
+                <View style={styles.messageInfo}>
+                    <Text style={styles.messageTime}>
+                        {item.lastMessageTime ? moment(item.lastMessageTime).format('h:mm A') : ''}
+                    </Text>
+                    {item.unreadCount > 0 && (
+                        <View style={styles.unreadBadge}>
+                            <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+                        </View>
+                    )}
+                </View>
             </TouchableOpacity>
         );
-    }, [navigation]);
+    };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#0095F6" />
+            </View>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Đoạn chat</Text>
-                <TouchableOpacity>
-                    <Icon name="create-outline" size={24} color="#007AFF" />
-                </TouchableOpacity>
-            </View>
-            <View style={styles.searchContainer}>
-                <Icon name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Tìm kiếm"
-                    placeholderTextColor="#8E8E93"
-                    onChangeText={handleSearch}
-                />
-            </View>
-            {!isConnected && (
-                <Text style={styles.offlineText}>You are offline. Some features may be unavailable.</Text>
-            )}
+            <Header />
+            <SearchBar />
             <FlatList
-                ListHeaderComponent={
-                    <FlatList
-                        horizontal
-                        data={allUsers}
-                        renderItem={renderUserItem}
-                        keyExtractor={(item) => item._id}
-                        style={styles.onlineList}
-                        showsHorizontalScrollIndicator={false}
-                    />
-                }
-                data={chatHistory}
-                renderItem={renderChatItem}
-                keyExtractor={(item) => item.id}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefreshing}
-                        onRefresh={onRefresh}
-                    />
-                }
+                data={users}
+                renderItem={renderChatUser}
+                keyExtractor={item => item._id}
+                ListHeaderComponent={() => (
+                    <View style={styles.onlineSection}>
+                        <Text style={styles.sectionTitle}>Active Now</Text>
+                        <FlatList
+                            horizontal
+                            data={users.filter(user => user.isOnline)}
+                            renderItem={renderOnlineUser}
+                            keyExtractor={item => `online-${item._id}`}
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={styles.onlineList}
+                            ListEmptyComponent={() => (
+                                <Text style={styles.emptyText}>No active users</Text>
+                            )}
+                        />
+                    </View>
+                )}
+                ListEmptyComponent={() => (
+                    <View style={styles.emptyContainer}>
+                        <Ionicons name="chatbubble-outline" size={48} color="#8E8E93" />
+                        <Text style={styles.emptyTitle}>No Messages</Text>
+                        <Text style={styles.emptyText}>Start a conversation with your friends</Text>
+                    </View>
+                )}
             />
         </SafeAreaView>
     );
-}
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -216,24 +214,28 @@ const styles = StyleSheet.create({
     },
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
+        justifyContent: 'space-between',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#DBDBDB',
     },
     headerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#000000',
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#262626',
+    },
+    headerAction: {
+        padding: 8,
     },
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F2F2F7',
-        borderRadius: 10,
-        margin: 16,
-        paddingHorizontal: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#DBDBDB',
     },
     searchIcon: {
         marginRight: 8,
@@ -241,95 +243,138 @@ const styles = StyleSheet.create({
     searchInput: {
         flex: 1,
         height: 36,
-        color: '#000000',
+        backgroundColor: '#EFEFEF',
+        borderRadius: 10,
+        paddingHorizontal: 12,
+        fontSize: 16,
+    },
+    onlineSection: {
+        paddingVertical: 12,
+        borderBottomWidth: 0.5,
+        borderBottomColor: '#DBDBDB',
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#262626',
+        marginLeft: 16,
+        marginBottom: 12,
     },
     onlineList: {
-        paddingVertical: 16,
+        paddingHorizontal: 8,
     },
     onlineUserItem: {
         alignItems: 'center',
-        marginRight: 16,
+        marginHorizontal: 8,
+        width: 70,
+    },
+    onlineAvatarContainer: {
+        position: 'relative',
+        marginBottom: 4,
     },
     onlineAvatar: {
         width: 60,
         height: 60,
         borderRadius: 30,
-        marginBottom: 4,
-    },
-    onlineUserName: {
-        color: '#000000',
-        fontSize: 12,
+        borderWidth: 2,
+        borderColor: '#fff',
     },
     onlineIndicator: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#4CD964',
         position: 'absolute',
-        bottom: 22,
-        right: 0,
+        bottom: 2,
+        right: 2,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#4CAF50',
         borderWidth: 2,
-        borderColor: '#FFFFFF',
+        borderColor: '#fff',
     },
-    chatItem: {
+    onlineUserName: {
+        fontSize: 12,
+        textAlign: 'center',
+        color: '#1a1a1a',
+        maxWidth: 70,
+    },
+    chatUserItem: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#fff',
         padding: 16,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
+        borderBottomColor: '#F1F3F4',
+    },
+    avatarContainer: {
+        position: 'relative',
     },
     avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        marginRight: 12,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#E9ECEF',
     },
-    chatInfo: {
-        flex: 1,
-    },
-    userName: {
-        color: '#000000',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    lastMessage: {
-        color: '#8E8E93',
-        fontSize: 14,
-    },
-    timeStamp: {
-        color: '#8E8E93',
-        fontSize: 12,
-    },
-    offlineText: {
-        backgroundColor: '#f8d7da',
-        color: '#721c24',
-        padding: 10,
-        textAlign: 'center',
-    },
-    userItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
+    statusIndicator: {
+        position: 'absolute',
+        bottom: 0,
+        right: 0,
+        width: 14,
+        height: 14,
+        borderRadius: 7,
+        backgroundColor: '#4CAF50',
+        borderWidth: 2,
+        borderColor: '#fff',
     },
     userInfo: {
         flex: 1,
-        marginLeft: 12,
+        marginLeft: 16,
     },
-    lastActive: {
-        color: '#8E8E93',
+    userName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1a1a1a',
+        marginBottom: 4,
+    },
+    lastMessage: {
+        fontSize: 13,
+        color: '#666',
+    },
+    messageInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    messageTime: {
+        fontSize: 13,
+        color: '#666',
+    },
+    unreadBadge: {
+        backgroundColor: '#4CAF50',
+        borderRadius: 10,
+        paddingHorizontal: 4,
+        paddingVertical: 2,
+        marginLeft: 4,
+    },
+    unreadCount: {
         fontSize: 12,
+        fontWeight: '600',
+        color: '#fff',
     },
-    onlineIndicator: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: '#4CD964',
-        position: 'absolute',
-        top: 16,
-        right: 16,
-        borderWidth: 2,
-        borderColor: '#FFFFFF',
+    emptyText: {
+        textAlign: 'center',
+        color: '#666',
+        padding: 16,
+    },
+    emptyContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    emptyTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1a1a1a',
+        marginBottom: 12,
     },
 });
+
+export default UserListScreen;

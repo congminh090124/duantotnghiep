@@ -93,28 +93,43 @@ const UserInfo = React.memo(({ post }) => {
   useEffect(() => {
     const getTranslatedLocationName = async (lat, lng, locationType) => {
       try {
-        const [location] = await Location.reverseGeocodeAsync({ 
-          latitude: lat, 
-          longitude: lng 
-        });
+        const response = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=vi`
+        );
         
-        const locationName = location ? 
-          `${location.city || ''}, ${location.region || ''}, ${location.country || ''}` : 
-          'Unknown location';
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+
+        const data = await response.json();
+        
+        // Tạo tên địa điểm từ dữ liệu trả về
+        const parts = [];
+        if (data.locality) parts.push(data.locality);
+        if (data.city) parts.push(data.city);
+        if (data.principalSubdivision) parts.push(data.principalSubdivision);
+        if (data.countryName) parts.push(data.countryName);
+        
+        const locationName = parts.length > 0 
+          ? parts.join(', ')
+          : `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`;
 
         setLocationNames(prev => ({
           ...prev,
           [locationType]: locationName
         }));
       } catch (error) {
-        console.error('Error translating location:', error);
+        console.warn('Error translating location:', error);
+        // Fallback hiển thị tọa độ nếu có lỗi
+        const coordString = `${lat.toFixed(2)}°, ${lng.toFixed(2)}°`;
         setLocationNames(prev => ({
           ...prev,
-          [locationType]: 'Unknown location'
+          [locationType]: coordString
         }));
       }
     };
 
+    // Gọi API cho vị trí hiện tại
     if (post.currentLocation?.coordinates) {
       getTranslatedLocationName(
         post.currentLocation.coordinates[1],
@@ -123,12 +138,15 @@ const UserInfo = React.memo(({ post }) => {
       );
     }
     
+    // Gọi API cho điểm đến
     if (post.destination?.coordinates) {
-      getTranslatedLocationName(
-        post.destination.coordinates[1],
-        post.destination.coordinates[0],
-        'destination'
-      );
+      setTimeout(() => {
+        getTranslatedLocationName(
+          post.destination.coordinates[1],
+          post.destination.coordinates[0],
+          'destination'
+        );
+      }, 500); // Giảm delay xuống 500ms vì API này có giới hạn request cao hơn
     }
   }, [post]);
 

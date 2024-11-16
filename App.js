@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-
+import { SocketProvider } from './context/SocketContext'; 
 // Import BottomTabs
 import BottomTabs from './screens/bottomNav';
-import TopTabNavigator from './screens/TopTabNavigator';
+
 // Import screens
 import QuenMatKhauScreen from './screens/auth/QuenMatKhauScreen';
 import XacMinhOtpScreen from './screens/auth/XacMinhOtpScreen';
@@ -55,6 +55,7 @@ const Stack = createStackNavigator();
 // Main App component
 const App = () => {
   return (
+    <SocketProvider>
     <NavigationContainer>
       <Stack.Navigator initialRouteName="DangNhap">
         {/* Auth Screens */}
@@ -101,6 +102,7 @@ const App = () => {
         <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
+      </SocketProvider>
   );
 };
 
