@@ -4,7 +4,7 @@ import { Image, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getUserProfile } from '../apiConfig'; // Đảm bảo import này chính xác
 import AddOptionsModal from '../screens/modal/AddOptionsModal';
-import TrangTimBanDuLich from './TrangChu/TrangTimBanDuLich';
+import TopTabNavigator from '../screens/TopTabNavigator';
 import UserListScreen from '../screens/chat/UserListScreen';
 import NotificationsScreen from '../screens/thongbao/NotificationsScreen';
 import MyProfile from '../screens/profile/MyProfile';
@@ -102,7 +102,7 @@ const BottomTabs = () => {
       >
         <Tab.Screen 
           name="Home" 
-          component={TrangTimBanDuLich} 
+          component={TopTabNavigator} 
           options={{ headerShown: false }}
           listeners={{
             tabPress: (e) => handleTabPress(e, { name: 'Home' }),
