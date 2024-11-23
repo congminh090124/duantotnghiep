@@ -9,12 +9,14 @@ export const subscribeToNotifications = (userId, callback) => {
   const unsubscribe = onValue(notificationsQuery, (snapshot) => {
     const notifications = [];
     snapshot.forEach((childSnapshot) => {
-      notifications.push({
+      const notification = {
         id: childSnapshot.key,
         ...childSnapshot.val()
-      });
+      };
+      notifications.push(notification);
     });
-    callback(notifications.reverse());
+    notifications.sort((a, b) => b.createdAt - a.createdAt);
+    callback(notifications);
   });
 
   return unsubscribe;

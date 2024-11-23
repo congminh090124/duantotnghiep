@@ -3,7 +3,6 @@ import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensio
 import { Ionicons } from '@expo/vector-icons';
 import { showPostWithID } from '../../apiConfig';
 
-const API_BASE_URL = 'https://enhanced-remotely-bobcat.ngrok-free.app';
 const { width, height } = Dimensions.get('window');
 
 const PostDetailScreen = ({ route, navigation }) => {
@@ -138,21 +137,22 @@ const PostDetailScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#121212',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   headerTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   postContainer: {
     flex: 1,
@@ -160,24 +160,29 @@ const styles = StyleSheet.create({
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    padding: 14,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   username: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   moreButton: {
     marginLeft: 'auto',
+    padding: 8,
   },
   postImage: {
     width: width,
-    height: height - 200, // Adjust this value as needed
+    height: height * 0.6,
     resizeMode: 'cover',
   },
   imageIndicatorContainer: {
@@ -185,55 +190,63 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'absolute',
-    bottom: 20,
+    bottom: 24,
     left: 0,
     right: 0,
   },
   imageIndicatorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     marginHorizontal: 4,
   },
   imageIndicatorDotActive: {
-    backgroundColor: 'white',
+    width: 8,
+    height: 8,
+    backgroundColor: '#FFFFFF',
+    transform: [{scale: 1.2}],
   },
   interactionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 10,
-  },
-  spacer: {
-    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   likesCount: {
-    color: 'white',
-    fontWeight: 'bold',
-    marginLeft: 10,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 16,
+    marginTop: 8,
   },
   captionContainer: {
     flexDirection: 'row',
-    padding: 10,
+    padding: 16,
+    paddingTop: 8,
   },
   caption: {
-    color: 'white',
-    marginLeft: 5,
+    color: '#FFFFFF',
+    marginLeft: 8,
+    fontSize: 14,
+    lineHeight: 20,
+    flex: 1,
   },
   postDate: {
-    color: 'gray',
+    color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 12,
-    marginLeft: 10,
-    marginTop: 5,
+    marginLeft: 16,
+    marginTop: 4,
+    marginBottom: 16,
   },
   placeholderImage: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#2A2A2A',
     justifyContent: 'center',
     alignItems: 'center',
   },
   placeholderText: {
-    color: '#fff',
-    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 12,
   },
 });
 

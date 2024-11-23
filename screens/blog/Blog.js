@@ -237,7 +237,22 @@ const BlogPage = () => {
             renderItem={({ item }) => (
               <View style={styles.commentItem}>
                 <View style={styles.commentHeader}>
-                  <Text style={styles.commentUser}>{item.user.username}</Text>
+                  <View style={styles.commentUserInfo}>
+                    {item.userAvatar ? (
+                      <Image
+                        source={{ uri: item.userAvatar }}
+                        style={styles.commentAvatar}
+                        onError={(e) => console.log('Comment avatar load error:', e.nativeEvent.error)}
+                      />
+                    ) : (
+                      <View style={[styles.commentAvatar, styles.placeholderAvatar]}>
+                        <Ionicons name="person-outline" size={16} color="#fff" />
+                      </View>
+                    )}
+                    <Text style={styles.commentUser}>
+                      {item.username || item.user?.username || 'Unknown User'}
+                    </Text>
+                  </View>
                   <Text style={styles.commentDate}>
                     {new Date(item.createdAt).toLocaleDateString()}
                   </Text>
@@ -399,9 +414,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
   },
+  commentUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  commentAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 8,
+  },
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 5,
   },
   commentUser: {

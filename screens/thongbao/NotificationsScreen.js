@@ -12,6 +12,7 @@ import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { showMessage, hideMessage } from "react-native-flash-message";
+import { useNavigation } from '@react-navigation/native';
 
 // Cấu hình thông báo
 Notifications.setNotificationHandler({
@@ -27,6 +28,7 @@ const NotificationsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState(null);
   const [expoPushToken, setExpoPushToken] = useState('');
+  const navigation = useNavigation();
 
   useEffect(() => {
     const getUserId = async () => {
@@ -47,49 +49,38 @@ const NotificationsScreen = () => {
                 hour12: false
               });
 
+              const getNotificationMessage = (type) => {
+                switch (type) {
+                  case 'like':
+                    return 'đã thích bài viết của bạn';
+                  case 'likeTravel':
+                    return 'đã thích bài viết du lịch của bạn';
+                  case 'comment':
+                    return 'đã bình luận về bài viết của bạn';
+                  case 'follow':
+                    return 'đã bắt đầu theo dõi bạn';
+                  case 'new_post':
+                    return 'đã đăng một bài viết mới';
+                  case 'mention':
+                    return 'đã nhắc đến bạn trong một bài viết';
+                }
+              };
+
               showMessage({
                 message: newestNotification.senderName || "Thông báo",
-                description: newestNotification.content,
+                description: getNotificationMessage(newestNotification.type),
                 type: "info",
                 duration: 4000,
                 icon: props => (
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Image 
                       source={{ uri: newestNotification.senderAvatar || 'https://via.placeholder.com/40' }}
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 20,
-                        marginRight: 10,
-                        borderWidth: 1,
-                        borderColor: 'white'
-                      }}
+                      style={styles.notificationAvatar}
                     />
-                    <Text style={{ fontSize: 12, color: 'white', position: 'absolute', right: -50 }}>
-                      {time}
-                    </Text>
+                    <Text style={styles.timeStamp}>{time}</Text>
                   </View>
                 ),
-                style: {
-                  marginTop: 30,
-                  paddingVertical: 10,
-                  paddingHorizontal: 15,
-                  backgroundColor: '#2196F3',
-                  borderRadius: 8,
-                },
-                titleStyle: {
-                  fontSize: 16,
-                  fontWeight: "bold",
-                  color: 'white',
-                },
-                textStyle: {
-                  fontSize: 14,
-                  color: 'white',
-                },
-                onPress: () => {
-                  handleNotificationPress(newestNotification);
-                },
-                hideOnPress: true,
+                style: styles.notification,
               });
             }
             setNotifications(updatedNotifications);
@@ -164,10 +155,53 @@ const NotificationsScreen = () => {
     if (!notification.read && userId) {
       await markNotificationAsRead(userId, notification.id);
     }
-    // Xử lý navigation hoặc action khác khi nhấn vào thông báo
+
+    // Xử lý navigation dựa vào type của notification
+    switch (notification.type) {
+      case 'like':
+      case 'comment':
+        // Điều hướng đến chi tiết bài viết
+        navigation.navigate('PostDetailScreen', {
+          postId: notification.post,
+        });
+        break;
+      case 'likeTravel':
+        // Điều hướng đến chi tiết bài viết du lịch
+        navigation.navigate('TravelPostDetail', {
+          postId: notification.post,
+        });
+        break;
+      case 'follow':
+        // Điều hướng đến trang cá nhân người dùng
+        navigation.navigate('UserProfile', {
+          userId: notification.sender,
+        });
+        break;
+      case 'new_post':
+        // Điều hướng đến bài viết mới
+        navigation.navigate('PostDetailScreen', {
+          postId: notification.post,
+        });
+        break;
+      case 'mention':
+        // Điều hướng đến bài viết có mention
+        navigation.navigate('PostDetailScreen', {
+          postId: notification.post,
+        });
+        break;
+      case 'request':
+        // Điều hướng đến trang cá nhân người gửi yêu cầu
+        navigation.navigate('UserProfile', {
+          userId: notification.sender,
+        });
+        break;
+      default:
+        console.log('Unknown notification type:', notification.type);
+    }
   };
 
   const handleDelete = async (notificationId) => {
+    hideMessage();
     if (!userId) return;
     try {
       await deleteNotification(userId, notificationId);
@@ -275,6 +309,32 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  notificationAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: 'white'
+  },
+  timeStamp: {
+    fontSize: 11,
+    color: '#E8E8E8',
+    position: 'absolute',
+    left: 300,
+    top: -3,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  notification: {
+    marginTop: 30,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#2196F3',
+    borderRadius: 8,
   },
 });
 
