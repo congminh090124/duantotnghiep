@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, Text } from 'react-native';
+import { View, FlatList, StyleSheet, ActivityIndicator, Text, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NotificationItem from './NotificationItem';
 import { 
@@ -11,6 +11,7 @@ import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { showMessage, hideMessage } from "react-native-flash-message";
 
 // Cấu hình thông báo
 Notifications.setNotificationHandler({
@@ -31,26 +32,79 @@ const NotificationsScreen = () => {
     const getUserId = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem('userID');
-        console.log('Stored userID:', storedUserId);
         
         if (storedUserId) {
           setUserId(storedUserId);
-          console.log('Setting userID in state:', storedUserId);
           
           const unsubscribe = subscribeToNotifications(storedUserId, (updatedNotifications) => {
-            console.log('Received notifications for userID:', storedUserId);
-            console.log('Notifications data:', updatedNotifications);
+            if (updatedNotifications.length > notifications.length) {
+              const newestNotification = updatedNotifications[0];
+              
+              // Format thời gian chỉ hiển thị giờ:phút
+              const time = new Date(newestNotification.createdAt).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+              });
+
+              showMessage({
+                message: newestNotification.senderName || "Thông báo",
+                description: newestNotification.content,
+                type: "info",
+                duration: 4000,
+                icon: props => (
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Image 
+                      source={{ uri: newestNotification.senderAvatar || 'https://via.placeholder.com/40' }}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 20,
+                        marginRight: 10,
+                        borderWidth: 1,
+                        borderColor: 'white'
+                      }}
+                    />
+                    <Text style={{ fontSize: 12, color: 'white', position: 'absolute', right: -50 }}>
+                      {time}
+                    </Text>
+                  </View>
+                ),
+                style: {
+                  marginTop: 30,
+                  paddingVertical: 10,
+                  paddingHorizontal: 15,
+                  backgroundColor: '#2196F3',
+                  borderRadius: 8,
+                },
+                titleStyle: {
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  color: 'white',
+                },
+                textStyle: {
+                  fontSize: 14,
+                  color: 'white',
+                },
+                onPress: () => {
+                  handleNotificationPress(newestNotification);
+                },
+                hideOnPress: true,
+              });
+            }
             setNotifications(updatedNotifications);
             setLoading(false);
           });
           return () => unsubscribe();
-        } else {
-          console.log('No userID found in AsyncStorage');
-          setLoading(false);
         }
       } catch (error) {
-        console.error('Error getting userID from AsyncStorage:', error);
-        setLoading(false);
+        console.error('Error:', error);
+        showMessage({
+          message: "Lỗi",
+          description: "Không thể tải thông báo",
+          type: "danger",
+          duration: 3000,
+        });
       }
     };
 
@@ -106,6 +160,7 @@ const NotificationsScreen = () => {
   }
 
   const handleNotificationPress = async (notification) => {
+    hideMessage();
     if (!notification.read && userId) {
       await markNotificationAsRead(userId, notification.id);
     }

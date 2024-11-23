@@ -2,6 +2,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SocketProvider } from './context/SocketContext'; 
+import FlashMessage from "react-native-flash-message";
+
 // Import BottomTabs
 import BottomTabs from './screens/bottomNav';
 
@@ -101,6 +103,25 @@ const App = () => {
         <Stack.Screen name="DangKiTinhNguyenVienScreen" component={DangKiTinhNguyenVienScreen} options={{ headerShown: false }} />
         <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />
       </Stack.Navigator>
+      <FlashMessage 
+        position="top"
+        floating={true}
+        style={{
+          paddingTop: 30,
+          backgroundColor: '#2196F3',
+          borderRadius: 8,
+          margin: 10,
+        }}
+        titleStyle={{
+          fontSize: 16,
+          fontWeight: "bold",
+          color: 'white'
+        }}
+        textStyle={{
+          fontSize: 14,
+          color: 'white'
+        }}
+      />
     </NavigationContainer>
       </SocketProvider>
   );
