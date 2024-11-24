@@ -8,16 +8,12 @@ import {
   StyleSheet, 
   StatusBar, 
   Platform,
-  Text,
-  SafeAreaView
+  Text
 } from 'react-native';
 import { getAllTravelPosts } from '../../apiConfig';
 import UserImages from './UserImages';
-import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight;
-const BOTTOM_TAB_HEIGHT = Platform.OS === 'ios' ? 83 : 60;
 
 const MainScreen = () => {
   const [posts, setPosts] = useState([]);
@@ -28,7 +24,6 @@ const MainScreen = () => {
   const fetchPosts = useCallback(async () => {
     try {
       const fetchedPosts = await getAllTravelPosts();
-    //   console.log('Fetched Posts:', fetchedPosts);
       setPosts(fetchedPosts);
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -53,7 +48,7 @@ const MainScreen = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <StatusBar 
           barStyle="light-content"
           backgroundColor="#000000"
@@ -62,19 +57,18 @@ const MainScreen = () => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#ffffff" />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar 
         barStyle="light-content"
         backgroundColor="#000000"
         translucent={true}
       />
       
-      {/* Content */}
       <FlatList
         ref={flatListRef}
         data={posts}
@@ -82,12 +76,12 @@ const MainScreen = () => {
         keyExtractor={(item) => item._id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={SCREEN_HEIGHT - STATUSBAR_HEIGHT - BOTTOM_TAB_HEIGHT}
+        snapToInterval={SCREEN_HEIGHT}
         snapToAlignment="start"
         decelerationRate={Platform.select({ ios: 0.99, android: 0.85 })}
         getItemLayout={(data, index) => ({
-          length: SCREEN_HEIGHT - STATUSBAR_HEIGHT - BOTTOM_TAB_HEIGHT,
-          offset: (SCREEN_HEIGHT - STATUSBAR_HEIGHT - BOTTOM_TAB_HEIGHT) * index,
+          length: SCREEN_HEIGHT,
+          offset: SCREEN_HEIGHT * index,
           index,
         })}
         refreshControl={
@@ -97,7 +91,6 @@ const MainScreen = () => {
             tintColor="#ffffff"
             colors={['#ffffff']}
             progressBackgroundColor="#000000"
-            progressViewOffset={STATUSBAR_HEIGHT}
           />
         }
         viewabilityConfig={viewabilityConfig}
@@ -112,7 +105,7 @@ const MainScreen = () => {
           </View>
         )}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -127,7 +120,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyContainer: {
-    height: SCREEN_HEIGHT - STATUSBAR_HEIGHT - BOTTOM_TAB_HEIGHT,
+    height: SCREEN_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -136,15 +129,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     opacity: 0.7,
-  },
-  gradientOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 100,
-    zIndex: 99,
-  },
+  }
 });
 
 export default MainScreen;

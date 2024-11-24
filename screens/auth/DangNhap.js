@@ -26,10 +26,8 @@ const LoginScreen = () => {
      
       
       if (response.token && response.user) {
-        await saveToken(response.token);
+        await AsyncStorage.setItem('token', response.token);
         await AsyncStorage.setItem('userData', JSON.stringify(response.user));
-        console.log('Login successful, token saved');
-      
         await AsyncStorage.setItem('userID', response.user.id);
     
         navigation.navigate('TrangChu');
