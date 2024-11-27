@@ -29,13 +29,16 @@ const RAPID_API_KEY = 'f2a097fff0mshc9e7deae19d8053p11d780jsn906b698f08d0';
 const EditTravelPost = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { post } = route.params;
-  const [title, setTitle] = useState(post.title);
-  const [startDate, setStartDate] = useState(new Date(post.startDate));
-  const [endDate, setEndDate] = useState(new Date(post.endDate));
-  const [destination, setDestination] = useState(post.destination);
-  const [destinationName, setDestinationName] = useState(post.destinationName);
-  const [images, setImages] = useState(post.images);
+  const { _id, title: initialTitle, startDate: initialStartDate, endDate: initialEndDate, 
+          destination: initialDestination, destinationName: initialDestinationName, 
+          images: initialImages } = route.params.post;
+
+  const [title, setTitle] = useState(initialTitle);
+  const [startDate, setStartDate] = useState(new Date(initialStartDate));
+  const [endDate, setEndDate] = useState(new Date(initialEndDate));
+  const [destination, setDestination] = useState(initialDestination);
+  const [destinationName, setDestinationName] = useState(initialDestinationName);
+  const [images, setImages] = useState(initialImages);
   const [isLoading, setIsLoading] = useState(false);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -49,10 +52,10 @@ const EditTravelPost = () => {
   const [showMapSearchResults, setShowMapSearchResults] = useState(false);
   const [tempLocation, setTempLocation] = useState(null);
 
-  const handleUpdatePost = async () => {
+  const handleUpdatePost = useCallback(async () => {
     setIsLoading(true);
     try {
-      const updatedPost = await editTravelPost(post._id, {
+      const postData = {
         title,
         startDate,
         endDate,
@@ -60,15 +63,24 @@ const EditTravelPost = () => {
         destinationLng: destination.coordinates[0],
         destinationName,
         images
-      });
-      setIsLoading(false);
-      Alert.alert('Thành công', 'Bài viết đã được cập nhật');
-      navigation.goBack();
+      };
+
+      await editTravelPost(_id, postData);
+      
+      Alert.alert('Thành công', 'Bài viết đã được cập nhật', [
+        {
+          text: 'OK',
+          onPress: () => {
+            navigation.goBack();
+          }
+        }
+      ]);
     } catch (error) {
-      setIsLoading(false);
       Alert.alert('Lỗi', 'Không thể cập nhật bài viết');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [title, startDate, endDate, destination, destinationName, images, _id, navigation]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -83,7 +95,7 @@ const EditTravelPost = () => {
     }
   };
 
-  const removeImage = (index) => {
+  const removeImage = useCallback((index) => {
     if (index < 0 || index >= images.length) return;
     
     const imageToRemove = images[index];
@@ -98,25 +110,23 @@ const EditTravelPost = () => {
           style: "destructive",
           onPress: async () => {
             try {
-              const newImages = images.filter((_, i) => i !== index);
-              const response = await editTravelPost(post._id, {
-                images: newImages,
+              const response = await editTravelPost(_id, {
+                images: images.filter((_, i) => i !== index),
                 imagesToDelete: [imageToRemove],
               });
   
-              if (response && response.travelPost) {
+              if (response?.travelPost) {
                 setImages(response.travelPost.images);
                 Alert.alert('Thành công', 'Hình ảnh đã được xóa');
               }
             } catch (error) {
-              console.error('Lỗi khi xóa hình ảnh:', error);
               Alert.alert('Lỗi', 'Không thể xóa hình ảnh. Vui lòng thử lại.');
             }
           }
         }
       ]
     );
-  };
+  }, [images, _id]);
 
   const handleSearchInputChange = async (text) => {
     setSearchQuery(text);
@@ -186,7 +196,7 @@ const EditTravelPost = () => {
     }
   };
 
-  const debouncedMapSearch = useCallback(
+  const debouncedMapSearch = useMemo(() => 
     debounce(async (text) => {
       if (text.length <= 2) {
         setMapSearchResults([]);
@@ -641,4 +651,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default React.memo(EditTravelPost);
+export default React.memo(EditTravelPost, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps) === JSON.stringify(nextProps);
+});

@@ -3,7 +3,7 @@ import { SafeAreaView, StyleSheet, Text, View, Dimensions, TouchableOpacity, Pla
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import MainScreen from './TrangChu/MainScreen';
+import TrangTimBanDuLich from './TrangChu/TrangTimBanDuLich';
 import MapScreen from './TrangChu/MapScreen';
 import Blog from './blog/Blog';
 
@@ -11,19 +11,12 @@ const TopTab = createMaterialTopTabNavigator();
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const TAB_BAR_HEIGHT = Platform.select({
   ios: 45, // Giữ nguyên chiều cao cũ cho iOS
-  android: SCREEN_HEIGHT * 0.1 // 10% chiều cao màn hình cho Android
+  android: SCREEN_HEIGHT * -0.1 // 10% chiều cao màn hình cho Android
 });
 
 const CustomTabBar = ({ state, descriptors, navigation }) => {
   return (
     <View style={styles.tabBarContainer}>
-      <TouchableOpacity 
-        style={styles.searchButton}
-        onPress={() => navigation.navigate('TravelSearch')}
-      >
-        <Ionicons name="search" size={24} color="white" />
-      </TouchableOpacity>
-
       <View style={styles.tabBar}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
@@ -101,7 +94,7 @@ const TopTabNavigator = () => {
       >
         <TopTab.Screen 
           name="Trang chủ" 
-          component={MainScreen}
+          component={TrangTimBanDuLich}
           options={{
             tabBarLabel: "Trang chủ"
           }}
@@ -145,17 +138,6 @@ const styles = StyleSheet.create({
       android: 'flex-end',
     }),
     paddingBottom: 8,
-  },
-  searchButton: {
-    position: 'absolute',
-    right: 16,
-    top: Platform.select({
-      ios: 50,
-      android: TAB_BAR_HEIGHT * 0.8,
-    }),
-    zIndex: 1,
-    padding: 8,
-    
   },
   tabBar: {
     flexDirection: 'row',

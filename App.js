@@ -67,10 +67,8 @@ const App = () => {
 
   const checkLoginStatus = async () => {
     try {
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        setIsLoggedIn(true);
-      }
+      const userToken = await AsyncStorage.getItem('userToken');
+      setIsLoggedIn(!!userToken);
     } catch (error) {
       console.error('Error checking login status:', error);
     } finally {
@@ -107,70 +105,177 @@ const App = () => {
     <AppWrapper>
       <SocketProvider>
         <NavigationContainer>
-          <Stack.Navigator initialRouteName={isLoggedIn ? "TrangChu" : "DangNhap"}>
-            {/* Auth Screens */}
-
-            <Stack.Screen name="DangNhap" component={DangNhap} options={{ headerShown: false }} />
-            <Stack.Screen name="DangKy" component={DangKy} options={{ headerShown: false }} />
-            <Stack.Screen name="QuenMatKhauScreen" component={QuenMatKhauScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="XacMinhOTP" component={XacMinhOtpScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="IdentityVerification" component={IdentityVerification} options={{ headerShown: false }} />
-            <Stack.Screen name="VerifyIDScreen" component={VerifyIDScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ConfirmCCCDScreen" component={ConfirmCCCDScreen} options={{ headerShown: false }} />
+          <Stack.Navigator 
+            initialRouteName={isLoggedIn ? "TrangChu" : "DangNhap"}
+            screenOptions={{
+              headerShown: false
+            }}
+          >
+            {/* Auth Screens - Each screen with explicit key */}
+            <Stack.Screen 
+              key="dangNhap"
+              name="DangNhap" 
+              component={DangNhap} 
+            />
+            <Stack.Screen 
+              key="dangKy"
+              name="DangKy" 
+              component={DangKy} 
+            />
+            <Stack.Screen 
+              key="quenMatKhau"
+              name="QuenMatKhauScreen" 
+              component={QuenMatKhauScreen} 
+            />
+            <Stack.Screen 
+              key="xacMinhOTP"
+              name="XacMinhOTP" 
+              component={XacMinhOtpScreen} 
+            />
+            <Stack.Screen 
+              key="identityVerification"
+              name="IdentityVerification" 
+              component={IdentityVerification} 
+            />
+            <Stack.Screen 
+              key="verifyIDScreen"
+              name="VerifyIDScreen" 
+              component={VerifyIDScreen} 
+            />
+            <Stack.Screen 
+              key="confirmCCCDScreen"
+              name="ConfirmCCCDScreen" 
+              component={ConfirmCCCDScreen} 
+            />
 
             {/* Main Screens */}
-            <Stack.Screen name="MapScreen" component={MapScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="TrangChu" component={BottomTabs} options={{ headerShown: false }} />
-            <Stack.Screen name="Blog" component={Blog} options={{ headerShown: false }} />
-            <Stack.Screen name="CreatePost" component={CreatePost} options={{ headerShown: false }} />
-            <Stack.Screen name="PostDetailScreen" component={PostDetailScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="TaoTrangTimBanDuLich" component={TaoTrangTimBanDuLich} options={{ headerShown: false }} />
-         
-            <Stack.Screen name="TravelPostDetail" component={TravelPostDetail} options={{ headerShown: false }} />
-            <Stack.Screen name="TravelSearch" component={TravelSearch} options={{ headerShown: false }} />
+            <Stack.Screen 
+              key="mapScreen"
+              name="MapScreen" 
+              component={MapScreen} 
+            />
+            <Stack.Screen 
+              key="trangChu"
+              name="TrangChu" 
+              component={BottomTabs} 
+            />
+            <Stack.Screen 
+              key="blog"
+              name="Blog" 
+              component={Blog} 
+            />
+            <Stack.Screen 
+              key="createPost"
+              name="CreatePost" 
+              component={CreatePost} 
+            />
+            <Stack.Screen 
+              key="postDetailScreen"
+              name="PostDetailScreen" 
+              component={PostDetailScreen} 
+            />
+            <Stack.Screen 
+              key="taoTrangTimBanDuLich"
+              name="TaoTrangTimBanDuLich" 
+              component={TaoTrangTimBanDuLich} 
+            />
+
+            {/* Travel Screens */}
+            <Stack.Screen 
+              key="travelPostDetail"
+              name="TravelPostDetail" 
+              component={TravelPostDetail} 
+            />
+            <Stack.Screen 
+              key="travelSearch"
+              name="TravelSearch" 
+              component={TravelSearch} 
+            />
 
             {/* Profile Screens */}
-            <Stack.Screen name="UpdateProfile" component={UpdateProfile} options={{ headerShown: false }} />
-            <Stack.Screen name="Follower" component={Follower} options={{ headerShown: false }} />
-            <Stack.Screen name="Following" component={Following} options={{ headerShown: false }} />
-            <Stack.Screen name="UserProfile" component={UserProfile} options={{ headerShown: false }} />
-            <Stack.Screen name="ProfileMapScreen" component={ProfileMapScreen} options={{ headerShown: false }} />
+            <Stack.Screen 
+              key="updateProfile"
+              name="UpdateProfile" 
+              component={UpdateProfile} 
+            />
+            <Stack.Screen 
+              key="follower"
+              name="Follower" 
+              component={Follower} 
+            />
+            <Stack.Screen 
+              key="following"
+              name="Following" 
+              component={Following} 
+            />
+            <Stack.Screen 
+              key="userProfile"
+              name="UserProfile" 
+              component={UserProfile} 
+            />
+            <Stack.Screen 
+              key="profileMapScreen"
+              name="ProfileMapScreen" 
+              component={ProfileMapScreen} 
+            />
 
             {/* Chat Screens */}
-            <Stack.Screen name="UserListScreen" component={UserListScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
+            <Stack.Screen 
+              key="userListScreen"
+              name="UserListScreen" 
+              component={UserListScreen} 
+            />
+            <Stack.Screen 
+              key="chatScreen"
+              name="ChatScreen" 
+              component={ChatScreen} 
+            />
 
             {/* Settings Screens */}
-            <Stack.Screen name="Settings" component={Settings} options={{ headerShown: false }} />
-            <Stack.Screen name="ChangePassword" component={ChangePassword} options={{ headerShown: false }} />
-            <Stack.Screen name="PostManager" component={PostManager} options={{ headerShown: false }} />
-            <Stack.Screen name="EditPost" component={EditPost} options={{ headerShown: false }} />
-            <Stack.Screen name="EditTravelPost" component={EditTravelPost} options={{ headerShown: false }} />
-            <Stack.Screen name="BlockedUsers" component={BlockedUsers} options={{ headerShown: false }} />
+            <Stack.Screen 
+              key="settings"
+              name="Settings" 
+              component={Settings} 
+            />
+            <Stack.Screen 
+              key="changePassword"
+              name="ChangePassword" 
+              component={ChangePassword} 
+            />
+            <Stack.Screen 
+              key="postManager"
+              name="PostManager" 
+              component={PostManager} 
+            />
+            <Stack.Screen 
+              key="editPost"
+              name="EditPost" 
+              component={EditPost} 
+            />
+            <Stack.Screen 
+              key="editTravelPost"
+              name="EditTravelPost" 
+              component={EditTravelPost} 
+            />
+            <Stack.Screen 
+              key="blockedUsers"
+              name="BlockedUsers" 
+              component={BlockedUsers} 
+            />
 
             {/* Other Screens */}
-            <Stack.Screen name="DangKiTinhNguyenVienScreen" component={DangKiTinhNguyenVienScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="DKTinhNguyenVien" component={DKTinhNguyenVien} options={{ headerShown: false }} />
+            <Stack.Screen 
+              key="dangKiTinhNguyenVien"
+              name="DangKiTinhNguyenVienScreen" 
+              component={DangKiTinhNguyenVienScreen} 
+            />
+            <Stack.Screen 
+              key="dkTinhNguyenVien"
+              name="DKTinhNguyenVien" 
+              component={DKTinhNguyenVien} 
+            />
           </Stack.Navigator>
-          <FlashMessage 
-            position="top"
-            floating={true}
-            style={{
-              paddingTop: Platform.OS === 'android' ? 10 : 30,
-              backgroundColor: '#2196F3',
-              borderRadius: 8,
-              margin: 10,
-            }}
-            titleStyle={{
-              fontSize: 16,
-              fontWeight: "bold",
-              color: 'white'
-            }}
-            textStyle={{
-              fontSize: 14,
-              color: 'white'
-            }}
-          />
+          <FlashMessage position="top" />
         </NavigationContainer>
       </SocketProvider>
     </AppWrapper>

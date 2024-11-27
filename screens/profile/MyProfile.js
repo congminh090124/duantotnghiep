@@ -5,6 +5,8 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getUserProfile, updateAvatar, getUserPosts, getFollowers, getFollowing, getMyTravelPosts } from '../../apiConfig';
 import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSocket } from '../../context/SocketContext';
 
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 40) / 2;
@@ -21,6 +23,7 @@ const MyProfile = () => {
   const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
   const [travelPosts, setTravelPosts] = useState([]);
+  const { socket } = useSocket();
 
   const normalPosts = useMemo(() =>
     posts.filter(post => post.type !== 'travel'), [posts]
@@ -157,39 +160,48 @@ const MyProfile = () => {
     setIsMenuVisible(false);
     switch (action) {
       case 'settings':
-        // Điều hướng đến trang cài đặt
         navigation.navigate('Settings');
         break;
       case 'volunteer':
-        // Điều hướng đến trang đăng ký TNV
         navigation.navigate('VolunteerRegistration');
         break;
       case 'logout':
-        // Xử lý đăng xuất
         Alert.alert(
           "Đăng xuất",
           "Bạn có chắc chắn muốn đăng xuất?",
           [
             { text: "Hủy", style: "cancel" },
             {
-              text: "Đăng xuất", onPress: () => {
-                // Thực hiện đăng xuất ở đây
-                // Ví dụ: clearToken() và điều hướng về màn hình đăng nhập
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'DangNhap' }],
-                });
+              text: "Đăng xuất",
+              onPress: async () => {
+                try {
+                  // Ngắt kết nối socket trước
+                  if (socket) {
+                    socket.disconnect();
+                  }
+                  
+                  // Xóa toàn bộ AsyncStorage
+                  await AsyncStorage.clear();
+                  
+                  // Reset navigation và chuyển đến màn hình đăng nhập
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'DangNhap' }],
+                  });
+                } catch (error) {
+                  console.error('Lỗi khi đăng xuất:', error);
+                  Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
+                }
               }
             }
           ]
         );
         break;
       case 'support':
-        // Điều hướng đến trang hỗ trợ
         navigation.navigate('Support');
         break;
     }
-  }, [navigation]);
+  }, [navigation, socket]);
 
   // Thêm hàm helper để xử lý location
   const getLocationString = (location) => {

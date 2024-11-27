@@ -10,7 +10,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -45,6 +46,7 @@ const TaoTrangTimBanDuLich = () => {
   const mapRef = useRef(null);
   const [mapRegion, setMapRegion] = useState(null);
   const [tempDestination, setTempDestination] = useState(null);
+  const [isPosting, setIsPosting] = useState(false);
   
   const navigation = useNavigation();
 
@@ -267,6 +269,7 @@ const TaoTrangTimBanDuLich = () => {
       return;
     }
   
+    setIsPosting(true);
     try {
       const optimizedImages = await Promise.all(
         image.map(async (img) => {
@@ -302,6 +305,8 @@ const TaoTrangTimBanDuLich = () => {
     } catch (error) {
       console.error('Error creating post:', error);
       Alert.alert('Lỗi', `Không thể tạo bài viết: ${error.message}`);
+    } finally {
+      setIsPosting(false);
     }
   };
 
@@ -391,8 +396,16 @@ const TaoTrangTimBanDuLich = () => {
               <Text style={styles.closeButtonText}>×</Text>
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Tạo bài viết</Text>
-            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-              <Text style={styles.postButtonText}>Đăng</Text>
+            <TouchableOpacity 
+              style={styles.postButton} 
+              onPress={handlePost}
+              disabled={isPosting}
+            >
+              {isPosting ? (
+                <ActivityIndicator size="small" color="#1877f2" />
+              ) : (
+                <Text style={styles.postButtonText}>Đăng</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -608,6 +621,8 @@ const styles = StyleSheet.create({
   },
   postButton: {
     padding: 5,
+    minWidth: 50,
+    alignItems: 'center',
   },
   postButtonText: {
     color: '#1877f2',

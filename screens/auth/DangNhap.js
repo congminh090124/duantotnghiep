@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Image, ImageBackground, StyleS
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { login, saveToken, googleSignIn, facebookSignIn } from '../../apiConfig';
+import { useSocket } from '../../context/SocketContext';
 
 import { ResponseType } from 'expo-auth-session';
 
@@ -12,6 +13,7 @@ const LoginScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigation = useNavigation();
+  const { initSocket } = useSocket();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -26,11 +28,18 @@ const LoginScreen = () => {
      
       
       if (response.token && response.user) {
-        await AsyncStorage.setItem('token', response.token);
-        await AsyncStorage.setItem('userData', JSON.stringify(response.user));
-        await AsyncStorage.setItem('userID', response.user.id);
+        await AsyncStorage.multiSet([
+          ['userToken', response.token],
+          ['userData', JSON.stringify(response.user)],
+          ['userID', response.user.id.toString()]
+        ]);
     
-        navigation.navigate('TrangChu');
+        await initSocket();
+    
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'TrangChu' }],
+        });
       } else {
         console.log('Login failed: No token or user data in response');
         Alert.alert('Lỗi', 'Đăng nhập không thành công. Vui lòng thử lại.');
