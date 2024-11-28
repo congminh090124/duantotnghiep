@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SafeAreaView, StatusBar, Platform, View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SocketProvider } from './context/SocketContext'; 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import FlashMessage from "react-native-flash-message";
 
 // Import BottomTabs
@@ -58,28 +57,6 @@ const Stack = createStackNavigator();
 
 // Main App component
 const App = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    checkLoginStatus();
-  }, []);
-
-  const checkLoginStatus = async () => {
-    try {
-      const userToken = await AsyncStorage.getItem('userToken');
-      setIsLoggedIn(!!userToken);
-    } catch (error) {
-      console.error('Error checking login status:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading) {
-    return null; // hoặc return một loading spinner
-  }
-
   // Wrapper component để xử lý SafeAreaView theo platform
   const AppWrapper = ({ children }) => {
     if (Platform.OS === 'android') {
@@ -106,7 +83,7 @@ const App = () => {
       <SocketProvider>
         <NavigationContainer>
           <Stack.Navigator 
-            initialRouteName={isLoggedIn ? "TrangChu" : "DangNhap"}
+            initialRouteName="DangNhap"
             screenOptions={{
               headerShown: false
             }}

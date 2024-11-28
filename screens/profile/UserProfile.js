@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator, Modal, Animated, Platform } from 'react-native';
+import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator, Modal, Animated, Platform, KeyboardAvoidingView, TextInput, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser, getUserTravelPosts, blockUser, unblockUser, getBlockStatus } from '../../apiConfig';
-import{API_ENDPOINTS,getToken} from '../../apiConfig'
+
 import * as Location from 'expo-location';
+import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser, getUserTravelPosts, blockUser, unblockUser, getBlockStatus, getToken, API_ENDPOINTS } from '../../apiConfig';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import BlockedProfileView from '../report/BlockedProfileView';
+import ReportForm from '../report/ReportForm';
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 45) / 2;
 
@@ -237,9 +241,28 @@ const UserProfile = ({ route }) => {
   const [isFollowingMe, setIsFollowingMe] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
+  const [isReportVisible, setIsReportVisible] = useState(false);
   const [slideAnim] = useState(new Animated.Value(0));
   const [isBlocked, setIsBlocked] = useState(false);
   const [isBlockedBy, setIsBlockedBy] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [description, setDescription] = useState('');
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    const getCurrentUserId = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          const { id } = JSON.parse(userData);
+          setCurrentUserId(id);
+        }
+      } catch (error) {
+        console.error('Error fetching current user ID:', error);
+      }
+    };
+    getCurrentUserId();
+  }, []);
 
   const checkBlockStatus = async () => {
     try {
@@ -396,10 +419,11 @@ const UserProfile = ({ route }) => {
     } else {
       navigation.navigate('PostDetailScreen', { 
         postId: post._id,
-        title: post.title || 'Chi tiết bài viết'
+        title: post.title || 'Chi tiết bài viết',
+        currentUserId: currentUserId
       });
     }
-  }, [navigation, activeTab]);
+  }, [navigation, activeTab,currentUserId]);
 
   const renderFollowButton = useCallback(() => {
     if (isFollowingMe && !isFollowing) {
@@ -472,44 +496,58 @@ const UserProfile = ({ route }) => {
     });
   }, [navigation, userId, userProfile]);
 
-  const handleMenuPress = () => {
+  const handleMenuPress = useCallback(() => {
     setIsMenuVisible(true);
-    Animated.timing(slideAnim, {
+    Animated.spring(slideAnim, {
       toValue: 1,
-      duration: 300,
       useNativeDriver: true,
+      damping: 20,
+      stiffness: 90
     }).start();
-  };
+  }, [slideAnim]);
 
-  const handleMenuClose = () => {
+  const handleMenuClose = useCallback(() => {
     Animated.timing(slideAnim, {
       toValue: 0,
-      duration: 300,
-      useNativeDriver: true,
+      duration: 200,
+      useNativeDriver: true
     }).start(() => {
       setIsMenuVisible(false);
     });
-  };
+  }, [slideAnim]);
 
-  const handleBlockUser = async () => {
+  const handleReportPress = useCallback(() => {
+    handleMenuClose();
+    setTimeout(() => {
+      setIsReportVisible(true);
+    }, 300);
+  }, [handleMenuClose]);
+
+  const handleCloseReport = useCallback(() => {
+    setIsReportVisible(false);
+  }, []);
+
+  const handleReportSubmit = useCallback(async (reportData) => {
+    setIsReportVisible(false);
+  }, []);
+
+  const handleBlockUser = useCallback(async () => {
     try {
       if (isBlocked) {
         await unblockUser(userId);
         setIsBlocked(false);
-        // Fetch lại profile sau khi unblock
         const data = await getUserProfileById(userId);
         setUserProfile(data);
       } else {
         await blockUser(userId);
         setIsBlocked(true);
-        // Tự động unfollow và cập nhật UI
         setIsFollowing(false);
         setIsFriend(false);
-        setUserProfile(prevProfile => ({
-          ...prevProfile,
+        setUserProfile(prev => ({
+          ...prev,
           thong_ke: {
-            ...prevProfile.thong_ke,
-            nguoi_theo_doi: Math.max(0, prevProfile.thong_ke.nguoi_theo_doi - 1)
+            ...prev.thong_ke,
+            nguoi_theo_doi: Math.max(0, prev.thong_ke.nguoi_theo_doi - 1)
           }
         }));
       }
@@ -521,66 +559,7 @@ const UserProfile = ({ route }) => {
       console.error('Block/unblock error:', error);
       Alert.alert('Lỗi', 'Không thể thực hiện thao tác này');
     }
-  };
-
-  const handleReportUser = () => {
-    Alert.alert(
-      "Báo cáo người dùng",
-      "Bạn có chắc chắn muốn báo cáo người dùng này?",
-      [
-        {
-          text: "Hủy",
-          style: "cancel"
-        },
-        {
-          text: "Báo cáo",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              // Gọi API báo cáo người dùng ở đây
-              // await reportUser(userId);
-              Alert.alert("Thành công", "Đã gửi báo cáo về người dùng này");
-              handleMenuClose();
-            } catch (error) {
-              Alert.alert("Lỗi", "Không thể báo cáo người dùng này");
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const BlockedProfileView = () => (
-    <View style={styles.blockedContainer}>
-      <Ionicons name="ban-outline" size={64} color="#666" />
-      <Text style={styles.blockedTitle}>Không thể hiển thị trang cá nhân</Text>
-      <Text style={styles.blockedMessage}>
-        {isBlockedBy 
-          ? "Bạn đã bị người dùng này chặn"
-          : "Bạn đã chặn người dùng này"}
-      </Text>
-      {isBlocked && (
-        <TouchableOpacity
-          style={styles.unblockButton}
-          onPress={handleUnblock}
-        >
-          <Text style={styles.unblockButtonText}>Bỏ chặn</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  const handleUnblock = async () => {
-    try {
-      await unblockUser(userId);
-      setIsBlocked(false);
-      // Fetch lại profile sau khi unblock
-      const data = await getUserProfileById(userId);
-      setUserProfile(data);
-    } catch (error) {
-      Alert.alert('Lỗi', 'Không thể bỏ chặn người dùng này');
-    }
-  };
+  }, [isBlocked, userId, handleMenuClose]);
 
   // Thêm function xác nhận block
   const confirmBlock = () => {
@@ -616,6 +595,87 @@ const UserProfile = ({ route }) => {
     });
   }, [activeTab, normalPosts.length, travelPosts.length]);
 
+  const renderHeader = useCallback(() => (
+    <View style={styles.header}>
+      <TouchableOpacity onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={24} color="black" />
+      </TouchableOpacity>
+      <View style={styles.usernameContainer}>
+        <Text style={styles.username}>{userProfile?.username}</Text>
+        {userProfile?.xacMinhDanhTinh && (
+          <Ionicons name="checkmark-circle" size={20} color="#1DA1F2" style={styles.verifiedIcon} />
+        )}
+      </View>
+      {currentUserId !== userId && (
+        <TouchableOpacity onPress={handleMenuPress}>
+          <Ionicons name="ellipsis-vertical" size={24} color="black" />
+        </TouchableOpacity>
+      )}
+      {currentUserId === userId && <View style={{ width: 24 }} />}
+    </View>
+  ), [navigation, userProfile, userId, currentUserId, handleMenuPress]);
+
+  const renderMenuOptions = useCallback(() => {
+    if (!isMenuVisible) return null;
+
+    const slideAnimation = {
+      transform: [{
+        translateY: slideAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [600, 0]
+        })
+      }]
+    };
+
+    return (
+      <Modal
+        transparent
+        visible={isMenuVisible}
+        onRequestClose={handleMenuClose}
+        animationType="none"
+      >
+        <TouchableWithoutFeedback onPress={handleMenuClose}>
+          <View style={styles.menuModalContainer}>
+            <TouchableWithoutFeedback>
+              <Animated.View style={[styles.menuContent, slideAnimation]}>
+                <TouchableOpacity
+                  style={styles.menuOption}
+                  onPress={handleReportPress}
+                >
+                  <Ionicons name="warning-outline" size={24} color="#FF3B30" />
+                  <Text style={[styles.menuOptionText, styles.reportText]}>
+                    Báo cáo người dùng
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.menuOption}
+                  onPress={confirmBlock}
+                >
+                  <Ionicons 
+                    name={isBlocked ? "person-add-outline" : "person-remove-outline"} 
+                    size={24} 
+                    color="#FF3B30" 
+                  />
+                  <Text style={[styles.menuOptionText, styles.blockText]}>
+                    {isBlocked ? 'Bỏ chặn người dùng' : 'Chặn người dùng'}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.menuOption, styles.cancelOption]}
+                  onPress={handleMenuClose}
+                >
+                  <Text style={styles.cancelText}>Hủy</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    );
+  }, [isMenuVisible, isBlocked, handleMenuClose, handleReportPress, confirmBlock, slideAnim]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -627,49 +687,21 @@ const UserProfile = ({ route }) => {
   if (isBlocked || isBlockedBy) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Trang cá nhân</Text>
-          {!isBlockedBy && (
-            <TouchableOpacity onPress={handleMenuPress}>
-              <Ionicons name="ellipsis-vertical" size={24} color="black" />
-            </TouchableOpacity>
-          )}
-        </View>
-        <BlockedProfileView />
+        {renderHeader()}
+        <BlockedProfileView 
+          isBlocked={isBlocked}
+          isBlockedBy={isBlockedBy}
+          onUnblock={handleUnblock}
+        />
       </SafeAreaView>
     );
-  }
-
-  if (error) {
-    return <Text style={styles.errorText}>{error}</Text>;
-  }
-
-  if (!userProfile) {
-    return <Text style={styles.errorText}>No profile data available</Text>;
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <View style={styles.usernameContainer}>
-            <Text style={styles.username}>{userProfile.username}</Text>
-            {userProfile.xacMinhDanhTinh && (
-              <Ionicons name="checkmark-circle" size={20} color="#1DA1F2" style={styles.verifiedIcon} />
-            )}
-          </View>
-          <TouchableOpacity onPress={handleMenuPress}>
-            <Ionicons name="ellipsis-vertical" size={24} color="black" />
-          </TouchableOpacity>
-        </View>
-
+        {renderHeader()}
+        
         {/* Profile Info */}
         <View style={styles.profileContainer}>
           <View style={styles.avatarContainer}>
@@ -769,67 +801,20 @@ const UserProfile = ({ route }) => {
           </View>
         </View>
       </ScrollView>
-      <Modal
-        visible={isMenuVisible}
-        transparent={true}
-        animationType="none"
-        onRequestClose={handleMenuClose}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
-          onPress={handleMenuClose}
-        >
-          <Animated.View 
-            style={[
-              styles.menuContainer,
-              {
-                transform: [
-                  {
-                    translateY: slideAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [300, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <View style={styles.menuHeader}>
-              <View style={styles.menuIndicator} />
-            </View>
 
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={confirmBlock}
-            >
-              <Ionicons 
-                name={isBlocked ? "person-add-outline" : "ban-outline"} 
-                size={24} 
-                color="#FF3B30" 
-              />
-              <Text style={[styles.menuText, styles.menuTextDanger]}>
-                {isBlocked ? 'Bỏ chặn người dùng' : 'Chặn người dùng'}
-              </Text>
-            </TouchableOpacity>
+      {/* Report Form */}
+      {isReportVisible && (
+        <ReportForm
+          isVisible={isReportVisible}
+          onClose={handleCloseReport}
+          targetId={userId}
+          targetType="User"
+          onSubmit={handleReportSubmit}
+        />
+      )}
 
-            <TouchableOpacity 
-              style={styles.menuItem}
-              onPress={handleReportUser}
-            >
-              <Ionicons name="flag-outline" size={24} color="#FF3B30" />
-              <Text style={[styles.menuText, styles.menuTextDanger]}>Báo cáo người dùng</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.menuItem, styles.menuItemCancel]}
-              onPress={handleMenuClose}
-            >
-              <Text style={styles.menuTextCancel}>Hủy</Text>
-            </TouchableOpacity>
-          </Animated.View>
-        </TouchableOpacity>
-      </Modal>
+      {/* Menu Options */}
+      {renderMenuOptions()}
     </SafeAreaView>
   );
 };
@@ -915,6 +900,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 15,
     marginTop: 15,
+    paddingBottom: 20,
   },
   followButton: {
     flex: 1,
@@ -1173,83 +1159,106 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     backgroundColor: 'white',
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-  },
-  menuHeader: {
-    alignItems: 'center',
-    paddingVertical: 10,
-  },
-  menuIndicator: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#DEDEDE',
-    borderRadius: 2,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
-  },
-  menuItemCancel: {
-    justifyContent: 'center',
-    borderBottomWidth: 0,
-    marginTop: 8,
+    paddingVertical: 16,
   },
   menuText: {
     fontSize: 16,
     marginLeft: 12,
   },
-  menuTextDanger: {
+  reportText: {
     color: '#FF3B30',
   },
-  menuTextCancel: {
+  blockText: {
+    color: '#FF3B30',
+  },
+  unblockText: {
+    color: '#007AFF',
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 16,
+    paddingTop: 8,
+  },
+  menuHeader: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  menuIndicator: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 2,
+    marginVertical: 8,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+  },
+  menuText: {
+    fontSize: 16,
+    marginLeft: 12,
+  },
+  reportText: {
+    color: '#FF3B30',
+  },
+  blockText: {
+    color: '#FF3B30',
+  },
+  unblockText: {
+    color: '#007AFF',
+  },
+  menuModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  menuContent: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+  },
+  menuOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#eee',
+  },
+  menuOptionText: {
+    fontSize: 16,
+    marginLeft: 12,
+  },
+  cancelOption: {
+    justifyContent: 'center',
+    borderBottomWidth: 0,
+    marginTop: 8,
+  },
+  cancelText: {
     color: '#007AFF',
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  blockedContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  blockedTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 20,
-    marginBottom: 10,
-    color: '#262626',
-  },
-  blockedMessage: {
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  unblockButton: {
-    backgroundColor: '#0095f6',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 5,
-    marginTop: 10,
-  },
-  unblockButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    fontWeight: '500',
   },
 });
 
 export default React.memo(UserProfile);
+

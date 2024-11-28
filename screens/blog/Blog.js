@@ -86,8 +86,11 @@ const BlogPage = () => {
   }, [fetchPosts]);
 
   const handlePostPress = useCallback((post) => {
-    navigation.navigate('PostDetailScreen', { postId: post._id });
-  }, [navigation]);
+    navigation.navigate('PostDetailScreen', { 
+      postId: post._id,
+      currentUserId: currentUserId
+    });
+  }, [navigation, currentUserId]);
 
   const handleLikePress = useCallback(async (postId) => {
     setLikeStates(prevStates => {
