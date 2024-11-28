@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
 const Settings = () => {
   const navigation = useNavigation();
-  const [isVerified, setIsVerified] = useState(false); // Giả sử ban đầu chưa xác minh
+  const [isVerified, setIsVerified] = useState(false);
 
   const handleChangePassword = () => {
     navigation.navigate('ChangePassword');

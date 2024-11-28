@@ -1222,12 +1222,12 @@ export const getBlockedUsers = async () => {
       }
     });
 
-    const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.message || 'Failed to get blocked users');
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch blocked users');
     }
 
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Error getting blocked users:', error);
     throw error;

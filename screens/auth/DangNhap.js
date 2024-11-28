@@ -36,10 +36,7 @@ const LoginScreen = () => {
     
         await initSocket();
     
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'TrangChu' }],
-        });
+      navigation.navigate('TrangChu')
       } else {
         console.log('Login failed: No token or user data in response');
         Alert.alert('Lỗi', 'Đăng nhập không thành công. Vui lòng thử lại.');

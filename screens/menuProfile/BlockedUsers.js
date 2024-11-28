@@ -13,6 +13,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { getBlockedUsers, unblockUser } from '../../apiConfig';
+import { format } from 'date-fns';
+import { vi } from 'date-fns/locale';
 
 const BlockedUsers = () => {
   const [blockedUsers, setBlockedUsers] = useState([]);
@@ -25,35 +27,46 @@ const BlockedUsers = () => {
 
   const fetchBlockedUsers = async () => {
     try {
-      const data = await getBlockedUsers();
-      setBlockedUsers(data);
+      const response = await getBlockedUsers();
+      console.log('Raw API Response:', response);
+
+      if (response && response.success && Array.isArray(response.data)) {
+        setBlockedUsers(response.data);
+      } else {
+        console.error('Invalid response structure:', response);
+        throw new Error('Không thể lấy danh sách người dùng bị chặn');
+      }
     } catch (error) {
-      Alert.alert('Lỗi', 'Không thể tải danh sách người dùng bị chặn');
+      console.error('Error fetching blocked users:', error);
+      Alert.alert(
+        'Lỗi',
+        'Không thể tải danh sách người dùng bị chặn',
+        [{ text: 'OK' }]
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUnblock = (userId) => {
+  const handleUnblock = async (userId) => {
     Alert.alert(
       'Xác nhận bỏ chặn',
       'Bạn có chắc chắn muốn bỏ chặn người dùng này?',
       [
-        {
-          text: 'Hủy',
-          style: 'cancel'
-        },
+        { text: 'Hủy', style: 'cancel' },
         {
           text: 'Bỏ chặn',
           onPress: async () => {
             try {
-              await unblockUser(userId);
-              // Cập nhật lại danh sách sau khi bỏ chặn
-              setBlockedUsers(prevUsers => 
-                prevUsers.filter(user => user.id !== userId)
-              );
-              Alert.alert('Thành công', 'Đã bỏ chặn người dùng');
+              const response = await unblockUser(userId);
+              if (response.success || response.message) {
+                setBlockedUsers(prevUsers => 
+                  prevUsers.filter(user => user.id !== userId)
+                );
+                Alert.alert('Thành công', 'Đã bỏ chặn người dùng');
+              }
             } catch (error) {
+              console.error('Error unblocking user:', error);
               Alert.alert('Lỗi', 'Không thể bỏ chặn người dùng này');
             }
           }
@@ -65,14 +78,23 @@ const BlockedUsers = () => {
   const renderItem = ({ item }) => (
     <View style={styles.userItem}>
       <Image 
-        source={{ uri: item.avatar || 'default_avatar_url' }}
+        source={{ 
+          uri: item.avatar || 'https://via.placeholder.com/50'
+        }}
         style={styles.avatar}
       />
       <View style={styles.userInfo}>
-        <Text style={styles.username}>{item.username}</Text>
-        <Text style={styles.blockDate}>
-          Đã chặn từ: {new Date(item.blockedAt).toLocaleDateString()}
+        <Text style={styles.username}>
+          {item.username || 'Người dùng'}
         </Text>
+        <Text style={styles.email}>
+          {item.email || ''}
+        </Text>
+        {item.blockedAt && (
+          <Text style={styles.blockedDate}>
+            Đã chặn: {new Date(item.blockedAt).toLocaleDateString('vi-VN')}
+          </Text>
+        )}
       </View>
       <TouchableOpacity 
         style={styles.unblockButton}
@@ -166,7 +188,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  blockDate: {
+  email: {
     fontSize: 12,
     color: '#666',
     marginTop: 2,
@@ -198,6 +220,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  blockedDate: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+    fontStyle: 'italic'
   },
 });
 

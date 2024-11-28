@@ -259,7 +259,7 @@ const App = () => {
               component={ReportHistory}
             />
 
-         
+          
             <Stack.Screen
               key="ReportDetail"
               name="ReportDetail"

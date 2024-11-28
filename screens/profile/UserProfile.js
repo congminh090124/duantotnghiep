@@ -676,6 +676,43 @@ const UserProfile = ({ route }) => {
     );
   }, [isMenuVisible, isBlocked, handleMenuClose, handleReportPress, confirmBlock, slideAnim]);
 
+  // Thêm hàm handleUnblock
+  const handleUnblock = useCallback(async () => {
+    try {
+      Alert.alert(
+        'Xác nhận bỏ chặn',
+        `Bạn có chắc chắn muốn bỏ chặn ${userProfile?.username || 'người dùng này'}?`,
+        [
+          {
+            text: 'Hủy',
+            style: 'cancel'
+          },
+          {
+            text: 'Bỏ chặn',
+            onPress: async () => {
+              try {
+                await unblockUser(userId);
+                setIsBlocked(false);
+                
+                // Cập nhật lại thông tin profile
+                const data = await getUserProfileById(userId);
+                setUserProfile(data);
+                
+                Alert.alert('Thành công', 'Đã bỏ chặn người dùng');
+              } catch (error) {
+                console.error('Error unblocking user:', error);
+                Alert.alert('Lỗi', 'Không thể bỏ chặn người dùng này');
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Error in handleUnblock:', error);
+      Alert.alert('Lỗi', 'Không thể thực hiện thao tác này');
+    }
+  }, [userId, userProfile?.username]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -692,6 +729,7 @@ const UserProfile = ({ route }) => {
           isBlocked={isBlocked}
           isBlockedBy={isBlockedBy}
           onUnblock={handleUnblock}
+          username={userProfile?.username}
         />
       </SafeAreaView>
     );
