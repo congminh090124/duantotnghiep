@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator, FlatList } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator, FlatList, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { showPostWithID } from '../../apiConfig';
+import ReportForm from '../report/ReportForm';
 
 const { width, height } = Dimensions.get('window');
 
 const PostDetailScreen = ({ route, navigation }) => {
-  const { postId } = route.params;
+  const { postId, currentUserId } = route.params;
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isReportVisible, setIsReportVisible] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   useEffect(() => {
     fetchPostDetails();
@@ -28,6 +31,17 @@ const PostDetailScreen = ({ route, navigation }) => {
       setLoading(false);
     }
   };
+
+  const handleMenuPress = useCallback(() => {
+    setIsMenuVisible(true);
+  }, []);
+
+  const handleReportPress = useCallback(() => {
+    setIsMenuVisible(false);
+    setTimeout(() => {
+      setIsReportVisible(true);
+    }, 300);
+  }, []);
 
   if (loading) {
     return (
@@ -79,9 +93,11 @@ const PostDetailScreen = ({ route, navigation }) => {
             </View>
           )}
           <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
-          <TouchableOpacity style={styles.moreButton}>
-            <Ionicons name="ellipsis-horizontal" size={24} color="white" />
-          </TouchableOpacity>
+          {post.user && post.user.id !== currentUserId && (
+            <TouchableOpacity style={styles.moreButton} onPress={handleMenuPress}>
+              <Ionicons name="ellipsis-horizontal" size={24} color="white" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Post Image */}
@@ -130,6 +146,38 @@ const PostDetailScreen = ({ route, navigation }) => {
         {/* Post Date */}
         <Text style={styles.postDate}>{post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Unknown date'}</Text>
       </View>
+
+      {/* Thêm Modal cho menu */}
+      <Modal
+        transparent
+        visible={isMenuVisible}
+        onRequestClose={() => setIsMenuVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1} 
+          onPress={() => setIsMenuVisible(false)}
+        >
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={handleReportPress}
+            >
+              <Ionicons name="warning-outline" size={24} color="#FF3B30" />
+              <Text style={styles.menuText}>Báo cáo bài viết</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Thêm ReportForm */}
+      <ReportForm
+        isVisible={isReportVisible}
+        onClose={() => setIsReportVisible(false)}
+        targetId={postId}
+        targetType="Post"
+        onSubmit={() => setIsReportVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -247,6 +295,27 @@ const styles = StyleSheet.create({
   placeholderText: {
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    padding: 15,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  menuText: {
+    fontSize: 16,
+    marginLeft: 15,
+    color: '#FF3B30',
   },
 });
 

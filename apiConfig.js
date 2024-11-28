@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://striking-caribou-willingly.ngrok-free.app';
+const API_BASE_URL = 'https://lobster-upward-sunbeam.ngrok-free.app';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
@@ -41,6 +41,13 @@ export const API_ENDPOINTS = {
     sendMessage: `${API_BASE_URL}/api/chat/send`,
     readStatus: `${API_BASE_URL}/api/chat/read-status`,
 },
+  reports: {
+    create: `${API_BASE_URL}/api/reports/create`,
+    myReports: `${API_BASE_URL}/api/reports/my-reports`,
+    adminAll: `${API_BASE_URL}/api/reports/admin/all`,
+    adminUpdate: `${API_BASE_URL}/api/reports/admin`,
+    userDetail: `${API_BASE_URL}/api/reports/user`,
+  },
 };
 
 
@@ -1296,6 +1303,89 @@ export const searchTravelPosts = async ({ query, page = 1, limit = 10 }) => {
 
   } catch (error) {
     console.error('Error searching travel posts:', error);
+    throw error;
+  }
+};
+
+// Create a new report
+export const createReport = async (reportData) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.reports.create, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(reportData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create report');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error creating report:', error);
+    throw error;
+  }
+};
+
+// Get user's reports
+export const getMyReports = async () => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(API_ENDPOINTS.reports.myReports, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch reports');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+    throw error;
+  }
+};
+
+// Get report details (for users)
+export const getReportDetail = async (reportId) => {
+  try {
+    const token = await getToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const response = await fetch(`${API_ENDPOINTS.reports.userDetail}/${reportId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to fetch report details');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching report details:', error);
     throw error;
   }
 };
