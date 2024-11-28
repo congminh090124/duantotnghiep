@@ -7,6 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSocket } from '../../context/SocketContext';
+import * as Location from 'expo-location';
 
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 40) / 2;
@@ -24,6 +25,7 @@ const MyProfile = () => {
   const [activeTab, setActiveTab] = useState('posts');
   const [travelPosts, setTravelPosts] = useState([]);
   const { socket } = useSocket();
+  const [locationNames, setLocationNames] = useState({});
 
   const normalPosts = useMemo(() =>
     posts.filter(post => post.type !== 'travel'), [posts]
@@ -46,7 +48,7 @@ const MyProfile = () => {
       setTravelPosts(travelPostsData);
     } catch (error) {
       console.error('Error fetching data:', error);
-      Alert.alert('Error', 'Unable to fetch data. Please try again later.');
+      Alert.alert('Lỗi', 'Không thể tải dữ liệu. Vui lòng thử lại sau.');
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -78,7 +80,7 @@ const MyProfile = () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Sorry, we need camera roll permissions to update your avatar.');
+        Alert.alert('Quyền truy cập bị từ chối', 'Xin lỗi, chúng tôi cần quyền truy cập thư viện ảnh để cập nhật ảnh đại diện.');
         return;
       }
 
@@ -106,10 +108,10 @@ const MyProfile = () => {
           anh_dai_dien: updatedProfile.avatar
         }));
 
-        Alert.alert('Success', 'Avatar updated successfully');
+        Alert.alert('', 'Cập Nhật Ảnh Đại Diện Thành Công');
       }
     } catch (error) {
-      Alert.alert('Error', 'Failed to update avatar. Please try again.');
+      Alert.alert('Lỗi', 'Failed to update avatar. Please try again.');
     } finally {
       setIsUpdatingAvatar(false);
     }
@@ -213,7 +215,73 @@ const MyProfile = () => {
     return 'No location';
   };
 
+  const getLocationName = async (coordinates) => {
+    try {
+      if (!coordinates || coordinates.length < 2) {
+        return 'Không xác định';
+      }
+
+      // Đảm bảo thứ tự latitude, longitude đúng
+      const [longitude, latitude] = coordinates;
+      
+      //console.log('Getting location for:', { latitude, longitude });
+
+      const result = await Location.reverseGeocodeAsync(
+        { latitude, longitude },
+        { useGoogleMaps: false }
+      );
+
+      //console.log('Geocoding result:', result);
+
+      if (result && result.length > 0) {
+        const address = result[0];
+        // Ưu tiên district -> city -> region để hiển thị địa chỉ ngắn gọn nhất
+        return address.district || address.city || address.region || 'Không xác định';
+      }
+      
+      return 'Không xác định';
+    } catch (error) {
+      console.error('Error getting location name:', error);
+      return 'Không xác định';
+    }
+  };
+
   const renderPostItem = useCallback((post) => {
+    const postLocations = locationNames[post._id] || {};
+    
+    // Xử lý hiển thị location tùy theo loại bài viết
+    const renderLocation = () => {
+      if (activeTab === 'posts') {
+        // Bài viết thường
+        return (
+          <View style={styles.locationContainer}>
+            <Ionicons name="location-outline" size={12} color="#666" />
+            <Text style={styles.locationText} numberOfLines={1}>
+              {postLocations.location || 'Đang tải...'}
+            </Text>
+          </View>
+        );
+      } else {
+        // Bài viết du lịch
+        return (
+          <>
+            <View style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={12} color="#666" />
+              <Text style={styles.locationText} numberOfLines={1}>
+                Từ: {postLocations.current || 'Đang tải...'}
+              </Text>
+            </View>
+            <View style={styles.locationContainer}>
+              <Ionicons name="navigate-outline" size={12} color="#666" />
+              <Text style={styles.locationText} numberOfLines={1}>
+                Đến: {postLocations.destination || 'Đang tải...'}
+              </Text>
+            </View>
+          </>
+        );
+      }
+    };
+
     return (
       <TouchableOpacity
         key={post._id}
@@ -241,15 +309,15 @@ const MyProfile = () => {
 
         <View style={styles.postInfo}>
           <Text style={styles.postTitle} numberOfLines={1}>
-            {post.title || 'Untitled'}
+            {post.title || 'Chưa có tiêu đề'}
           </Text>
-          <Text style={styles.postLocation} numberOfLines={1}>
-            {getLocationString(post.location)}
-          </Text>
+          
+          {renderLocation()}
+
           {activeTab === 'travel' && post.startDate && post.endDate && (
             <Text style={styles.travelDate}>
-              {new Date(post.startDate).toLocaleDateString()} -
-              {new Date(post.endDate).toLocaleDateString()}
+              {new Date(post.startDate).toLocaleDateString('vi-VN')} -
+              {new Date(post.endDate).toLocaleDateString('vi-VN')}
             </Text>
           )}
           <View style={styles.postStats}>
@@ -265,7 +333,52 @@ const MyProfile = () => {
         </View>
       </TouchableOpacity>
     );
-  }, [activeTab, handlePostPress]);
+  }, [activeTab, handlePostPress, locationNames]);
+
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          //console.log('Permission to access location was denied');
+          return;
+        }
+
+        const names = {};
+        const postsToProcess = activeTab === 'posts' ? normalPosts : travelPosts;
+        
+        await Promise.all(
+          postsToProcess.map(async (post) => {
+            if (post._id) {
+              if (activeTab === 'posts') {
+                // Xử lý bài viết thường
+                if (post.location?.coordinates) {
+                  names[post._id] = {
+                    location: await getLocationName(post.location.coordinates)
+                  };
+                }
+              } else {
+                // Xử lý bài viết du lịch
+                names[post._id] = {
+                  current: post.currentLocation?.coordinates ? 
+                    await getLocationName(post.currentLocation.coordinates) : 'Không xác định',
+                  destination: post.destination?.coordinates ? 
+                    await getLocationName(post.destination.coordinates) : 'Không xác định'
+                };
+              }
+            }
+          })
+        );
+        
+        //console.log('Processed location names:', names);
+        setLocationNames(names);
+      } catch (error) {
+        console.error('Error loading locations:', error);
+      }
+    };
+    
+    loadLocations();
+  }, [normalPosts, travelPosts, activeTab]);
 
   if (isLoading) {
     return (
@@ -279,7 +392,7 @@ const MyProfile = () => {
   }
 
   if (!profileData) {
-    return <Text style={styles.errorText}>No profile data available</Text>;
+    return <Text style={styles.errorText}>Không có dữ liệu người dùng</Text>;
   }
 
 
@@ -319,7 +432,7 @@ const MyProfile = () => {
               />
             ) : (
               <View style={[styles.profileImage, styles.placeholderImage]}>
-                <Text style={styles.placeholderText}>No Image</Text>
+                <Text style={styles.placeholderText}>Chưa có ảnh</Text>
               </View>
             )}
             <TouchableOpacity
@@ -366,7 +479,7 @@ const MyProfile = () => {
           </View>
         </View>
 
-        <Text style={styles.bioText}>{profileData.bio || 'No bio available'}</Text>
+        <Text style={styles.bioText}>{profileData.bio || 'Chưa có tiểu sử'}</Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
@@ -579,535 +692,227 @@ const PersonalInfo = ({ profileData }) => {
 };
 
 const styles = StyleSheet.create({
-  sectionTitle: {
-    color: 'black',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    marginLeft: 10,
-    marginTop: 10,
-  },
-
-  postGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-
-  bioText: {
-    marginLeft: "5%"
-  },
-
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    marginLeft: 10,
-  },
-
-  infoText: {
-    color: 'black',
-    fontSize: 16,
-  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 15, // Thêm padding ngang cho toàn bộ container
+    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15, // Thêm padding dọc cho header
-    paddingHorizontal: 10, // Thêm padding ngang cho header
-
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E0E0E0',
   },
   usernameContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   username: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginRight: 5, // Add some space between the username and the checkmark
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#262626',
   },
   verifiedIcon: {
-    marginLeft: 5, // Add some space between the username and the checkmark
+    marginLeft: 6,
   },
   headerIcons: {
     flexDirection: 'row',
   },
   iconButton: {
-    marginLeft: 15, // Tăng khoảng cách giữa các icon
+    padding: 8,
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   avatarContainer: {
-    marginLeft: 15,
+    position: 'relative',
+    marginRight: 24,
   },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-  },
-  placeholderImage: {
-    backgroundColor: '#ccc',
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: '#E0E0E0',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  placeholderImage: {
+    backgroundColor: '#F0F0F0',
+  },
   placeholderText: {
-    color: '#fff',
+    color: '#666',
   },
   updateAvatarIcon: {
     position: 'absolute',
-    bottom: 10,
+    bottom: -5,
     right: -5,
     backgroundColor: 'white',
     borderRadius: 12,
-  },
-  addStoryText: {
-    color: 'black',
-    fontSize: 15,
-    marginTop: 5,
-    marginLeft: 10,
+    padding: 2,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   statsContainer: {
     flex: 1,
-    
   },
-  
   statsNumbers: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 5,
-    marginBottom: 8,
-  },
-  statsLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 5,
   },
   statNumberContainer: {
-    width: '33%',  // Chia đều không gian
-    alignItems: 'center', // Căn giữa theo chiều ngang
+    alignItems: 'center',
+    flex: 1,
   },
   statNumber: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#262626',
-    textAlign: 'center', // Đảm bảo text căn giữa
+  },
+  statsLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
-    width: '33%', // Chia đều không gian
-    textAlign: 'center', // Căn giữa text
+    flex: 1,
+    textAlign: 'center',
+  },
+  bioText: {
+    paddingHorizontal: 16,
+    marginTop: 12,
+    color: '#262626',
+    fontSize: 14,
+    lineHeight: 20,
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    marginTop: 15,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    gap: 10,
   },
   editButton: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#0095F6',
     paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginRight: 5,
+    borderRadius: 8,
+    alignItems: 'center',
   },
   editButtonText: {
-    color: 'black',
-    textAlign: 'center',
-    fontWeight: 'bold',
+    color: 'white',
+    fontWeight: '600',
   },
   shareButton: {
     flex: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'white',
     paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginLeft: 5,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DBDBDB',
   },
   shareButtonText: {
-    color: 'black',
-    textAlign: 'center',
-    fontWeight: 'bold',
-  },
-  personalInfoContainer: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-
-  infoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-
-  sectionTitle: {
-    fontSize: 18,
+    color: '#262626',
     fontWeight: '600',
-    color: '#262626',
   },
-
-  infoContent: {
-    overflow: 'hidden',
-    transition: 'max-height 0.3s ease-out',
-  },
-
-  collapsedContent: {
-    maxHeight: 180, // Adjust based on your needs
-  },
-
-  expandedContent: {
-    maxHeight: undefined,
-  },
-
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f8f8f8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-
-  infoTextContainer: {
-    flex: 1,
-  },
-
-  infoLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-
-  infoValue: {
-    fontSize: 14,
-    color: '#262626',
-    fontWeight: '500',
-  },
-
-  
-
-  
-  addFriendButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 8,
-    borderRadius: 5,
-    marginLeft: 5,
-  },
-  discoverSection: {
-    marginTop: 20,
-    paddingHorizontal: 15,
-  },
-  discoverTitle: {
-    color: 'black',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  discoverContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-    padding: 10,
-  },
-  discoverAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  discoverTextContainer: {
-    flex: 1,
-  },
-  discoverText: {
-    color: 'black',
-    fontSize: 14,
-  },
-  seeAllText: {
-    color: '#0095F6',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    marginTop: 20,
-  },
-
-
-  loadingText: {
-    color: 'black',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-
-
-
   postsContainer: {
-    marginTop: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 15, // Thêm padding dọc
-  },
-
-  postGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  postItem: {
-    width: (windowWidth - 45) / 2, // Điều chỉnh để có khoảng cách giữa các item
-    marginBottom: 15, // Tăng khoảng cách giữa các hàng
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
-  },
-  postImage: {
-    width: '100%',
-    height: imageSize,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-  },
-  postInfo: {
-    padding: 10,
-    backgroundColor: '#fff',
-  },
-  postTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#262626',
-    marginBottom: 4,
-  },
-  postLocation: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 2,
-  },
-  travelDate: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-    marginTop: 20,
-  },
-  tab: {
-    paddingVertical: 10,
-    flex: 1,
-    alignItems: 'center',
-  },
-  activeTab: {
-    borderBottomWidth: 2,
-    borderBottomColor: 'black',
-  },
-  tabContent: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  tabContentText: {
-    fontSize: 16,
-    color: 'black',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalView: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  menuItemText: {
-    marginLeft: 15,
-    fontSize: 16,
-    color: 'black',
+    marginTop: 16,
   },
   tabBar: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderBottomWidth: 1,
-    borderBottomColor: '#DBDBDB',
-    marginBottom: 15,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E0E0E0',
   },
-
   tab: {
+    flex: 1,
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
     gap: 8,
   },
-
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: 'black',
+    borderBottomColor: '#0095F6',
   },
-
   tabText: {
-    fontSize: 16,
     color: '#262626',
+    fontWeight: '500',
   },
-
   activeTabText: {
     color: '#0095F6',
   },
-
-  emptyText: {
-    color: '#262626',
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 20,
+  postGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 8,
+    paddingTop: 8,
   },
-
+  postItem: {
+    width: (windowWidth - 32) / 2,
+    marginHorizontal: 4,
+    marginBottom: 16,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    overflow: 'hidden',
+  },
   postImageContainer: {
-    position: 'relative',
     width: '100%',
     aspectRatio: 1,
   },
-
   postImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
-
-  noImageContainer: {
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  multipleImagesIndicator: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 12,
-    padding: 4,
-  },
-
   postInfo: {
     padding: 8,
   },
-
   postTitle: {
     fontSize: 14,
     fontWeight: '600',
     color: '#262626',
     marginBottom: 4,
   },
-
-  postLocation: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 4,
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
   },
-
-  travelDate: {
-    fontSize: 12,
+  locationText: {
+    marginLeft: 2,
+    fontSize: 11,
     color: '#666',
-    marginBottom: 4,
   },
-
   postStats: {
     flexDirection: 'row',
     marginTop: 4,
+    gap: 8,
   },
-
-  statItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-
-  statText: {
-    fontSize: 12,
+  travelDate: {
+    fontSize: 11,
     color: '#666',
-    marginLeft: 5,
+    marginBottom: 2,
   },
- 
-
   personalInfoContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    marginTop: 16,
     backgroundColor: 'white',
-    marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoText: {
-    marginLeft: 12,
-    fontSize: 14,
-    color: '#262626',
   },
   headerContainer: {
     flexDirection: 'row',
@@ -1115,112 +920,97 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: '#262626',
   },
-
-  emptyText: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
-  },
-
   infoContent: {
-    overflow: 'hidden',
-    transition: 'max-height 0.3s ease-out',
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 12,
   },
-
   infoItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    marginBottom: 12,
+    paddingBottom: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E0E0E0',
   },
-
   lastItem: {
+    marginBottom: 0,
     borderBottomWidth: 0,
+    paddingBottom: 0,
   },
-
   iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#f8f8f8',
-    justifyContent: 'center',
-    alignItems: 'center',
     marginRight: 12,
+    width: 32,
+    alignItems: 'center',
   },
-
   infoTextContainer: {
     flex: 1,
   },
-
   infoLabel: {
     fontSize: 12,
     color: '#666',
     marginBottom: 2,
   },
-
   infoValue: {
     fontSize: 14,
     color: '#262626',
-    fontWeight: '500',
   },
-
   expandButton: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
     paddingVertical: 12,
-    marginTop: 6,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
-
   expandButtonText: {
-    color: '#0095f6',
-    fontSize: 14,
+    color: '#0095F6',
     fontWeight: '500',
     marginRight: 4,
   },
-
   expandIcon: {
-    marginTop: 2,
+    marginLeft: 4,
   },
-
+  emptyText: {
+    textAlign: 'center',
+    color: '#666',
+    marginTop: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalView: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#E0E0E0',
+  },
+  menuItemText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#262626',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
   },
-
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666666',
-  },
-
-  loadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-
-  loadingOverlayText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#FFFFFF',
+    marginTop: 12,
+    color: '#666',
   },
 });
 

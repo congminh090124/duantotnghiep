@@ -86,9 +86,9 @@ const UserImages = React.memo(({ post }) => {
 
   const handleMessage = useCallback(() => {
     navigation.navigate('ChatScreen', {
-      receiverId: post.author._id,
-      receiverName: post.author.username,
-      receiverAvatar: post.author.avatar
+      userId: post.author._id,
+      userName: post.author.username, // Đổi tên param để khớp với ChatScreen
+      userAvatar: post.author.avatar
     });
   }, [navigation, post.author]);
   const handleTravelTogether = useCallback(() => console.log('Muốn đi du lịch cùng', post.author.username), [post.author.username]);

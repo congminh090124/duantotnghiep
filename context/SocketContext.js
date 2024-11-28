@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../apiConfig';
+import { showNotificationMessage } from '../screens/thongbao/FlashMessenger';
 
 const SocketContext = createContext();
 
@@ -38,6 +39,27 @@ export const SocketProvider = ({ children }) => {
                 console.log('Socket connected with ID:', socketInstance.id);
                 setIsConnected(true);
                 socketInstance.emit('user_connected', userIdFromStorage);
+            });
+
+            socketInstance.on('receive_message', (message) => {
+                console.log('Tin nhắn mới:', message);
+                
+                showNotificationMessage({
+                    type: 'message',
+                    senderName: message.sender.username,
+                    senderAvatar: message.sender.avatar,
+                    content: message.content,
+                    createdAt: message.createdAt,
+                    onPress: () => {
+                        // Navigate to chat screen or handle message press
+                        if (navigation) {
+                            navigation.navigate('ChatDetail', {
+                                conversationId: message.conversationId,
+                                recipientId: message.sender._id
+                            });
+                        }
+                    }
+                });
             });
 
             socketInstance.on('disconnect', (reason) => {

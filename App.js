@@ -3,8 +3,8 @@ import { SafeAreaView, StatusBar, Platform, View, StyleSheet } from 'react-nativ
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SocketProvider } from './context/SocketContext'; 
-import FlashMessage from "react-native-flash-message";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import FlashMessage from "react-native-flash-message";
 
 // Import BottomTabs
 import BottomTabs from './screens/bottomNav';
@@ -275,7 +275,24 @@ const App = () => {
               component={DKTinhNguyenVien} 
             />
           </Stack.Navigator>
-          <FlashMessage position="top" />
+          
+          {/* Chỉ giữ lại một FlashMessage component ở đây với cấu hình đầy đủ */}
+          <FlashMessage
+            position="top"
+            floating={true}
+            statusBarHeight={Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 10}
+            style={styles.flashMessage}
+            titleStyle={{
+              fontSize: 16,
+              fontWeight: '600',
+              color: '#FFFFFF',
+            }}
+            textStyle={{
+              fontSize: 14,
+              color: '#FFFFFF',
+            }}
+            duration={3000}
+          />
         </NavigationContainer>
       </SocketProvider>
     </AppWrapper>
@@ -291,6 +308,19 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
+  flashMessage: {
+    marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    borderRadius: 8,
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  }
 });
 
 export default App;

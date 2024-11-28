@@ -61,7 +61,7 @@ const ProfileEditScreen = () => {
     try {
       setIsLoading(true);
       await updateProfile(profile);
-      Alert.alert('Success', 'Profile updated successfully');
+      Alert.alert('Thành công', 'Cập nhật hồ sơ thành công');
       navigation.goBack();
     } catch (error) {
       Alert.alert('Error', 'Failed to update profile');

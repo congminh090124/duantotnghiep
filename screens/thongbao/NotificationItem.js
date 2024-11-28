@@ -1,24 +1,35 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Animated } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const NotificationItem = ({ notification, onPress, onDelete }) => {
-  const getNotificationMessage = (type) => {
-    switch (type) {
-      case 'like':
-        return 'đã thích bài viết của bạn';
-      case 'likeTravel':
-        return 'đã thích bài viết du lịch của bạn';
-      case 'comment':
-        return 'đã bình luận về bài viết của bạn';
-      case 'follow':
-        return 'đã bắt đầu theo dõi bạn';
-      case 'new_post':
-        return 'đã đăng một bài viết mới';
-      case 'mention':
-        return 'đã nhắc đến bạn trong một bài viết';
-    }
-  };
+  const getNotificationMessage = useMemo(() => {
+    const messages = {
+      like: 'đã thích bài viết của bạn',
+      likeTravel: 'đã thích bài viết du lịch của bạn',
+      comment: 'đã bình luận về bài viết của bạn',
+      follow: 'đã bắt đầu theo dõi bạn',
+      new_post: 'đã đăng một bài viết mới',
+      mention: 'đã nhắc đến bạn trong một bài viết',
+      request: 'đã gửi yêu cầu kết bạn',
+      accept_request: 'đã chấp nhận lời mời kết bạn',
+    };
+    return messages[notification.type] || 'đã tương tác với bạn';
+  }, [notification.type]);
+
+  const formatTime = useMemo(() => {
+    const now = Date.now();
+    const notificationTime = notification.createdAt;
+    const diffMinutes = Math.floor((now - notificationTime) / (1000 * 60));
+    
+    if (diffMinutes < 1) return 'Vừa xong';
+    if (diffMinutes < 60) return `${diffMinutes} phút trước`;
+    
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours} giờ trước`;
+    
+    return new Date(notificationTime).toLocaleDateString('vi-VN');
+  }, [notification.createdAt]);
 
   return (
     <TouchableOpacity 
@@ -28,7 +39,9 @@ const NotificationItem = ({ notification, onPress, onDelete }) => {
     >
       <View style={styles.avatarContainer}>
         <Image 
-          source={{ uri: notification.senderAvatar || 'https://via.placeholder.com/48' }} 
+          source={{ 
+            uri: notification.senderAvatar || 'https://via.placeholder.com/48'
+          }} 
           style={styles.avatar}
         />
         {!notification.read && <View style={styles.unreadDot} />}
@@ -37,15 +50,13 @@ const NotificationItem = ({ notification, onPress, onDelete }) => {
       <View style={styles.content}>
         <View style={styles.headerRow}>
           <Text style={styles.name} numberOfLines={1}>
-            {notification.senderName}
+            {notification.senderName || 'Người dùng'}
           </Text>
-          <Text style={styles.time}>
-            {new Date(notification.createdAt).toLocaleDateString()}
-          </Text>
+          <Text style={styles.time}>{formatTime}</Text>
         </View>
         
         <Text style={styles.messageText} numberOfLines={2}>
-          {getNotificationMessage(notification.type)}
+          {getNotificationMessage}
         </Text>
       </View>
 
@@ -154,4 +165,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default NotificationItem;
+export default React.memo(NotificationItem);

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, Image, FlatList, StyleSheet, TouchableOpacity,
     SafeAreaView, TextInput, KeyboardAvoidingView, Platform,
-    ActivityIndicator
+    ActivityIndicator, AppState
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
@@ -24,16 +24,32 @@ const ChatScreen = ({ route, navigation }) => {
     const typingTimeoutRef = useRef(null);
     const flatListRef = useRef(null);
 
-    // Đánh dấu tin nhắn đã đọc khi vào chat
-    useEffect(() => {
+    // Thêm hàm markMessagesAsRead
+    const markMessagesAsRead = useCallback(() => {
         if (!socket || !chatPartnerId) return;
+        
         socket.emit('mark_messages_read', {
             userId,
             fromUserId: chatPartnerId
         });
     }, [socket, chatPartnerId, userId]);
 
-    // Fetch messages và xử lý realtime updates
+    // Sử dụng markMessagesAsRead trong useEffect
+    useEffect(() => {
+        if (!socket || !chatPartnerId) return;
+
+        markMessagesAsRead();
+        
+        const subscription = AppState.addEventListener('change', (nextAppState) => {
+            if (nextAppState === 'active') {
+                markMessagesAsRead();
+            }
+        });
+
+        return () => subscription.remove();
+    }, [socket, chatPartnerId, markMessagesAsRead]);
+
+    // Tối ưu fetch messages
     useEffect(() => {
         if (!socket) return;
         let isSubscribed = true;
@@ -42,36 +58,35 @@ const ChatScreen = ({ route, navigation }) => {
             try {
                 if (pageNum === 1) setLoading(true);
                 const token = await AsyncStorage.getItem('userToken');
-                const config = {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                };
-
+                
                 const [messagesRes, userRes] = await Promise.all([
                     axios.get(
-                        `${API_ENDPOINTS.socketURL}/api/chat/messages/${chatPartnerId}?page=${pageNum}`,
-                        config
+                        `${API_ENDPOINTS.socketURL}/api/chat/messages/${chatPartnerId}`,
+                        {
+                            params: { page: pageNum, limit: 30 },
+                            headers: { 'Authorization': `Bearer ${token}` }
+                        }
                     ),
-                    axios.get(`${API_ENDPOINTS.socketURL}/api/chat/online-users`, config)
+                    axios.get(`${API_ENDPOINTS.socketURL}/api/chat/online-users`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
                 ]);
 
-                if (isSubscribed) {
-                    const { messages: newMessages, hasMore: moreMessages } = messagesRes.data;
-                    
-                    setMessages(prev => {
-                        const uniqueMessages = [...prev, ...newMessages].reduce((acc, msg) => {
-                            acc[msg._id] = msg;
-                            return acc;
-                        }, {});
-                        return Object.values(uniqueMessages).sort((a, b) => 
-                            new Date(b.createdAt) - new Date(a.createdAt)
-                        );
-                    });
-                    
-                    setHasMore(moreMessages);
-                    setPartnerOnline(userRes.data.some(user => user._id === chatPartnerId));
-                }
+                if (!isSubscribed) return;
+
+                const { messages: newMessages, hasMore: moreMessages } = messagesRes.data;
+                
+                setMessages(prev => {
+                    const messageMap = new Map(prev.map(msg => [msg._id, msg]));
+                    newMessages.forEach(msg => messageMap.set(msg._id, msg));
+                    return Array.from(messageMap.values())
+                        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                });
+                
+                setHasMore(moreMessages);
+                setPartnerOnline(userRes.data.some(user => user._id === chatPartnerId));
             } catch (error) {
-                console.error('Error:', error.response?.data || error.message);
+                console.error('Error fetching messages:', error);
             } finally {
                 if (isSubscribed) {
                     setLoading(false);
@@ -82,82 +97,86 @@ const ChatScreen = ({ route, navigation }) => {
 
         fetchMessages();
 
-        // Xử lý nhận tin nhắn mới
-        socket.on('receive_message', (newMessage) => {
-            if (newMessage.sender._id === chatPartnerId) {
-                setMessages(prev => {
-                    const messageExists = prev.some(msg => msg._id === newMessage._id);
-                    if (!messageExists) {
-                        socket.emit('mark_messages_read', {
-                            userId,
-                            fromUserId: chatPartnerId
-                        });
+        // Cập nhật socket handlers để sử dụng markMessagesAsRead
+        const socketHandlers = {
+            receive_message: (newMessage) => {
+                if (newMessage.sender._id === chatPartnerId) {
+                    setMessages(prev => {
+                        if (prev.some(msg => msg._id === newMessage._id)) return prev;
+                        markMessagesAsRead();
                         return [newMessage, ...prev];
-                    }
-                    return prev;
-                });
-            }
-        });
+                    });
+                }
+            },
+            
+            messages_marked_read: ({ fromUserId }) => {
+                if (fromUserId === chatPartnerId) {
+                    setMessages(prev => 
+                        prev.map(msg => 
+                            msg.sender._id === userId ? { ...msg, read: true } : msg
+                        )
+                    );
+                }
+            },
 
-        // Xử lý tin nhắn đã đọc
-        socket.on('messages_marked_read', ({ fromUserId }) => {
-            if (fromUserId === chatPartnerId) {
-                setMessages(prev => 
-                    prev.map(msg => 
-                        msg.sender._id === userId ? { ...msg, read: true } : msg
-                    )
-                );
-            }
-        });
+            user_status_changed: ({ userId: changedUserId, isOnline }) => {
+                if (changedUserId === chatPartnerId) {
+                    setPartnerOnline(isOnline);
+                }
+            },
 
-        // Xử lý trạng thái online/offline
-        socket.on('user_status_changed', ({ userId: changedUserId, isOnline }) => {
-            if (changedUserId === chatPartnerId) {
-                setPartnerOnline(isOnline);
+            typing_status: ({ userId: typingUserId, isTyping }) => {
+                if (typingUserId === chatPartnerId) {
+                    setPartnerTyping(isTyping);
+                }
             }
-        });
+        };
 
-        // Xử lý typing status
-        socket.on('typing_status', ({ userId: typingUserId, isTyping }) => {
-            if (typingUserId === chatPartnerId) {
-                setPartnerTyping(isTyping);
-            }
+        // Register socket handlers
+        Object.entries(socketHandlers).forEach(([event, handler]) => {
+            socket.on(event, handler);
         });
 
         return () => {
             isSubscribed = false;
-            socket.off('receive_message');
-            socket.off('messages_marked_read');
-            socket.off('user_status_changed');
-            socket.off('typing_status');
+            Object.keys(socketHandlers).forEach(event => {
+                socket.off(event);
+            });
         };
-    }, [socket, chatPartnerId, userId]);
+    }, [socket, chatPartnerId, userId, markMessagesAsRead]);
 
-    // Xử lý gửi tin nhắn
+    // Tối ưu hóa việc gửi tin nhắn
     const sendMessage = useCallback(() => {
         if (!socket || !inputMessage.trim()) return;
 
-        const tempId = Date.now().toString();
-        const newMessage = {
-            _id: tempId,
+        const messageData = {
+            _id: Date.now().toString(),
             content: inputMessage.trim(),
             type: 'text',
-            sender: {
-                _id: userId
-            },
+            sender: { _id: userId },
             createdAt: new Date().toISOString(),
             pending: true
         };
 
-        setMessages(prev => [newMessage, ...prev]);
+        setMessages(prev => [messageData, ...prev]);
         setInputMessage('');
 
         socket.emit('send_message', {
             senderId: userId,
             receiverId: chatPartnerId,
-            content: inputMessage.trim(),
+            content: messageData.content,
             type: 'text',
-            tempId
+            tempId: messageData._id
+        }, (error) => {
+            if (error) {
+                setMessages(prev => 
+                    prev.map(msg => 
+                        msg._id === messageData._id 
+                            ? { ...msg, error: true, pending: false }
+                            : msg
+                    )
+                );
+            }
         });
     }, [inputMessage, chatPartnerId, userId, socket]);
 

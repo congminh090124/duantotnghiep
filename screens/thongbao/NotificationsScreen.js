@@ -1,280 +1,258 @@
-import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, ActivityIndicator, Text, Image } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  FlatList, 
+  StyleSheet, 
+  ActivityIndicator, 
+  RefreshControl 
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import * as Notifications from 'expo-notifications';
+
+// Custom Components and Services
 import NotificationItem from './NotificationItem';
 import { 
   subscribeToNotifications, 
+  fetchNotifications,
   markNotificationAsRead, 
   deleteNotification 
 } from './notificationService';
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { showMessage, hideMessage } from "react-native-flash-message";
-import { useNavigation } from '@react-navigation/native';
+import { showErrorMessage, showNotificationMessage } from './FlashMessenger';
 
-// Cấu hình thông báo
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Constants
+const EMPTY_STATE_ICON_SIZE = 64;
+const LOADER_COLOR = '#2196F3';
 
 const NotificationsScreen = () => {
+  // State Management
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState(null);
-  const [expoPushToken, setExpoPushToken] = useState('');
+
+  // Hooks
   const navigation = useNavigation();
 
+  // Fetch User ID on Component Mount
   useEffect(() => {
-    const getUserId = async () => {
+    const retrieveUserId = async () => {
       try {
         const storedUserId = await AsyncStorage.getItem('userID');
-        
         if (storedUserId) {
           setUserId(storedUserId);
-          
-          const unsubscribe = subscribeToNotifications(storedUserId, (updatedNotifications) => {
-            if (updatedNotifications.length > notifications.length) {
-              const newestNotification = updatedNotifications[0];
-              
-              // Format thời gian chỉ hiển thị giờ:phút
-              const time = new Date(newestNotification.createdAt).toLocaleTimeString('vi-VN', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-              });
-
-              const getNotificationMessage = (type) => {
-                switch (type) {
-                  case 'like':
-                    return 'đã thích bài viết của bạn';
-                  case 'likeTravel':
-                    return 'đã thích bài viết du lịch của bạn';
-                  case 'comment':
-                    return 'đã bình luận về bài viết của bạn';
-                  case 'follow':
-                    return 'đã bắt đầu theo dõi bạn';
-                  case 'new_post':
-                    return 'đã đăng một bài viết mới';
-                  case 'mention':
-                    return 'đã nhắc đến bạn trong một bài viết';
-                }
-              };
-
-              showMessage({
-                message: newestNotification.senderName || "Thông báo",
-                description: getNotificationMessage(newestNotification.type),
-                type: "info",
-                duration: 4000,
-                icon: props => (
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Image 
-                      source={{ uri: newestNotification.senderAvatar || 'https://via.placeholder.com/40' }}
-                      style={styles.notificationAvatar}
-                    />
-                    <Text style={styles.timeStamp}>{time}</Text>
-                  </View>
-                ),
-                style: styles.notification,
-              });
-            }
-            setNotifications(updatedNotifications);
-            setLoading(false);
-          });
-          return () => unsubscribe();
+        } else {
+          showErrorMessage('Lỗi', 'Không tìm thấy thông tin người dùng');
         }
       } catch (error) {
-        console.error('Error:', error);
-        showMessage({
-          message: "Lỗi",
-          description: "Không thể tải thông báo",
-          type: "danger",
-          duration: 3000,
-        });
+        showErrorMessage('Lỗi', 'Không thể truy xuất thông tin người dùng');
+        console.error('User ID Retrieval Error:', error);
       }
     };
 
-    getUserId();
+    retrieveUserId();
   }, []);
 
+  // Notifications Subscription
   useEffect(() => {
-    registerForPushNotificationsAsync();
-    
-    // Lắng nghe khi nhận được notification khi app đang chạy
-    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
-      console.log('Received notification:', notification);
-    });
+    let unsubscribe;
+    if (userId) {
+      unsubscribe = subscribeToNotifications(userId, (updatedNotifications) => {
+        setNotifications(updatedNotifications);
+        setLoading(false);
+      });
+    }
+    return () => unsubscribe && unsubscribe();
+  }, [userId]);
 
-    // Lắng nghe khi user nhấn vào notification
-    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log('Notification response:', response);
-    });
-
-    return () => {
-      Notifications.removeNotificationSubscription(notificationListener);
-      Notifications.removeNotificationSubscription(responseListener);
+  // Push Notifications Setup
+  useEffect(() => {
+    const configureNotifications = async () => {
+      try {
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        
+        if (existingStatus !== 'granted') {
+          const { status } = await Notifications.requestPermissionsAsync();
+          if (status !== 'granted') {
+            showErrorMessage('Thông báo', 'Không thể nhận thông báo');
+          }
+        }
+      } catch (error) {
+        console.error('Notification Permission Error:', error);
+      }
     };
+
+    configureNotifications();
   }, []);
 
-  // Thêm hàm đăng ký push notification
-  async function registerForPushNotificationsAsync() {
-    let token;
-    
-    if (Constants.isDevice) {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      
-      if (finalStatus !== 'granted') {
-        alert('Failed to get push token for push notification!');
-        return;
-      }
-      
-      token = (await Notifications.getExpoPushTokenAsync()).data;
-      console.log('Expo push token:', token);
-      setExpoPushToken(token);
-      
-      // Lưu token vào AsyncStorage nếu cần
-      await AsyncStorage.setItem('expoPushToken', token);
-    } else {
-      alert('Must use physical device for Push Notifications');
-    }
-  }
+  // Refresh Handler
+  const handleRefresh = useCallback(async () => {
+    if (!userId) return;
 
+    setRefreshing(true);
+    try {
+      const refreshedNotifications = await fetchNotifications(userId);
+      setNotifications(refreshedNotifications);
+    } catch (error) {
+      showErrorMessage('Lỗi', 'Không thể làm mới thông báo');
+      console.error('Refresh Notifications Error:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [userId]);
+
+  // Notification Press Handler
   const handleNotificationPress = async (notification) => {
-    hideMessage();
-    if (!notification.read && userId) {
-      await markNotificationAsRead(userId, notification.id);
-    }
+    try {
+      // Mark as read
+      if (!notification.read && userId) {
+        await markNotificationAsRead(userId, notification.id);
+      }
 
-    // Xử lý navigation dựa vào type của notification
-    switch (notification.type) {
-      case 'like':
-      case 'comment':
-        // Điều hướng đến chi tiết bài viết
-        navigation.navigate('PostDetailScreen', {
-          postId: notification.post,
+      // Navigation based on notification type
+      const navigationMap = {
+        'like': 'PostDetailScreen',
+        'comment': 'PostDetailScreen',
+        'likeTravel': 'TravelPostDetail',
+        'follow': 'UserProfile',
+        'new_post': 'PostDetailScreen',
+        'mention': 'PostDetailScreen',
+        'request': 'UserProfile'
+      };
+
+      const screenName = navigationMap[notification.type];
+      const paramKey = screenName === 'UserProfile' ? 'userId' : 'postId';
+      
+      if (screenName) {
+        navigation.navigate(screenName, {
+          [paramKey]: notification.type === 'follow' || notification.type === 'request' 
+            ? notification.sender 
+            : notification.post
         });
-        break;
-      case 'likeTravel':
-        // Điều hướng đến chi tiết bài viết du lịch
-        navigation.navigate('TravelPostDetail', {
-          postId: notification.post,
-        });
-        break;
-      case 'follow':
-        // Điều hướng đến trang cá nhân người dùng
-        navigation.navigate('UserProfile', {
-          userId: notification.sender,
-        });
-        break;
-      case 'new_post':
-        // Điều hướng đến bài viết mới
-        navigation.navigate('PostDetailScreen', {
-          postId: notification.post,
-        });
-        break;
-      case 'mention':
-        // Điều hướng đến bài viết có mention
-        navigation.navigate('PostDetailScreen', {
-          postId: notification.post,
-        });
-        break;
-      case 'request':
-        // Điều hướng đến trang cá nhân người gửi yêu cầu
-        navigation.navigate('UserProfile', {
-          userId: notification.sender,
-        });
-        break;
-      default:
-        console.log('Unknown notification type:', notification.type);
+      }
+    } catch (error) {
+      console.error('Notification Press Error:', error);
     }
   };
 
-  const handleDelete = async (notificationId) => {
-    hideMessage();
+  // Delete Notification Handler
+  const handleDeleteNotification = async (notificationId) => {
     if (!userId) return;
+    
     try {
       await deleteNotification(userId, notificationId);
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      showErrorMessage('Lỗi', 'Không thể xóa thông báo');
+      console.error('Delete Notification Error:', error);
     }
   };
 
+  // Thêm useEffect để xử lý thông báo mới
+  useEffect(() => {
+    if (userId) {
+      const handleNewNotification = (updatedNotifications, previousNotifications) => {
+        // Tìm thông báo mới bằng cách so sánh với danh sách cũ
+        const newNotifications = updatedNotifications.filter(notification => {
+          return !previousNotifications.some(prevNotif => prevNotif.id === notification.id);
+        });
+
+        // Hiển thị flash message cho mỗi thông báo mới
+        newNotifications.forEach(notification => {
+          showNotificationMessage({
+            type: notification.type,
+            senderName: notification.senderName,
+            senderAvatar: notification.senderAvatar,
+            content: notification.content,
+            createdAt: notification.createdAt,
+            onPress: () => handleNotificationPress(notification)
+          });
+        });
+      };
+
+      let previousNotifications = notifications;
+      const unsubscribe = subscribeToNotifications(userId, (updatedNotifications) => {
+        handleNewNotification(updatedNotifications, previousNotifications);
+        previousNotifications = updatedNotifications;
+        setNotifications(updatedNotifications);
+        setLoading(false);
+      });
+
+      return () => unsubscribe && unsubscribe();
+    }
+  }, [userId]);
+
+  // Render Loading State
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2196F3" />
-        </View>
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color={LOADER_COLOR} />
       </SafeAreaView>
     );
   }
 
-  if (!userId) {
+  // Render Empty State
+  if (!notifications.length) {
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.emptyContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#999" />
-          <Text style={styles.emptyText}>Không tìm thấy thông tin người dùng</Text>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyStateContainer}>
+          <Ionicons 
+            name="notifications-off-outline" 
+            size={EMPTY_STATE_ICON_SIZE} 
+            color="#999" 
+          />
+          <Text style={styles.emptyStateText}>
+            Chưa có thông báo nào
+          </Text>
         </View>
       </SafeAreaView>
     );
   }
 
+  // Main Render
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Thông báo</Text>
       </View>
-      
-      {notifications.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="notifications-off-outline" size={64} color="#999" />
-          <Text style={styles.emptyText}>Chưa có thông báo nào</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={notifications}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <NotificationItem
-              notification={item}
-              onPress={() => handleNotificationPress(item)}
-              onDelete={() => handleDelete(item.id)}
-            />
-          )}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-          refreshing={loading}
-          onRefresh={() => {
-            // Add refresh logic here
-          }}
-        />
-      )}
+
+      <FlatList
+        data={notifications}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <NotificationItem
+            notification={item}
+            onPress={() => handleNotificationPress(item)}
+            onDelete={() => handleDeleteNotification(item.id)}
+          />
+        )}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[LOADER_COLOR]}
+          />
+        }
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+      />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
   },
-  header: {
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+  headerContainer: {
+    paddingVertical: 15,
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#EEEEEE',
+    backgroundColor: '#FFFFFF',
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -290,51 +268,19 @@ const styles = StyleSheet.create({
   listContainer: {
     paddingVertical: 8,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  emptyContainer: {
+  emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     padding: 20,
   },
-  emptyText: {
+  emptyStateText: {
     marginTop: 16,
     fontSize: 16,
     color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
-  },
-  notificationAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-    borderWidth: 1,
-    borderColor: 'white'
-  },
-  timeStamp: {
-    fontSize: 11,
-    color: '#E8E8E8',
-    position: 'absolute',
-    left: 300,
-    top: -3,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  notification: {
-    marginTop: 30,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: '#2196F3',
-    borderRadius: 8,
   },
 });
 

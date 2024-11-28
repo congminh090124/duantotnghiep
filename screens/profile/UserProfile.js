@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser, getUserTravelPosts, blockUser, unblockUser, getBlockStatus } from '../../apiConfig';
 import{API_ENDPOINTS,getToken} from '../../apiConfig'
+import * as Location from 'expo-location';
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 45) / 2;
 
@@ -97,6 +98,132 @@ const PersonalInfo = ({ userProfile }) => {
   );
 };
 
+const PostItem = React.memo(({ post, activeTab, onPress }) => {
+  const [locationName, setLocationName] = useState('No location');
+
+  useEffect(() => {
+    const getLocationName = async () => {
+      // Log dữ liệu location từ post
+      console.log('Post Location Data:', {
+        postId: post._id,
+        location: post.location,
+        title: post.title
+      });
+
+      // Kiểm tra nếu location là GeoJSON format
+      if (post.location?.coordinates) {
+        try {
+          // GeoJSON coordinates là [longitude, latitude]
+          const result = await Location.reverseGeocodeAsync({
+            longitude: post.location.coordinates[0],
+            latitude: post.location.coordinates[1]
+          });
+
+          console.log('Geocoding Result:', result);
+
+          if (result[0]) {
+            const address = [
+              result[0].street,
+              result[0].district,
+              result[0].city,
+              result[0].region,
+            ].filter(Boolean).join(', ');
+            console.log('Formatted Address:', address);
+            setLocationName(address || 'No location');
+          }
+        } catch (error) {
+          console.error('Geocoding error:', error);
+          setLocationName('No location');
+        }
+      } else if (activeTab === 'travel') {
+        // Đối với travel posts, thử lấy địa điểm từ destination hoặc currentLocation
+        try {
+          const location = post.destination || post.currentLocation;
+          if (location?.coordinates) {
+            const result = await Location.reverseGeocodeAsync({
+              longitude: location.coordinates[0],
+              latitude: location.coordinates[1]
+            });
+
+            if (result[0]) {
+              const address = [
+                result[0].street,
+                result[0].district,
+                result[0].city,
+                result[0].region,
+              ].filter(Boolean).join(', ');
+              setLocationName(address || 'No location');
+            }
+          }
+        } catch (error) {
+          console.error('Travel post location error:', error);
+          setLocationName('No location');
+        }
+      }
+    };
+
+    getLocationName();
+  }, [post.location, post.destination, post.currentLocation, activeTab]);
+
+  // Log render của PostItem
+  console.log('Rendering PostItem:', {
+    postId: post._id,
+    title: post.title,
+    locationName,
+    activeTab,
+    hasLocation: post.location?.coordinates ? 'yes' : 'no',
+    hasDestination: post.destination?.coordinates ? 'yes' : 'no',
+    hasCurrentLocation: post.currentLocation?.coordinates ? 'yes' : 'no'
+  });
+
+  return (
+    <TouchableOpacity 
+      style={styles.postItem}
+      onPress={() => onPress(post)}
+    >
+      <View style={styles.postImageContainer}>
+        {post.images && post.images.length > 0 ? (
+          <Image
+            source={{ uri: post.images[0] }}
+            style={styles.postImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.postImage, styles.noImageContainer]}>
+            <Ionicons name="image-outline" size={24} color="#666" />
+          </View>
+        )}
+        {post.images && post.images.length > 1 && (
+          <View style={styles.multipleImagesIndicator}>
+            <Ionicons name="copy-outline" size={16} color="#fff" />
+          </View>
+        )}
+      </View>
+      
+      <View style={styles.postInfo}>
+        <Text style={styles.postTitle} numberOfLines={1}>
+          {post.title || 'Untitled'}
+        </Text>
+        
+        {activeTab === 'travel' && (
+          <>
+            <Text style={styles.postLocation} numberOfLines={1}>
+              <Ionicons name="location-outline" size={12} color="#666" />
+              {locationName}
+            </Text>
+            {post.startDate && (
+              <Text style={styles.travelDate}>
+                <Ionicons name="calendar-outline" size={12} color="#666" />
+                {new Date(post.startDate).toLocaleDateString()}
+              </Text>
+            )}
+          </>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+});
+
 const UserProfile = ({ route }) => {
   const { userId } = route.params;
   const [userProfile, setUserProfile] = useState(null);
@@ -164,6 +291,13 @@ const UserProfile = ({ route }) => {
           getUserTravelPosts(userId)
         ]);
         
+        // Log dữ liệu fetch được
+        console.log('Fetched User Data:', {
+          profile: profileData,
+          normalPosts: postsData,
+          travelPosts: travelPostsData
+        });
+
         setUserProfile(profileData);
         setNormalPosts(postsData);
         setTravelPosts(travelPostsData);
@@ -242,6 +376,13 @@ const UserProfile = ({ route }) => {
   const avatarUri = useMemo(() => userProfile?.anh_dai_dien || null, [userProfile?.anh_dai_dien]);
 
   const handlePostPress = useCallback((post) => {
+    // Log khi user nhấn vào post
+    console.log('Post Pressed:', {
+      postId: post._id,
+      title: post.title,
+      activeTab
+    });
+
     if (!post?._id) {
       Alert.alert('Lỗi', 'Không thể mở bài viết này');
       return;
@@ -303,51 +444,12 @@ const UserProfile = ({ route }) => {
 
   const renderPostItem = useCallback((post) => {
     return (
-      <TouchableOpacity 
+      <PostItem 
         key={post._id} 
-        style={styles.postItem}
-        onPress={() => handlePostPress(post)}
-      >
-        <View style={styles.postImageContainer}>
-          {post.images && post.images.length > 0 ? (
-            <Image
-              source={{ uri: post.images[0] }}
-              style={styles.postImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[styles.postImage, styles.noImageContainer]}>
-              <Ionicons name="image-outline" size={24} color="#666" />
-            </View>
-          )}
-          {post.images && post.images.length > 1 && (
-            <View style={styles.multipleImagesIndicator}>
-              <Ionicons name="copy-outline" size={16} color="#fff" />
-            </View>
-          )}
-        </View>
-        
-        <View style={styles.postInfo}>
-          <Text style={styles.postTitle} numberOfLines={1}>
-            {post.title || 'Untitled'}
-          </Text>
-          
-          {activeTab === 'travel' && (
-            <>
-              <Text style={styles.postLocation} numberOfLines={1}>
-                <Ionicons name="location-outline" size={12} color="#666" />
-                {post.destinationName || 'No location'}
-              </Text>
-              {post.startDate && (
-                <Text style={styles.travelDate}>
-                  <Ionicons name="calendar-outline" size={12} color="#666" />
-                  {new Date(post.startDate).toLocaleDateString()}
-                </Text>
-              )}
-            </>
-          )}
-        </View>
-      </TouchableOpacity>
+        post={post} 
+        activeTab={activeTab} 
+        onPress={handlePostPress}
+      />
     );
   }, [activeTab, handlePostPress]);
 
@@ -504,6 +606,15 @@ const UserProfile = ({ route }) => {
       { cancelable: true }
     );
   };
+
+  // Log mỗi khi activeTab thay đổi
+  useEffect(() => {
+    console.log('Active Tab Changed:', {
+      activeTab,
+      normalPostsCount: normalPosts.length,
+      travelPostsCount: travelPosts.length
+    });
+  }, [activeTab, normalPosts.length, travelPosts.length]);
 
   if (loading) {
     return (
