@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../apiConfig';
 import { showNotificationMessage } from '../screens/thongbao/FlashMessenger';
+import { navigate } from '../navigation/NavigationRef';
 
 const SocketContext = createContext();
 
@@ -42,22 +43,26 @@ export const SocketProvider = ({ children }) => {
             });
 
             socketInstance.on('receive_message', (message) => {
-                console.log('Tin nhắn mới:', message);
+                console.log('Received new message:', message);
                 
                 showNotificationMessage({
                     type: 'message',
                     senderName: message.sender.username,
                     senderAvatar: message.sender.avatar,
+                    senderId: message.sender._id,
                     content: message.content,
-                    createdAt: message.createdAt,
+                    createdAt: new Date(),
+                    conversationId: message._id,
                     onPress: () => {
-                        // Navigate to chat screen or handle message press
-                        if (navigation) {
-                            navigation.navigate('ChatDetail', {
-                                conversationId: message.conversationId,
-                                recipientId: message.sender._id
-                            });
-                        }
+                        console.log('Notification pressed, navigating to chat...');
+                        navigate('ChatScreen', {
+                            userId: message.sender._id,
+                            userName: message.sender.username,
+                            userAvatar: message.sender.avatar,
+                            conversationId: message._id,
+                            fromNotification: true,
+                            receiverId: message.receiver
+                        });
                     }
                 });
             });
