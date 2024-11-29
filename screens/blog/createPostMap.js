@@ -10,7 +10,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Alert,
-  Platform
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +28,12 @@ const PostCreationScreen = () => {
   const [loading, setLoading] = useState(true);
   const [location, setLocation] = useState(null);
   const [locationDisplay, setLocationDisplay] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({
+    title: '',
+    location: '',
+    images: ''
+  });
   
   const navigation = useNavigation();
 
@@ -110,17 +117,42 @@ const PostCreationScreen = () => {
     setImages(prevImages => prevImages.filter((_, i) => i !== index));
   }, []);
 
-  const handlePost = useCallback(async () => {
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = {
+      title: '',
+      location: '',
+      images: ''
+    };
+
     if (!title.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập tiêu đề bài viết.');
-      return;
+      newErrors.title = 'Vui lòng nhập tiêu đề bài viết';
+      isValid = false;
+    } else if (title.length < 10) {
+      newErrors.title = 'Tiêu đề phải có ít nhất 10 ký tự';
+      isValid = false;
     }
-  
+
     if (!location) {
-      Alert.alert('Lỗi', 'Không thể lấy vị trí hiện tại. Vui lòng thử lại.');
+      newErrors.location = 'Vui lòng chọn vị trí';
+      isValid = false;
+    }
+
+    if (image.length === 0) {
+      newErrors.images = 'Vui lòng thêm ít nhất 1 hình ảnh';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handlePost = useCallback(async () => {
+    if (!validateForm()) {
       return;
     }
-  
+
+    setIsLoading(true);
     try {
       const optimizedImages = await Promise.all(
         image.map(async (img) => {
@@ -132,26 +164,25 @@ const PostCreationScreen = () => {
           };
         })
       );
-  
+
       const [latitude, longitude] = location.split(',').map(coord => parseFloat(coord.trim()));
-  
+
       const postData = {
         title: title.trim(),
         location: {
-          coordinates: [longitude, latitude] // Note: GeoJSON format uses [longitude, latitude]
+          coordinates: [longitude, latitude]
         },
         image: optimizedImages
       };
-  
-      console.log('Sending post data:', postData);
-  
-      const result = await createPost(postData);
-      console.log('Post created successfully:', result);
-      Alert.alert('Thành công', 'Bài viết đã được tạo.');
+
+      await createPost(postData);
+      Alert.alert('Thành công', 'Bài viết đã được đăng thành công');
       navigation.goBack();
     } catch (error) {
       console.error('Error creating post:', error);
-      Alert.alert('Lỗi', `Không thể tạo bài viết: ${error.message}`);
+      Alert.alert('Lỗi', 'Không thể đăng bài viết. Vui lòng thử lại sau.');
+    } finally {
+      setIsLoading(false);
     }
   }, [title, location, image, optimizeImage, navigation]);
 
@@ -169,12 +200,36 @@ const PostCreationScreen = () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
           <View style={styles.header}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-              <Text style={styles.closeButtonText}>×</Text>
+            <TouchableOpacity 
+              style={styles.closeButton} 
+              onPress={() => {
+                if (title || image.length > 0) {
+                  Alert.alert(
+                    'Xác nhận',
+                    'Bạn có chắc muốn hủy tạo bài viết?',
+                    [
+                      { text: 'Tiếp tục chỉnh sửa', style: 'cancel' },
+                      { text: 'Hủy bài viết', style: 'destructive', onPress: () => navigation.goBack() }
+                    ]
+                  );
+                } else {
+                  navigation.goBack();
+                }
+              }}
+            >
+              <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Tạo bài viết</Text>
-            <TouchableOpacity style={styles.postButton} onPress={handlePost}>
-              <Text style={styles.postButtonText}>Đăng</Text>
+            <TouchableOpacity 
+              style={[styles.postButton, isLoading && styles.postButtonDisabled]} 
+              onPress={handlePost}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.postButtonText}>Đăng</Text>
+              )}
             </TouchableOpacity>
           </View>
 
@@ -198,12 +253,21 @@ const PostCreationScreen = () => {
             </View>
           )}
 
-          <TextInput
-            style={styles.titleInput}
-            placeholder="Tiêu đề bài viết"
-            value={title}
-            onChangeText={setTitle}
-          />
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={[styles.titleInput, errors.title && styles.inputError]}
+              placeholder="Tiêu đề bài viết"
+              value={title}
+              onChangeText={(text) => {
+                setTitle(text);
+                if (errors.title) setErrors({...errors, title: ''});
+              }}
+              multiline
+            />
+            {errors.title ? (
+              <Text style={styles.errorText}>{errors.title}</Text>
+            ) : null}
+          </View>
 
           <FlatList
             data={image}
@@ -212,10 +276,15 @@ const PostCreationScreen = () => {
             numColumns={3}
             style={styles.imageList}
             ListFooterComponent={
-              <TouchableOpacity style={styles.addImageButton} onPress={handleAddImages}>
-                <Ionicons name="image-outline" size={24} color="#1877f2" />
-                <Text style={styles.addImageText}>Thêm hình ảnh</Text>
-              </TouchableOpacity>
+              <View>
+                <TouchableOpacity style={styles.addImageButton} onPress={handleAddImages}>
+                  <Ionicons name="image-outline" size={24} color="#1877f2" />
+                  <Text style={styles.addImageText}>Thêm hình ảnh</Text>
+                </TouchableOpacity>
+                {errors.images ? (
+                  <Text style={[styles.errorText, styles.imageErrorText]}>{errors.images}</Text>
+                ) : null}
+              </View>
             }
           />
         </View>
@@ -233,40 +302,49 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    backgroundColor: '#fff',
   },
   titleInput: {
-    height: 40,
+    minHeight: 40,
     borderColor: '#e0e0e0',
     borderWidth: 1,
-    borderRadius: 5,
-    margin: 10,
-    padding: 10,
+    borderRadius: 12,
+    padding: 12,
     fontSize: 16,
+    backgroundColor: '#fff',
   },
   inner: {
     flex: 1,
     justifyContent: 'flex-end',
   },
   closeButton: {
-    padding: 5,
-  },
-  closeButtonText: {
-    fontSize: 24,
-    color: '#000',
+    padding: 8,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
   },
   postButton: {
-    padding: 5,
+    backgroundColor: '#1877f2',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 70,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  postButtonDisabled: {
+    backgroundColor: '#1877f2',
+    opacity: 0.8,
   },
   postButtonText: {
-    color: '#1877f2',
+    color: '#fff',
     fontWeight: 'bold',
+    fontSize: 15,
   },
   userInfo: {
     flexDirection: 'row',
@@ -315,13 +393,18 @@ const styles = StyleSheet.create({
   addImageButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    justifyContent: 'center',
+    padding: 15,
+    backgroundColor: '#f0f2f5',
+    borderRadius: 12,
+    marginHorizontal: 10,
     marginTop: 10,
   },
   addImageText: {
     color: '#1877f2',
     marginLeft: 10,
     fontSize: 16,
+    fontWeight: '500',
   },
   locationContainer: {
     flexDirection: 'row',
@@ -333,6 +416,22 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     color: '#1877f2',
     fontSize: 14,
+  },
+  inputContainer: {
+    marginHorizontal: 10,
+  },
+  inputError: {
+    borderColor: '#ff4444',
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  imageErrorText: {
+    textAlign: 'center',
+    marginTop: 10,
   },
 });
 

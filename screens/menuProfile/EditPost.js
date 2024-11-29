@@ -10,10 +10,14 @@ import {
   Alert,
   ActivityIndicator,
   SafeAreaView,
-  Platform
+  Platform,
+  Dimensions
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { editPost } from '../../apiConfig';
+import { Ionicons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
 
 const EditPost = ({ route, navigation }) => {
   const { postId, initialData } = route.params;
@@ -88,6 +92,20 @@ const EditPost = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons 
+              name="chevron-back" 
+              size={24} 
+              style={styles.backIcon}
+            />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Sửa bài viết</Text>
+        </View>
+
         <TextInput
           style={styles.input}
           value={title}
@@ -136,73 +154,182 @@ const EditPost = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#F8F9FA',
+    paddingHorizontal: 16,
+  },
+  scrollContainer: {
+    paddingTop: 12,
+    paddingBottom: 20,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingTop: 8,
+  },
+  backButton: {
+    width: '20%',
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  backIcon: {
+    color: '#495057',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    marginRight: '20%',
+  },
+  inputContainer: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#495057',
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
   input: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#212529',
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    marginBottom: 20,
-    borderRadius: 5,
+    borderColor: '#DEE2E6',
+    marginBottom: 24,
+    marginHorizontal: 4,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   imageContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 20,
+    gap: 12,
+    padding: 4,
+    marginBottom: 24,
+    marginHorizontal: 4,
   },
   imageWrapper: {
-    width: 100,
-    height: 100,
-    margin: 5,
+    width: (width - 56) / 3,
+    height: (width - 56) / 3,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
     position: 'relative',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: 5,
+    borderRadius: 12,
   },
   removeButton: {
     position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: 'rgba(255, 0, 0, 0.7)',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   removeButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#dc3545',
+    fontSize: 14,
+    fontWeight: '600',
   },
   addButton: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#f0f0f0',
+    width: (width - 56) / 3,
+    height: (width - 56) / 3,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 5,
-    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#DEE2E6',
+    borderStyle: 'dashed',
   },
   addButtonText: {
-    fontSize: 30,
-    color: '#888',
+    fontSize: 24,
+    color: '#ADB5BD',
+    fontWeight: '500',
   },
   updateButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 5,
+    backgroundColor: '#228BE6',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 20,
+    marginTop: 32,
+    marginBottom: 40,
+    marginHorizontal: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
   updateButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  updateButtonLoading: {
+    width: 20,
+    height: 20,
+  },
+  disabledButton: {
+    backgroundColor: '#ADB5BD',
+    opacity: 0.8,
   },
 });
 

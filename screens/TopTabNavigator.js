@@ -43,16 +43,19 @@ const CustomTabBar = ({ state, descriptors, navigation }) => {
               accessibilityLabel={options.tabBarAccessibilityLabel}
               testID={options.tabBarTestID}
               onPress={onPress}
-              style={styles.tabItem}
+              style={[
+                styles.tabItem,
+                isFocused && styles.tabItemActive
+              ]}
+              activeOpacity={0.7}
             >
               <Text 
                 style={[
                   styles.tabBarLabel,
-                  {
-                    opacity: isFocused ? 1 : 0.7,
-                    transform: [{ scale: isFocused ? 1 : 0.95 }]
-                  }
+                  isFocused && styles.tabBarLabelActive
                 ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
                 {label}
               </Text>
@@ -125,50 +128,79 @@ const styles = StyleSheet.create({
   },
   sceneContainer: {
     backgroundColor: '#000',
+    marginTop: Platform.OS === 'ios' ? 40 : TAB_BAR_HEIGHT,
   },
   tabBarContainer: {
-    backgroundColor: '#000',
-    paddingTop: 8,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    backgroundColor: 'transparent',
+    paddingTop: Platform.OS === 'ios' ? 6 : 2,
     height: Platform.select({
       ios: 'auto',
-      android: TAB_BAR_HEIGHT,
+      android: TAB_BAR_HEIGHT * 0.8,
     }),
     justifyContent: Platform.select({
       ios: 'flex-start',
       android: 'flex-end',
     }),
-    paddingBottom: 8,
+    paddingBottom: Platform.OS === 'ios' ? 6 : 2,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+    backdropFilter: 'blur(20px)',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#000',
+    backgroundColor: 'transparent',
     height: Platform.select({
-      ios: 45,
-      android: TAB_BAR_HEIGHT * 0.5,
+      ios: 36,
+      android: TAB_BAR_HEIGHT * 0.4,
     }),
     alignItems: 'center',
-    borderBottomWidth: 0,
+    paddingHorizontal: 8,
+    marginHorizontal: Platform.OS === 'ios' ? 12 : 6,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: Platform.select({
       ios: 8,
-      android: 0,
+      android: 6,
     }),
+    marginHorizontal: 4,
+    borderRadius: 10,
+    position: 'relative',
+    backgroundColor: 'transparent',
   },
   tabBarLabel: {
-    color: '#fff',
+    color: 'rgba(255, 255, 255, 0.45)',
     fontSize: Platform.select({
       ios: 14,
-      android: SCREEN_WIDTH * 0.04,
+      android: SCREEN_WIDTH * 0.035,
     }),
     textTransform: 'none',
-    fontWeight: '600',
-    letterSpacing: 0.3,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
+  tabBarLabelActive: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
+  tabItemActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  }
 });
 
 export default React.memo(TopTabNavigator);

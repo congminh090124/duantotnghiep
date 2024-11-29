@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Dimensions,
-  FlatList
+  FlatList,
+  Platform
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
@@ -314,145 +315,176 @@ const EditTravelPost = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-        <Text style={styles.label}>Tiêu đề</Text>
-        <TextInput
-          style={styles.input}
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Nhập tiêu đề bài viết"
-        />
-
-        <View style={styles.dateContainer}>
-          <View style={styles.dateWrapper}>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowStartDatePicker(true)}
-            >
-              <Text>Bắt đầu: {startDate.toLocaleDateString()}</Text>
-            </TouchableOpacity>
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={startDate}
-                mode="date"
-                display="default"
-                onChange={(event, date) => {
-                  setShowStartDatePicker(false);
-                  if (date) setStartDate(date);
-                }}
-              />
-            )}
-          </View>
-          <View style={styles.dateWrapper}>
-            <TouchableOpacity
-              style={styles.dateButton}
-              onPress={() => setShowEndDatePicker(true)}
-            >
-              <Text>Kết thúc: {endDate.toLocaleDateString()}</Text>
-            </TouchableOpacity>
-            {showEndDatePicker && (
-              <DateTimePicker
-                value={endDate}
-                mode="date"
-                display="default"
-                onChange={(event, date) => {
-                  setShowEndDatePicker(false);
-                  if (date) setEndDate(date);
-                }}
-              />
-            )}
-          </View>
+        <View style={styles.headerContainer}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons 
+              name="chevron-back" 
+              size={24} 
+              style={styles.backIcon}
+            />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Sửa bài du lịch</Text>
         </View>
+        
+        <View style={styles.scrollContainer}>
+          <Text style={styles.label}>Tiêu đề</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Nhập tiêu đề bài viết"
+          />
 
-        <TouchableOpacity
-          style={styles.locationButton}
-          onPress={() => setShowMap(true)}
-        >
-          <Text style={styles.locationText}>
-            {destinationName || 'Chọn địa điểm'}
-          </Text>
-        </TouchableOpacity>
-
-        {showMap && (
-          <View style={styles.mapContainer}>
-            <View style={styles.mapSearchContainer}>
-              <TextInput
-                style={styles.mapSearchInput}
-                value={mapSearchQuery}
-                onChangeText={handleMapSearch}
-                placeholder="Tìm kiếm địa điểm"
-                placeholderTextColor="#666"
-              />
-              {showMapSearchResults && (
-                <FlatList
-                  style={styles.mapSearchResults}
-                  data={mapSearchResults}
-                  keyExtractor={(item) => item.place_id}
-                  renderItem={renderMapSearchResult}
-                  keyboardShouldPersistTaps="handled"
-                  maxToRenderPerBatch={10}
-                  windowSize={5}
+          <View style={styles.dateContainer}>
+            <View style={styles.dateWrapper}>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowStartDatePicker(true)}
+              >
+                <Text>Bắt đầu: {startDate.toLocaleDateString()}</Text>
+              </TouchableOpacity>
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={startDate}
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowStartDatePicker(false);
+                    if (date) setStartDate(date);
+                  }}
                 />
               )}
             </View>
-
-            <MapView
-              ref={mapRef}
-              style={styles.map}
-              initialRegion={initialRegion}
-            >
-              {markerPosition && (
-                <Marker
-                  coordinate={markerPosition.coordinate}
-                  title={markerPosition.title}
-                />
-              )}
-            </MapView>
-
-            <View style={styles.mapButtonsContainer}>
+            <View style={styles.dateWrapper}>
               <TouchableOpacity
-                style={styles.closeMapButton}
-                onPress={() => setShowMap(false)}
+                style={styles.dateButton}
+                onPress={() => setShowEndDatePicker(true)}
               >
-                <Text style={styles.closeMapButtonText}>Đóng bản đồ</Text>
+                <Text>Kết thúc: {endDate.toLocaleDateString()}</Text>
               </TouchableOpacity>
-              
-              {tempLocation && (
-                <TouchableOpacity
-                  style={styles.selectLocationButton}
-                  onPress={handleSelectLocation}
-                >
-                  <Text style={styles.selectLocationButtonText}>
-                    Chọn vị trí này
-                  </Text>
-                </TouchableOpacity>
+              {showEndDatePicker && (
+                <DateTimePicker
+                  value={endDate}
+                  mode="date"
+                  display="default"
+                  onChange={(event, date) => {
+                    setShowEndDatePicker(false);
+                    if (date) setEndDate(date);
+                  }}
+                />
               )}
             </View>
           </View>
-        )}
 
-        <View style={styles.imageContainer}>
-          {images.map((image, index) => (
-            <View key={index} style={styles.imageWrapper}>
-              <Image source={{ uri: image }} style={styles.image} />
-              <TouchableOpacity
-                style={styles.removeButton}
-                onPress={() => removeImage(index)}
+          <TouchableOpacity
+            style={styles.locationButton}
+            onPress={() => setShowMap(true)}
+          >
+            <Text style={styles.locationText}>
+              {destinationName || 'Chọn địa điểm'}
+            </Text>
+          </TouchableOpacity>
+
+          {showMap && (
+            <View style={styles.mapContainer}>
+              <View style={styles.mapSearchContainer}>
+                <TextInput
+                  style={styles.mapSearchInput}
+                  value={mapSearchQuery}
+                  onChangeText={handleMapSearch}
+                  placeholder="Tìm kiếm địa điểm"
+                  placeholderTextColor="#666"
+                />
+                {showMapSearchResults && (
+                  <FlatList
+                    style={styles.mapSearchResults}
+                    data={mapSearchResults}
+                    keyExtractor={(item) => item.place_id}
+                    renderItem={renderMapSearchResult}
+                    keyboardShouldPersistTaps="handled"
+                    maxToRenderPerBatch={10}
+                    windowSize={5}
+                  />
+                )}
+              </View>
+
+              <MapView
+                ref={mapRef}
+                style={styles.map}
+                initialRegion={initialRegion}
               >
-                <Text style={styles.removeButtonText}>X</Text>
-              </TouchableOpacity>
+                {markerPosition && (
+                  <Marker
+                    coordinate={markerPosition.coordinate}
+                    title={markerPosition.title}
+                  />
+                )}
+              </MapView>
+
+              <View style={styles.mapButtonsContainer}>
+                <TouchableOpacity
+                  style={styles.closeMapButton}
+                  onPress={() => setShowMap(false)}
+                >
+                  <Text style={styles.closeMapButtonText}>Đóng bản đồ</Text>
+                </TouchableOpacity>
+                
+                {tempLocation && (
+                  <TouchableOpacity
+                    style={styles.selectLocationButton}
+                    onPress={handleSelectLocation}
+                  >
+                    <Text style={styles.selectLocationButtonText}>
+                      Chọn vị trí này
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-          ))}
-          <TouchableOpacity style={styles.addButton} onPress={pickImage}>
-            <Text style={styles.addButtonText}>+</Text>
+          )}
+
+          <View style={styles.imageContainer}>
+            {images.map((image, index) => (
+              <View key={index} style={styles.imageWrapper}>
+                <Image source={{ uri: image }} style={styles.image} />
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => removeImage(index)}
+                >
+                  <Text style={styles.removeButtonText}>X</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+            <TouchableOpacity style={styles.addButton} onPress={pickImage}>
+              <Text style={styles.addButtonText}>+</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.updateButton,
+              isLoading && styles.disabledButton
+            ]}
+            onPress={handleUpdatePost}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <ActivityIndicator 
+                  size="small" 
+                  color="#FFFFFF" 
+                  style={styles.updateButtonLoading} 
+                />
+                <Text style={styles.updateButtonText}>Đang cập nhật...</Text>
+              </>
+            ) : (
+              <Text style={styles.updateButtonText}>Cập nhật bài viết</Text>
+            )}
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.updateButton}
-          onPress={handleUpdatePost}
-        >
-          <Text style={styles.updateButtonText}>Cập nhật bài viết</Text>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -464,190 +496,321 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#F8F9FA',
+  },
+  scrollContainer: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  header: {
+    marginBottom: 30,
+    paddingHorizontal: 4,
+  },
+  
+  inputContainer: {
+    marginBottom: 24,
   },
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
+    color: '#495057',
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
   input: {
-    width: inputWidth,
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
+    color: '#212529',
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#DEE2E6',
+    marginBottom: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
   },
   dateContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  dateWrapper: {
-    width: inputWidth / 2 - 10,
+    gap: 16,
+    marginBottom: 24,
   },
   dateButton: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#DEE2E6',
+  },
+  dateText: {
+    fontSize: 16,
+    color: '#212529',
   },
   locationButton: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
+    borderColor: '#DEE2E6',
+    marginBottom: 24,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
   },
   locationText: {
+    flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#212529',
+    textAlign: 'center',
+  },
+  locationIcon: {
+    position: 'absolute',
+    left: 16,
+    color: '#495057',
+  },
+  locationPlaceholder: {
+    color: '#ADB5BD',
   },
   mapContainer: {
-    height: 300,
-    marginBottom: 20,
+    height: 400,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#DEE2E6',
+  },
+  mapSearchContainer: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    right: 16,
+    zIndex: 1,
+  },
+  mapSearchInput: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: '#DEE2E6',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  mapSearchResults: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 8,
+    maxHeight: 200,
+    borderWidth: 1,
+    borderColor: '#DEE2E6',
+  },
+  searchResult: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F5',
+  },
+  searchResultText: {
+    fontSize: 15,
+    color: '#495057',
   },
   map: {
     flex: 1,
-    borderRadius: 10,
-    overflow: 'hidden',
+  },
+  mapButtonsContainer: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   closeMapButton: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    padding: 10,
-    borderRadius: 5,
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#DEE2E6',
   },
   closeMapButtonText: {
-    color: '#007AFF',
-    fontWeight: 'bold',
+    color: '#495057',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  selectLocationButton: {
+    flex: 1,
+    backgroundColor: '#228BE6',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  selectLocationButtonText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '600',
   },
   imageContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 20,
+    gap: 12,
+    padding: 4,
+    marginBottom: 24,
   },
   imageWrapper: {
-    width: (inputWidth - 30) / 3,
-    height: (inputWidth - 30) / 3,
-    margin: 5,
-    borderRadius: 8,
+    width: (width - 56) / 3,
+    height: (width - 56) / 3,
+    borderRadius: 12,
     overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    position: 'relative',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
   image: {
     width: '100%',
     height: '100%',
+    borderRadius: 12,
   },
   removeButton: {
     position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: 'rgba(255, 0, 0, 0.7)',
+    top: 8,
+    right: 8,
     width: 24,
     height: 24,
     borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   removeButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: '#dc3545',
     fontSize: 14,
+    fontWeight: '600',
   },
   addButton: {
-    width: (inputWidth - 30) / 3,
-    height: (inputWidth - 30) / 3,
-    margin: 5,
-    backgroundColor: '#f0f0f0',
+    width: (width - 56) / 3,
+    height: (width - 56) / 3,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderWidth: 2,
+    borderColor: '#DEE2E6',
     borderStyle: 'dashed',
   },
   addButtonText: {
-    fontSize: 30,
-    color: '#888',
+    fontSize: 24,
+    color: '#ADB5BD',
+    fontWeight: '500',
   },
   updateButton: {
-    backgroundColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
+    backgroundColor: '#228BE6',
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: 'center',
-    marginBottom: 20,
+    marginTop: 32,
+    marginBottom: 40,
+    marginHorizontal: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
   updateButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  mapSearchContainer: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    right: 10,
-    zIndex: 1,
-  },
-  mapSearchInput: {
-    backgroundColor: 'white',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '600',
   },
-  mapSearchResults: {
-    backgroundColor: 'white',
-    marginTop: 5,
-    borderRadius: 8,
-    maxHeight: 200,
+  updateButtonLoading: {
+    width: 20,
+    height: 20,
   },
-  mapSearchResultItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  disabledButton: {
+    backgroundColor: '#ADB5BD',
+    opacity: 0.8,
   },
-  mapSearchResultText: {
-    fontSize: 16,
-    color: '#333',
+  errorText: {
+    color: '#FA5252',
+    fontSize: 14,
+    marginTop: 8,
+    marginLeft: 4,
   },
-  mapButtonsContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 10,
-    right: 10,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  selectLocationButton: {
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+  backButton: {
+    width: '20%',
+    height: 40,
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.08,
+        shadowRadius: 2,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
   },
-  selectLocationButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 16,
+  backIcon: {
+    color: '#495057',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1A1A1A',
+  
   },
 });
 
