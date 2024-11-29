@@ -7,6 +7,29 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const LIKE_COLOR = '#FF6B6B';
 const UNLIKE_COLOR = '#757575';
 
+const formatTimeAgo = (date) => {
+  const now = new Date();
+  const diffInSeconds = Math.floor((now - new Date(date)) / 1000);
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  const diffInDays = Math.floor(diffInHours / 24);
+  const diffInMonths = Math.floor(diffInDays / 30);
+
+  if (diffInSeconds < 60) {
+    return 'Vừa xong';
+  } else if (diffInMinutes < 60) {
+    return `${diffInMinutes} phút trước`;
+  } else if (diffInHours < 24) {
+    return `${diffInHours} giờ trước`;
+  } else if (diffInDays < 30) {
+    return `${diffInDays} ngày trước`;
+  } else if (diffInMonths < 12) {
+    return `${diffInMonths} tháng trước`;
+  } else {
+    return new Date(date).toLocaleDateString('vi-VN');
+  }
+};
+
 const BlogPage = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +41,7 @@ const BlogPage = () => {
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [error, setError] = useState(null);
+  const [loadingLikes, setLoadingLikes] = useState({});
 
   const fetchPosts = useCallback(async () => {
     try {
@@ -93,6 +117,13 @@ const BlogPage = () => {
   }, [navigation, currentUserId]);
 
   const handleLikePress = useCallback(async (postId) => {
+    if (loadingLikes[postId]) return;
+
+    setLoadingLikes(prev => ({
+      ...prev,
+      [postId]: true
+    }));
+
     setLikeStates(prevStates => {
       const currentState = prevStates[postId];
       return {
@@ -105,7 +136,10 @@ const BlogPage = () => {
     });
 
     try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       const result = await toggleLikePost(postId);
+      
       setLikeStates(prevStates => ({
         ...prevStates,
         [postId]: {
@@ -115,7 +149,6 @@ const BlogPage = () => {
       }));
     } catch (error) {
       console.error('Lỗi khi thay đổi trạng thái like:', error);
-      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái like');
       setLikeStates(prevStates => {
         const currentState = prevStates[postId];
         return {
@@ -126,6 +159,12 @@ const BlogPage = () => {
           }
         };
       });
+      Alert.alert('Thông báo', 'Có lỗi xảy ra khi thực hiện thao tác này');
+    } finally {
+      setLoadingLikes(prev => ({
+        ...prev,
+        [postId]: false
+      }));
     }
   }, [currentUserId]);
 
@@ -184,7 +223,7 @@ const BlogPage = () => {
         )}
         <View>
           <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
-          <Text style={styles.postDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
+          <Text style={styles.postDate}>{formatTimeAgo(post.createdAt)}</Text>
         </View>
       </TouchableOpacity>
 
@@ -201,16 +240,21 @@ const BlogPage = () => {
     </TouchableOpacity>
       <View style={styles.interactionInfo}>
         <TouchableOpacity
-          style={styles.interactionItem}
+          style={[styles.interactionItem, loadingLikes[post._id] && styles.interactionItemDisabled]}
           onPress={() => handleLikePress(post._id)}
+          disabled={loadingLikes[post._id]}
         >
-          <Ionicons
-            name={likeStates[post._id]?.isLiked ? "heart" : "heart-outline"}
-            size={24}
-            color={likeStates[post._id]?.isLiked ? LIKE_COLOR : UNLIKE_COLOR}
-          />
+          {loadingLikes[post._id] ? (
+            <ActivityIndicator size="small" color="#FF6B6B" style={styles.likeLoading} />
+          ) : (
+            <Ionicons
+              name={likeStates[post._id]?.isLiked ? "heart" : "heart-outline"}
+              size={24}
+              color={likeStates[post._id]?.isLiked ? LIKE_COLOR : UNLIKE_COLOR}
+            />
+          )}
           <Text style={styles.interactionText}>
-            {likeStates[post._id]?.likesCount || 0} Likes
+            {likeStates[post._id]?.likesCount || 0} Thích
           </Text>
         </TouchableOpacity>
 
@@ -219,28 +263,42 @@ const BlogPage = () => {
           onPress={() => handleCommentPress(post._id)}
         >
           <Ionicons name="chatbubble-outline" size={24} color="#555" />
-          <Text style={styles.interactionText}>{post.commentsCount || 0} Comments</Text>
+          <Text style={styles.interactionText}>{post.commentsCount || 0} Bình luận</Text>
         </TouchableOpacity>
       </View>
 
       {selectedPostId === post._id && (
         <View style={styles.commentSection}>
-          <TextInput
-            style={styles.commentInput}
-            value={commentText}
-            onChangeText={setCommentText}
-            placeholder="Add a comment..."
-          />
-          <TouchableOpacity style={styles.addCommentButton} onPress={handleAddComment}>
-            <Text style={styles.addCommentButtonText}>Add Comment</Text>
-          </TouchableOpacity>
+          <View style={styles.commentInputContainer}>
+            <TextInput
+              style={styles.commentInput}
+              value={commentText}
+              onChangeText={setCommentText}
+              placeholder="Viết bình luận của bạn..."
+              placeholderTextColor="#999"
+            />
+            <TouchableOpacity 
+              style={[
+                styles.addCommentButton,
+                !commentText.trim() && styles.addCommentButtonDisabled
+              ]} 
+              onPress={handleAddComment}
+              disabled={!commentText.trim()}
+            >
+              <Ionicons name="send" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
           <FlatList
             data={post.comments}
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => (
               <View style={styles.commentItem}>
                 <View style={styles.commentHeader}>
-                  <View style={styles.commentUserInfo}>
+                  <TouchableOpacity 
+                    style={styles.commentUserInfo}
+                    onPress={() => handleUserPress(item.user?._id)}
+                  >
                     {item.userAvatar ? (
                       <Image
                         source={{ uri: item.userAvatar }}
@@ -252,17 +310,21 @@ const BlogPage = () => {
                         <Ionicons name="person-outline" size={16} color="#fff" />
                       </View>
                     )}
-                    <Text style={styles.commentUser}>
-                      {item.username || item.user?.username || 'Unknown User'}
-                    </Text>
-                  </View>
-                  <Text style={styles.commentDate}>
-                    {new Date(item.createdAt).toLocaleDateString()}
-                  </Text>
+                    <View style={styles.commentUserDetails}>
+                      <Text style={styles.commentUser}>
+                        {item.username || item.user?.username || 'Người dùng ẩn danh'}
+                      </Text>
+                      <Text style={styles.commentDate}>
+                        {formatTimeAgo(item.createdAt)}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
                 <Text style={styles.commentContent}>{item.content}</Text>
               </View>
             )}
+            showsVerticalScrollIndicator={false}
+            ItemSeparatorComponent={() => <View style={styles.commentSeparator} />}
           />
         </View>
       )}
@@ -307,142 +369,221 @@ const BlogPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#F8F9FA',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#EDEDED',
+    borderBottomColor: '#EAEAEA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   headerText: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    letterSpacing: 0.5,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 20,
   },
   errorText: {
-    color: 'red',
+    color: '#DC3545',
     fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   postCard: {
     backgroundColor: '#fff',
-    marginBottom: 10,
-    padding: 15,
+    marginHorizontal: 12,
+    marginVertical: 8,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 4,
   },
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    padding: 12,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: 12,
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   placeholderAvatar: {
-    backgroundColor: '#ccc',
+    backgroundColor: '#E8E8E8',
     justifyContent: 'center',
     alignItems: 'center',
   },
   username: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 2,
   },
   postDate: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
   },
   postContent: {
-    fontSize: 16,
-    marginBottom: 10,
+    fontSize: 15,
     color: '#333',
-    lineHeight: 24,
+    lineHeight: 22,
+    paddingHorizontal: 15,
+    paddingBottom: 12,
   },
   postImage: {
     width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 10,
+    height: 250,
+    borderRadius: 0,
+    marginBottom: 12,
   },
   interactionInfo: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#EAEAEA',
   },
   interactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    opacity: 1,
   },
   interactionText: {
-    marginLeft: 5,
-    color: '#555',
+    marginLeft: 6,
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
   commentSection: {
-    marginTop: 10,
+    padding: 15,
+    backgroundColor: '#F8F9FA',
+    borderTopWidth: 1,
+    borderTopColor: '#EAEAEA',
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
   },
-  commentInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
-  addCommentButton: {
-    backgroundColor: '#0066cc',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  addCommentButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  commentItem: {
-    marginBottom: 10,
-    padding: 10,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 5,
-  },
-  commentUserInfo: {
+  commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 15,
+    backgroundColor: '#fff',
+    borderRadius: 25,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  commentAvatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginRight: 8,
+  commentInput: {
+    flex: 1,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    fontSize: 14,
+    color: '#333',
+  },
+  addCommentButton: {
+    backgroundColor: '#0066CC',
+    padding: 10,
+    borderRadius: 20,
+    marginLeft: 5,
+  },
+  addCommentButtonDisabled: {
+    backgroundColor: '#B0B0B0',
+  },
+  commentItem: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 8,
+  },
+  commentUserInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  commentUserDetails: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  commentAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
   },
   commentUser: {
-    fontWeight: 'bold',
+    fontWeight: '600',
+    fontSize: 14,
+    color: '#1A1A1A',
   },
   commentDate: {
     fontSize: 12,
-    color: '#888',
+    color: '#666',
+    marginTop: 2,
   },
   commentContent: {
     fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+    marginLeft: 44,
   },
+  commentSeparator: {
+    height: 1,
+    backgroundColor: '#EAEAEA',
+    marginVertical: 8,
+  },
+  likeLoading: {
+    width: 24,
+    height: 24,
+    marginRight: 0,
+  },
+  interactionItemDisabled: {
+    opacity: 0.7,
+  }
 });
 
 export default React.memo(BlogPage);

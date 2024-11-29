@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity, Alert, RefreshControl, Platform } from 'react-native';
 import { getUserPosts, deletePost } from '../../apiConfig';
 import { Menu, MenuOptions, MenuOption, MenuTrigger, MenuProvider } from 'react-native-popup-menu';
 import { Ionicons } from '@expo/vector-icons';
@@ -147,9 +147,7 @@ const BlogPostManager = () => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          ListHeaderComponent={
-            <Text style={styles.header}>Quản lý bài viết Blog</Text>
-          }
+         
           ListEmptyComponent={
             <Text style={styles.emptyText}>Không có bài viết nào</Text>
           }
@@ -162,98 +160,164 @@ const BlogPostManager = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8F9FA',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
   },
   listContainer: {
     padding: 16,
   },
   header: {
+    marginBottom: 24,
+  },
+  headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#1C1C1E',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    paddingHorizontal: 4,
   },
   item: {
-    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
     overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   image: {
-    width: 100,
-    height: 100,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
+    width: '100%',
+    height: 200,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   textContainer: {
-    flex: 1,
-    padding: 12,
+    padding: 16,
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 12,
+    lineHeight: 24,
   },
   date: {
     fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 4,
+    color: '#666',
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   content: {
     fontSize: 14,
-    color: '#3A3A3C',
+    color: '#495057',
+    marginBottom: 4,
+    lineHeight: 20,
   },
   menuContainer: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
     zIndex: 1,
   },
   menuTrigger: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   menuOptions: {
-    marginTop: 30,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginTop: 8,
+    borderRadius: 12,
+    padding: 4,
+    backgroundColor: '#FFFFFF',
+    width: 140,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   menuOption: {
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   menuOptionText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#495057',
   },
-  lastMenuOption: {
-    borderBottomWidth: 0,
+  deleteOption: {
+    color: '#dc3545',
   },
   emptyText: {
     textAlign: 'center',
     fontSize: 16,
-    color: '#8E8E93',
-    marginTop: 20,
+    color: '#666',
+    marginTop: 32,
+    lineHeight: 24,
+  },
+  noImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  noImageIcon: {
+    color: '#CED4DA',
+  },
+  noImageText: {
+    color: '#ADB5BD',
+    marginTop: 8,
+    fontSize: 14,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
 });
 

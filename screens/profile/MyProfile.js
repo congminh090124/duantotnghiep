@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSocket } from '../../context/SocketContext';
-import * as Location from 'expo-location';
+import { getLocationNameFromCoords } from '../service/geocoding';
 
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 40) / 2;
@@ -206,45 +206,29 @@ const MyProfile = () => {
   }, [navigation, socket]);
 
   // Thêm hàm helper để xử lý location
-  const getLocationString = (location) => {
-    if (!location) return 'No location';
-    if (typeof location === 'string') return location;
-    if (typeof location === 'object' && location.coordinates) {
-      return `${location.coordinates[1]}, ${location.coordinates[0]}`;
-    }
-    return 'No location';
-  };
+  const getLocationString = useCallback((post) => {
+    if (!post) return 'Chưa cập nhật';
 
-  const getLocationName = async (coordinates) => {
-    try {
-      if (!coordinates || coordinates.length < 2) {
-        return 'Không xác định';
+    if (activeTab === 'posts') {
+      return locationNames[post._id]?.location || 'Chưa cập nhật vị trí';
+    } else {
+      // Đối với bài viết du lịch
+      const locations = locationNames[post._id];
+      if (!locations) return 'Chưa cập nhật vị trí';
+
+      const currentLocation = locations.current ? locations.current.split(',') : [];
+      const destination = locations.destination ? locations.destination.split(',') : [];
+
+      if (currentLocation.length < 2 || destination.length < 2) {
+        return 'Chưa cập nhật vị trí';
       }
 
-      // Đảm bảo thứ tự latitude, longitude đúng
-      const [longitude, latitude] = coordinates;
-      
-      //console.log('Getting location for:', { latitude, longitude });
+      const currentLocationName = currentLocation.slice(0, 2).join(',');
+      const destinationName = destination.slice(0, 2).join(',');
 
-      const result = await Location.reverseGeocodeAsync(
-        { latitude, longitude },
-        { useGoogleMaps: false }
-      );
-
-      //console.log('Geocoding result:', result);
-
-      if (result && result.length > 0) {
-        const address = result[0];
-        // Ưu tiên district -> city -> region để hiển thị địa chỉ ngắn gọn nhất
-        return address.district || address.city || address.region || 'Không xác định';
-      }
-      
-      return 'Không xác định';
-    } catch (error) {
-      console.error('Error getting location name:', error);
-      return 'Không xác định';
+      return `${currentLocationName} - ${destinationName}`;
     }
-  };
+  }, [locationNames, activeTab]);
 
   const renderPostItem = useCallback((post) => {
     const postLocations = locationNames[post._id] || {};
@@ -338,39 +322,49 @@ const MyProfile = () => {
   useEffect(() => {
     const loadLocations = async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          //console.log('Permission to access location was denied');
-          return;
-        }
-
         const names = {};
         const postsToProcess = activeTab === 'posts' ? normalPosts : travelPosts;
         
-        await Promise.all(
-          postsToProcess.map(async (post) => {
-            if (post._id) {
-              if (activeTab === 'posts') {
-                // Xử lý bài viết thường
-                if (post.location?.coordinates) {
+        // Xử lý tối đa 5 bài viết một lần
+        const processInBatches = async (posts) => {
+          const batchSize = 5;
+          
+          for (let i = 0; i < posts.length; i += batchSize) {
+            const batch = posts.slice(i, i + batchSize);
+            await Promise.all(
+              batch.map(async (post) => {
+                if (!post._id) return;
+
+                if (activeTab === 'posts') {
+                  // Xử lý bài viết thường
+                  if (post.location?.coordinates) {
+                    const locationName = await getLocationNameFromCoords(post.location.coordinates);
+                    names[post._id] = {
+                      location: locationName
+                    };
+                  }
+                } else {
+                  // Xử lý bài viết du lịch
                   names[post._id] = {
-                    location: await getLocationName(post.location.coordinates)
+                    current: post.currentLocation?.coordinates ? 
+                      await getLocationNameFromCoords(post.currentLocation.coordinates) : 
+                      post.currentLocationName || 'Chưa cập nhật',
+                    destination: post.destination?.coordinates ? 
+                      await getLocationNameFromCoords(post.destination.coordinates) : 
+                      post.destinationName || 'Chưa cập nhật'
                   };
                 }
-              } else {
-                // Xử lý bài viết du lịch
-                names[post._id] = {
-                  current: post.currentLocation?.coordinates ? 
-                    await getLocationName(post.currentLocation.coordinates) : 'Không xác định',
-                  destination: post.destination?.coordinates ? 
-                    await getLocationName(post.destination.coordinates) : 'Không xác định'
-                };
-              }
+              })
+            );
+
+            // Thêm delay nhỏ giữa các batch để tránh rate limit
+            if (i + batchSize < posts.length) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
             }
-          })
-        );
-        
-        //console.log('Processed location names:', names);
+          }
+        };
+
+        await processInBatches(postsToProcess);
         setLocationNames(names);
       } catch (error) {
         console.error('Error loading locations:', error);

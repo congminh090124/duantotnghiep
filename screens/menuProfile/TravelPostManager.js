@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Image, TouchableOpacity, Alert, RefreshControl, Platform } from 'react-native';
 import { getMyTravelPosts, deleteTravelPost, editTravelPost } from '../../apiConfig';
-import * as Location from 'expo-location';
+import { processLocationBatches } from '../service/geocoding';
 import { Menu, MenuOptions, MenuOption, MenuTrigger, MenuProvider } from 'react-native-popup-menu';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SharedElement } from 'react-navigation-shared-element';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 
 const TravelPostManager = () => {
   const [travelPosts, setTravelPosts] = useState([]);
@@ -16,17 +18,11 @@ const TravelPostManager = () => {
   const fetchTravelPosts = useCallback(async () => {
     try {
       const data = await getMyTravelPosts();
-      const postsWithLocationNames = await Promise.all(
-        data.map(async (post) => ({
-          ...post,
-          currentLocationName: await getLocationName(post.currentLocation),
-          destinationName: await getLocationName(post.destination),
-        }))
-      );
-      setTravelPosts(postsWithLocationNames);
+      const postsWithAddress = await processLocationBatches(data);
+      setTravelPosts(postsWithAddress);
     } catch (error) {
       console.error('Error fetching travel posts:', error);
-      Alert.alert('Error', 'Failed to fetch travel posts. Please try again.');
+      Alert.alert('Lỗi', 'Không thể tải danh sách bài viết. Vui lòng thử lại.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -43,26 +39,6 @@ const TravelPostManager = () => {
     setRefreshing(true);
     fetchTravelPosts();
   }, [fetchTravelPosts]);
-
-  const getLocationName = async (location) => {
-    if (!location || !location.coordinates) {
-      return 'Vị trí không xác định';
-    }
-
-    try {
-      const [longitude, latitude] = location.coordinates;
-      const result = await Location.reverseGeocodeAsync({ latitude, longitude });
-      if (result.length > 0) {
-        const { city, region, country } = result[0];
-        return `${city || ''}, ${region || ''}, ${country || ''}`.trim();
-      } else {
-        return 'Không tìm thấy địa chỉ';
-      }
-    } catch (error) {
-      console.error('Lỗi khi chuyển đổi tọa độ:', error);
-      return 'Lỗi khi tải địa chỉ';
-    }
-  };
 
   const formatDate = (dateString) => {
    
@@ -199,9 +175,7 @@ const TravelPostManager = () => {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-          ListHeaderComponent={
-            <Text style={styles.header}>Quản lý bài viết Travel</Text>
-          }
+        
           ListEmptyComponent={
             <Text style={styles.emptyText}>Không có bài viết nào</Text>
           }
@@ -214,99 +188,211 @@ const TravelPostManager = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#F8F9FA',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F8F9FA',
   },
   listContainer: {
     padding: 16,
   },
   header: {
+    marginBottom: 24,
+  },
+  headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#1C1C1E',
+    color: '#1A1A1A',
+    marginBottom: 8,
+    paddingHorizontal: 4,
   },
   item: {
-    flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     marginBottom: 16,
+    overflow: 'hidden',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
+    shadowRadius: 8,
   },
   image: {
-    width: 100,
-    height: 100,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
+    width: '100%',
+    height: 200,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
   },
   textContainer: {
-    flex: 1,
-    padding: 12,
+    padding: 16,
   },
   title: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 4,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    marginBottom: 12,
+    lineHeight: 24,
   },
   date: {
     fontSize: 14,
-    color: '#8E8E93',
-    marginBottom: 4,
+    color: '#666',
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   location: {
     fontSize: 14,
-    color: '#3A3A3C',
-    marginBottom: 2,
+    color: '#495057',
+    marginBottom: 4,
+  },
+  locationContainer: {
+    marginTop: 8,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+    gap: 6,
   },
   menuContainer: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
     zIndex: 1,
   },
   menuTrigger: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   menuOptions: {
-    marginTop: 30,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    marginTop: 8,
+    borderRadius: 12,
+    padding: 4,
+    backgroundColor: '#FFFFFF',
+    width: 140,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   menuOption: {
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   menuOptionText: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#495057',
   },
-  lastMenuOption: {
-    borderBottomWidth: 0,
+  deleteOption: {
+    color: '#dc3545',
   },
   emptyText: {
     textAlign: 'center',
     fontSize: 16,
-    color: '#8E8E93',
-    marginTop: 20,
+    color: '#666',
+    marginTop: 32,
+    lineHeight: 24,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 6,
+  },
+  dateIcon: {
+    color: '#666',
+  },
+  dateText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  locationIcon: {
+    width: 20,
+    alignItems: 'center',
+  },
+  fromLocation: {
+    color: '#2ecc71',
+  },
+  toLocation: {
+    color: '#e74c3c',
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#495057',
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 60,
+    background: 'linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 100%)',
+  },
+  noImage: {
+    width: '100%',
+    height: 200,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  noImageIcon: {
+    color: '#CED4DA',
+  },
+  noImageText: {
+    color: '#ADB5BD',
+    marginTop: 8,
+    fontSize: 14,
+  },
+  cardContent: {
+    flex: 1,
+    padding: 16,
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    gap: 16,
+  },
+  statusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statusText: {
+    fontSize: 13,
+    color: '#666',
   },
 });
 

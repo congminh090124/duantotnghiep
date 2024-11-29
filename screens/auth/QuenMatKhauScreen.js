@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image } from 'react-native';
+import { SafeAreaView, View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Image, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { forgotPassword } from '../../apiConfig'; // Đảm bảo đường dẫn này chính xác
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const QuenMatKhauScreen = () => {
   const [email, setEmail] = useState('');
@@ -34,15 +35,19 @@ const QuenMatKhauScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.inner}>
-        {/* Row container for Back button and Title */}
         <View style={styles.headerRow}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Image
-              source={require('../../assets/buttonback.png')} // Đường dẫn tới hình ảnh trong assets
-              style={styles.backIcon}
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={handleBack}
+          >
+            <Ionicons 
+              name="chevron-back" 
+              size={28} 
+              color="#495057"
             />
           </TouchableOpacity>
           <Text style={styles.title}>Quên mật khẩu</Text>
+          <View style={styles.rightPlaceholder} />
         </View>
   
         <Text style={styles.description}>
@@ -54,6 +59,7 @@ const QuenMatKhauScreen = () => {
           style={styles.input}
           placeholder="Email"
           keyboardType="email-address"
+           autoCapitalize="none"
           value={email}
           onChangeText={setEmail}
         />
@@ -67,57 +73,112 @@ const QuenMatKhauScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      padding: 16,
-    },
-    inner: {
-        padding: 16,
-        flex: 1,
+  container: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
+  inner: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    marginBottom: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  
+   
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
       },
-    headerRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'flex-start',
-      marginBottom: 20,
-    },
-    backButton: {
-      marginRight: 16,
-    },
-    backIcon: {
-    // //   width: 24, // Kích thước hình ảnh
-    //   height: 24,
-    },
-    title: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginLeft: '15%',
-    },
-    description: {
-      fontSize: 14,
-      marginVertical: 10,
-      marginBottom:'10%'
-    },
-    input: {
-      height: 40,
-      borderColor: 'gray',
-      borderWidth: 1,
-      borderRadius: 5,
-      marginBottom: '10%',
-      paddingHorizontal: 10,
-    },
-    button: {
-      backgroundColor: 'blue',
-      padding: 10,
-      borderRadius: 5,
-      alignItems: 'center',
-
-    },
-    buttonText: {
-      color: 'white',
-      fontSize: 16,
-    },
-  });
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1A1A1A',
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: 16,
+  },
+  rightPlaceholder: {
+    width: 40,
+  },
+  description: {
+    fontSize: 16,
+    color: '#495057',
+    lineHeight: 24,
+    marginBottom: 32,
+    paddingHorizontal: 4,
+  },
+  input: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#212529',
+    borderWidth: 1,
+    borderColor: '#DEE2E6',
+    marginBottom: 32,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 3,
+      },
+      android: {
+        elevation: 1,
+      },
+    }),
+  },
+  button: {
+    backgroundColor: '#228BE6',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginHorizontal: 4,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  disabledButton: {
+    backgroundColor: '#ADB5BD',
+    opacity: 0.8,
+  },
+});
   
 
 export default QuenMatKhauScreen;

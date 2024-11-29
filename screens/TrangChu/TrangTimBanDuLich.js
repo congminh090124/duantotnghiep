@@ -3,19 +3,17 @@ import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, 
 import Swiper from 'react-native-swiper';
 import { Heart, MessageCircle, Users, Search } from 'react-native-feather';
 import { getAllTravelPosts, API_ENDPOINTS, toggleLikeTravelPost } from '../../apiConfig';
-import MapScreen from './MapScreen';
-import Blog from '../blog/Blog';
-import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getStatusBarHeight } from 'react-native-status-bar-height';
+import { getLocationNameFromCoords } from '../service/geocoding';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 // Tính toán tỷ lệ scale dựa trên màn hình
-const scale = SCREEN_WIDTH / 320; // Sử dng 320 lm chun
+const scale = SCREEN_WIDTH / 320; 
 const normalize = (size) => {
   const newSize = size * scale;
   if (Platform.OS === 'ios') {
@@ -173,89 +171,47 @@ const UserInfo = React.memo(({ post }) => {
     });
   }, [navigation, post.author]);
 
-  const [hasLocationPermission, setHasLocationPermission] = useState(false);
-
-  const requestLocationPermission = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      setHasLocationPermission(status === 'granted');
-      return status === 'granted';
-    } catch (error) {
-      console.error('Error requesting location permission:', error);
-      return false;
-    }
-  };
-
-  const getTranslatedLocationName = useCallback(async (lat, lng, locationType) => {
-    try {
-      const hasPermission = await requestLocationPermission();
-      if (!hasPermission) {
-        setLocationNames(prev => ({
-          ...prev,
-          [locationType]: 'Không có quyền truy cập vị trí'
-        }));
-        return;
-      }
-
-      const [location] = await Location.reverseGeocodeAsync({ 
-        latitude: lat, 
-        longitude: lng 
-      });
-      
-      if (location) {
-        const parts = [
-          location.city,
-          location.region,
-          location.country
-        ].filter(Boolean);
-        
-        const locationName = parts.join(', ');
-        setLocationNames(prev => ({
-          ...prev,
-          [locationType]: locationName || 'Không xác định'
-        }));
-      } else {
-        setLocationNames(prev => ({
-          ...prev,
-          [locationType]: 'Không xác định'
-        }));
-      }
-    } catch (error) {
-      console.error('Error translating location:', error);
-      setLocationNames(prev => ({
-        ...prev,
-        [locationType]: 'Không thể xác định vị trí'
-      }));
-    }
-  }, []);
-
   useEffect(() => {
-    if (post.currentLocation?.coordinates) {
-      getTranslatedLocationName(
-        post.currentLocation.coordinates[1],
-        post.currentLocation.coordinates[0],
-        'current'
-      );
-    } else {
-      setLocationNames(prev => ({
-        ...prev,
-        current: 'Chưa cập nhật'
-      }));
-    }
-    
-    if (post.destination?.coordinates) {
-      getTranslatedLocationName(
-        post.destination.coordinates[1],
-        post.destination.coordinates[0],
-        'destination'
-      );
-    } else {
-      setLocationNames(prev => ({
-        ...prev,
-        destination: 'Chưa cập nhật'
-      }));
-    }
-  }, [post, getTranslatedLocationName]);
+    const loadLocations = async () => {
+      try {
+        // Xử lý vị trí hiện tại
+        if (post.currentLocation?.coordinates) {
+          const currentLocationName = await getLocationNameFromCoords(post.currentLocation.coordinates);
+          setLocationNames(prev => ({
+            ...prev,
+            current: currentLocationName
+          }));
+        } else {
+          setLocationNames(prev => ({
+            ...prev,
+            current: 'Chưa cập nhật'
+          }));
+        }
+
+        // Xử lý điểm đến
+        if (post.destination?.coordinates) {
+          const destinationName = await getLocationNameFromCoords(post.destination.coordinates);
+          setLocationNames(prev => ({
+            ...prev,
+            destination: destinationName
+          }));
+        } else {
+          setLocationNames(prev => ({
+            ...prev,
+            destination: 'Chưa cập nhật'
+          }));
+        }
+      } catch (error) {
+        console.error('Error loading locations:', error);
+        setLocationNames({
+          current: 'Không thể tải vị trí',
+          destination: 'Không thể tải vị trí'
+        });
+      }
+    };
+
+    loadLocations();
+  }, [post]);
 
   return (
     <View style={styles.overlayContainer}>
@@ -372,12 +328,20 @@ const SearchHeader = React.memo(() => {
   const navigation = useNavigation();
   
   return (
-    <TouchableOpacity 
-      style={styles.searchButton}
-      onPress={() => navigation.navigate('TravelSearch')}
-    >
-      <Search stroke="white" width={24} height={24} />
-    </TouchableOpacity>
+    <View style={styles.searchHeaderContainer}>
+      <LinearGradient
+        colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0)']}
+        style={styles.searchHeaderGradient}
+      >
+        <TouchableOpacity 
+          style={styles.searchBar}
+          onPress={() => navigation.navigate('TravelSearch')}
+        >
+          <Search stroke="white" width={20} height={20} />
+          <Text style={styles.searchPlaceholder}>Tìm kiếm...</Text>
+        </TouchableOpacity>
+      </LinearGradient>
+    </View>
   );
 });
 
@@ -618,32 +582,42 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
   },
-  searchButton: {
+  searchHeaderContainer: {
     position: 'absolute',
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    right: 10,
-    top: Platform.OS === 'ios' 
-      ? getStatusBarHeight() + 5
-      : 0,
+    top: Platform.OS === 'ios' ? -getStatusBarHeight() : -15,
+    left: 0,
+    right: 0,
     zIndex: 9999,
+  },
+  searchHeaderGradient: {
+    paddingTop: Platform.OS === 'ios' ? getStatusBarHeight() + 15 : 20,
+    paddingBottom: 10,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    marginHorizontal: 10,
+    marginTop: Platform.OS === 'ios' ? -10 : -5,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.25,
-        shadowRadius: 3.84,
-      },
-      android: {
-        elevation: 5,
-      },
-    }),
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  searchPlaceholder: {
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: '500',
   },
   postContent: {
     position: 'absolute',
