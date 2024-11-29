@@ -104,37 +104,44 @@ const NotificationsScreen = () => {
     }
   }, [userId]);
 
-  // Notification Press Handler
+  // Hàm xử lý điều hướng thông báo
+  const handleNotificationNavigation = (notification) => {
+    const navigationMap = {
+      'like': { screen: 'PostDetailScreen', paramKey: 'postId', idField: 'post' },
+      'comment': { screen: 'PostDetailScreen', paramKey: 'postId', idField: 'post' },
+      'likeTravel': { screen: 'TravelPostDetail', paramKey: 'postId', idField: 'post' },
+      'follow': { screen: 'UserProfile', paramKey: 'userId', idField: 'sender' },
+      'new_post': { screen: 'PostDetailScreen', paramKey: 'postId', idField: 'post' },
+      'mention': { screen: 'PostDetailScreen', paramKey: 'postId', idField: 'post' },
+      'request': { screen: 'UserProfile', paramKey: 'userId', idField: 'sender' }
+    };
+
+    const navConfig = navigationMap[notification.type];
+    if (!navConfig) return;
+
+    const id = notification[navConfig.idField];
+    if (!id) {
+      console.error('Invalid ID for navigation:', id);
+      showErrorMessage('Lỗi', 'Không thể mở nội dung này');
+      return;
+    }
+
+    navigation.navigate(navConfig.screen, { [navConfig.paramKey]: id });
+  };
+
+  // Xử lý khi nhấn vào thông báo
   const handleNotificationPress = async (notification) => {
     try {
-      // Mark as read
+      // Đánh dấu đã đọc
       if (!notification.read && userId) {
         await markNotificationAsRead(userId, notification.id);
       }
 
-      // Navigation based on notification type
-      const navigationMap = {
-        'like': 'PostDetailScreen',
-        'comment': 'PostDetailScreen',
-        'likeTravel': 'TravelPostDetail',
-        'follow': 'UserProfile',
-        'new_post': 'PostDetailScreen',
-        'mention': 'PostDetailScreen',
-        'request': 'UserProfile'
-      };
-
-      const screenName = navigationMap[notification.type];
-      const paramKey = screenName === 'UserProfile' ? 'userId' : 'postId';
-      
-      if (screenName) {
-        navigation.navigate(screenName, {
-          [paramKey]: notification.type === 'follow' || notification.type === 'request' 
-            ? notification.sender 
-            : notification.post
-        });
-      }
+      // Điều hướng đến màn hình tương ứng
+      handleNotificationNavigation(notification);
     } catch (error) {
       console.error('Notification Press Error:', error);
+      showErrorMessage('Lỗi', 'Không thể xử lý thông báo');
     }
   };
 
@@ -149,40 +156,6 @@ const NotificationsScreen = () => {
       console.error('Delete Notification Error:', error);
     }
   };
-
-  // Thêm useEffect để xử lý thông báo mới
-  useEffect(() => {
-    if (userId) {
-      const handleNewNotification = (updatedNotifications, previousNotifications) => {
-        // Tìm thông báo mới bằng cách so sánh với danh sách cũ
-        const newNotifications = updatedNotifications.filter(notification => {
-          return !previousNotifications.some(prevNotif => prevNotif.id === notification.id);
-        });
-
-        // Hiển thị flash message cho mỗi thông báo mới
-        newNotifications.forEach(notification => {
-          showNotificationMessage({
-            type: notification.type,
-            senderName: notification.senderName,
-            senderAvatar: notification.senderAvatar,
-            content: notification.content,
-            createdAt: notification.createdAt,
-            onPress: () => handleNotificationPress(notification)
-          });
-        });
-      };
-
-      let previousNotifications = notifications;
-      const unsubscribe = subscribeToNotifications(userId, (updatedNotifications) => {
-        handleNewNotification(updatedNotifications, previousNotifications);
-        previousNotifications = updatedNotifications;
-        setNotifications(updatedNotifications);
-        setLoading(false);
-      });
-
-      return () => unsubscribe && unsubscribe();
-    }
-  }, [userId]);
 
   // Render Loading State
   if (loading) {

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SafeAreaView, StatusBar, Platform, View, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SocketProvider } from './context/SocketContext';
 import FlashMessage from "react-native-flash-message";
+import { navigationRef, initializeNotificationListener } from './navigation/NavigationRef';
 
 // Import BottomTabs
 import BottomTabs from './screens/bottomNav';
@@ -59,6 +60,22 @@ const Stack = createStackNavigator();
 
 // Main App component
 const App = () => {
+  useEffect(() => {
+    let unsubscribe;
+    
+    const initNotifications = async () => {
+      unsubscribe = await initializeNotificationListener();
+    };
+
+    initNotifications();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, []);
+
   // Wrapper component để xử lý SafeAreaView theo platform
   const AppWrapper = ({ children }) => {
     if (Platform.OS === 'android') {
@@ -83,7 +100,7 @@ const App = () => {
   return (
     <AppWrapper>
       <SocketProvider>
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           <Stack.Navigator
             initialRouteName="DangNhap"
             screenOptions={{

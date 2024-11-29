@@ -305,11 +305,11 @@ const MyProfile = () => {
             </Text>
           )}
           <View style={styles.postStats}>
-            <View style={styles.statItem}>
+            <View style={styles.statItemHorizontal}>
               <Ionicons name="heart-outline" size={16} color="#666" />
               <Text style={styles.statText}>{post.likes?.length || 0}</Text>
             </View>
-            <View style={styles.statItem}>
+            <View style={styles.statItemHorizontal}>
               <Ionicons name="chatbubble-outline" size={16} color="#666" />
               <Text style={styles.statText}>{post.comments?.length || 0}</Text>
             </View>
@@ -896,7 +896,7 @@ const styles = StyleSheet.create({
   postStats: {
     flexDirection: 'row',
     marginTop: 4,
-    gap: 8,
+    gap: 12,
   },
   travelDate: {
     fontSize: 11,
@@ -1005,6 +1005,21 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     color: '#666',
+  },
+  postStats: {
+    flexDirection: 'row',
+    marginTop: 4,
+    gap: 12,
+  },
+  statItemHorizontal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  statText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 2,
   },
 });
 

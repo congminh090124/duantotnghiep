@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { showMessage, hideMessage } from "react-native-flash-message";
+import { showMessage } from "react-native-flash-message";
+import { handleNotificationNavigation } from '../../navigation/NavigationRef';
 
 export const showNotificationMessage = (notification) => {
-  // Format thời gian chỉ hiển thị giờ:phút
   const time = new Date(notification.createdAt).toLocaleTimeString('vi-VN', {
     hour: '2-digit',
     minute: '2-digit',
@@ -49,18 +49,89 @@ export const showNotificationMessage = (notification) => {
     ),
     style: styles.notification,
     onPress: () => {
-      // Thêm callback để xử lý khi người dùng nhấn vào thông báo
       if (notification.onPress) {
-        notification.onPress(notification);
+        notification.onPress();
       }
     },
   });
 };
 
+export const showPostNotification = (postData) => {
+  showNotificationMessage({
+    type: 'new_post',
+    senderName: postData.authorName,
+    senderAvatar: postData.authorAvatar,
+    createdAt: new Date(),
+    senderId: postData.authorId,
+    post: postData._id,
+    onPress: () => {
+      handleNotificationNavigation({
+        type: 'new_post',
+        post: postData._id
+      });
+    }
+  });
+};
+
+export const showLikeNotification = (likeData) => {
+  showNotificationMessage({
+    type: 'like',
+    senderName: likeData.userName,
+    senderAvatar: likeData.userAvatar,
+    createdAt: new Date(),
+    senderId: likeData.userId,
+    onPress: () => {
+      handleNotificationNavigation({
+        type: 'like',
+        senderId: likeData.userId,
+        senderName: likeData.userName,
+        senderAvatar: likeData.userAvatar
+      });
+    }
+  });
+};
+
+export const showCommentNotification = (commentData) => {
+  showNotificationMessage({
+    type: 'comment',
+    senderName: commentData.userName,
+    senderAvatar: commentData.userAvatar,
+    createdAt: new Date(),
+    senderId: commentData.userId,
+    content: commentData.comment,
+    onPress: () => {
+      handleNotificationNavigation({
+        type: 'comment',
+        senderId: commentData.userId,
+        senderName: commentData.userName,
+        senderAvatar: commentData.userAvatar
+      });
+    }
+  });
+};
+
+export const showFollowNotification = (followData) => {
+  showNotificationMessage({
+    type: 'follow',
+    senderName: followData.followerName,
+    senderAvatar: followData.followerAvatar,
+    createdAt: new Date(),
+    senderId: followData.followerId,
+    onPress: () => {
+      handleNotificationNavigation({
+        type: 'follow',
+        senderId: followData.followerId,
+        senderName: followData.followerName,
+        senderAvatar: followData.followerAvatar
+      });
+    }
+  });
+};
+
 export const showErrorMessage = (message, description) => {
   showMessage({
-    message: message,
-    description: description,
+    message,
+    description,
     type: "danger",
     duration: 3000,
   });
@@ -84,6 +155,30 @@ export const showWarningMessage = (message, description = '') => {
   });
 };
 
+export const showMessageNotification = (messageData) => {
+  console.log('Showing message notification:', messageData); // Debug log
+  
+  showNotificationMessage({
+    type: 'message',
+    senderName: messageData.senderName,
+    senderAvatar: messageData.senderAvatar,
+    createdAt: new Date(),
+    senderId: messageData.senderId,
+    content: messageData.content,
+    conversationId: messageData.conversationId,
+    onPress: () => {
+      console.log('Message notification pressed'); // Debug log
+      handleNotificationNavigation({
+        type: 'message',
+        senderId: messageData.senderId,
+        senderName: messageData.senderName,
+        senderAvatar: messageData.senderAvatar,
+        conversationId: messageData.conversationId
+      });
+    }
+  });
+};
+
 const styles = StyleSheet.create({
   iconContainer: {
     flexDirection: 'row', 
@@ -101,7 +196,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#E8E8E8',
     position: 'absolute',
-    left: 300,
+    right: 10,
     top: -3,
     backgroundColor: 'rgba(0,0,0,0.2)',
     paddingHorizontal: 8,
