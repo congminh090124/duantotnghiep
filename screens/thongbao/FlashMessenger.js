@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, Platform } from 'react-native';
 import { showMessage } from "react-native-flash-message";
 import { handleNotificationNavigation } from '../../navigation/NavigationRef';
 
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#E8E8E8',
     position: 'absolute',
-    right: 10,
+    left: Platform.OS === 'ios' ? 300 : 270,
     top: -3,
     backgroundColor: 'rgba(0,0,0,0.2)',
     paddingHorizontal: 8,
