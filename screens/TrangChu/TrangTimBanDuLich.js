@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
   },
   searchHeaderContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? -getStatusBarHeight() : -15,
+    top: Platform.OS === 'ios' ? -getStatusBarHeight() : 95,
     left: 0,
     right: 0,
     zIndex: 9999,
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    bottom: 40,
+    bottom: Platform.OS === 'android' ? '10%' : '40',
     left: 0,
     right: 0,
     width: SCREEN_WIDTH,

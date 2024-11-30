@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput, Alert, RefreshControl } from 'react-native';
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput, Alert, RefreshControl, Platform } from 'react-native';
 import { toggleLikePost, addComment, getComments, getToken, getFeedPosts } from '../../apiConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -333,17 +333,21 @@ const BlogPage = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -358,9 +362,10 @@ const BlogPage = () => {
         }
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.headerText}>Social Feed</Text>
+            {/* <Text style={styles.headerText}>Social Feed</Text> */}
           </View>
         }
+        contentContainerStyle={styles.flatListContent}
       />
     </SafeAreaView>
   );
@@ -370,6 +375,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',
+    paddingTop: Platform.OS === 'android' ? 25 : 0,
   },
   header: {
     paddingHorizontal: 15,
@@ -409,6 +415,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   postCard: {
+
     backgroundColor: '#fff',
     marginHorizontal: 12,
     marginVertical: 8,
@@ -583,7 +590,11 @@ const styles = StyleSheet.create({
   },
   interactionItemDisabled: {
     opacity: 0.7,
-  }
+  },
+  flatListContent: {
+    paddingTop: 50,
+    paddingBottom: 80,
+  },
 });
 
 export default React.memo(BlogPage);

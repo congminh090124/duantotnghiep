@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 999,
-    backgroundColor: 'transparent',
+    backgroundColor: '#000',
     paddingTop: Platform.OS === 'ios' ? 6 : 2,
     height: Platform.select({
       ios: 'auto',
@@ -157,11 +157,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 3,
-    backdropFilter: 'blur(20px)',
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: 'transparent',
+    backgroundColor: '#000',
     height: Platform.select({
       ios: 36,
       android: TAB_BAR_HEIGHT * 0.4,
@@ -182,7 +181,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderRadius: 10,
     position: 'relative',
-    backgroundColor: 'transparent',
+    backgroundColor: '#000',
   },
   tabBarLabel: {
     color: 'rgba(255, 255, 255, 0.45)',

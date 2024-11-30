@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { 
   View, 
   StyleSheet, 
@@ -8,19 +8,192 @@ import {
   TouchableOpacity, 
   Modal, 
   ScrollView, 
-  Platform, 
   Dimensions,
-  Animated 
+  Platform 
 } from 'react-native';
-import MapView, { Marker, Callout } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_ENDPOINTS, getAllTravelPosts } from '../../apiConfig';
 import { MaterialIcons } from '@expo/vector-icons';
+import { getAllTravelPosts } from '../../apiConfig';
 
 const { width, height } = Dimensions.get('window');
 
-const MapScreen = ({ navigation }) => {
+const VIETNAM_REGION = {
+  latitude: 16.0544,
+  longitude: 108.2242,
+  latitudeDelta: 8.0,
+  longitudeDelta: 8.0,
+};
+
+const INITIAL_CAMERA = {
+  center: {
+    latitude: VIETNAM_REGION.latitude,
+    longitude: VIETNAM_REGION.longitude,
+  },
+  pitch: 0,
+  heading: 0,
+  zoom: 6.5,
+};
+
+const getLocationName = async (coordinates) => {
+  if (!coordinates) return 'Không xác định';
+  
+  try {
+    const [longitude, latitude] = coordinates;
+    const location = await Location.reverseGeocodeAsync({
+      latitude,
+      longitude
+    });
+
+    if (location && location[0]) {
+      const { city, region, country } = location[0];
+      const parts = [city, region, country].filter(Boolean);
+      return parts.join(', ');
+    }
+    return 'Không xác định';
+  } catch (error) {
+    console.error('Error getting location name:', error);
+    return 'Không xác định';
+  }
+};
+
+const MapMarker = memo(({ post, onPress, isSelected }) => {
+  if (!post?.currentLocation?.coordinates) return null;
+
+  const [latitude, longitude] = [
+    post.currentLocation.coordinates[1],
+    post.currentLocation.coordinates[0]
+  ];
+
+  // Validate coordinates
+  if (!latitude || !longitude || isNaN(latitude) || isNaN(longitude)) return null;
+
+  return (
+    <Marker
+      coordinate={{ latitude, longitude }}
+      onPress={() => onPress(post)}
+      tracksViewChanges={false} // Performance optimization
+    >
+      <View style={[styles.markerContainer, isSelected && styles.selectedMarker]}>
+        <Image
+          source={{ 
+            uri: post.author?.avatar,
+            cache: 'force-cache' // Performance optimization
+          }}
+          style={styles.markerAvatar}
+          defaultSource={require('../../assets/default-avatar.png')}
+        />
+        <Text numberOfLines={1} style={styles.markerUsername}>
+          {post.author?.username || 'Anonymous'}
+        </Text>
+      </View>
+    </Marker>
+  );
+});
+
+const PostDetailModal = memo(({ post, visible, onClose, onDestinationPress }) => {
+  const [destinationName, setDestinationName] = useState('Đang tải...');
+  
+  useEffect(() => {
+    const loadLocationName = async () => {
+      if (post?.destination?.coordinates) {
+        const name = await getLocationName(post.destination.coordinates);
+        setDestinationName(name);
+      }
+    };
+    
+    loadLocationName();
+  }, [post]);
+
+  if (!post) return null;
+
+  return (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={visible}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity 
+            style={styles.closeButton}
+            onPress={onClose}
+          >
+            <MaterialIcons name="close" size={24} color="#000" />
+          </TouchableOpacity>
+
+          <ScrollView style={styles.modalScroll}>
+            <ScrollView 
+              horizontal 
+              pagingEnabled 
+              style={styles.imageSlider}
+            >
+              {post.images?.map((image, index) => (
+                <Image
+                  key={`image-${index}`}
+                  source={{ uri: image }}
+                  style={styles.postImage}
+                  resizeMode="cover"
+                />
+              ))}
+            </ScrollView>
+
+            <View style={styles.postContent}>
+              <Text style={styles.postTitle}>
+                {post.title}
+              </Text>
+              
+              {post?.destination?.coordinates && (
+                <TouchableOpacity 
+                  style={styles.destinationButton}
+                  onPress={() => onDestinationPress(post.destination.coordinates)}
+                >
+                  <View style={styles.destinationContent}>
+                    <MaterialIcons name="place" size={24} color="#FF385C" />
+                    <View style={styles.destinationTextContainer}>
+                      <Text style={styles.destinationLabel}>Điểm đến:</Text>
+                      <Text style={styles.destinationText}>
+                        {destinationName}
+                      </Text>
+                    </View>
+                    <MaterialIcons name="chevron-right" size={24} color="#666" />
+                  </View>
+                </TouchableOpacity>
+              )}
+              
+              <View style={styles.authorSection}>
+                <Image
+                  source={{ 
+                    uri: post.author?.avatar,
+                    cache: 'force-cache'
+                  }}
+                  style={styles.authorAvatar}
+                  defaultSource={require('../../assets/default-avatar.png')}
+                />
+                <View style={styles.authorInfo}>
+                  <Text style={styles.authorName}>
+                    {post.author?.username || 'Anonymous'}
+                  </Text>
+                  <Text style={styles.postDate}>
+                    {new Date(post.createdAt).toLocaleDateString('vi-VN', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+});
+
+const MapScreen = () => {
+  const mapRef = useRef(null);
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   const [posts, setPosts] = useState([]);
@@ -28,32 +201,44 @@ const MapScreen = ({ navigation }) => {
   const [selectedPost, setSelectedPost] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setErrorMsg('Permission to access location was denied');
-          return;
-        }
-        let currentLocation = await Location.getCurrentPositionAsync({});
-        setLocation(currentLocation);
-        await fetchMapPosts();
-      } catch (error) {
-        console.error('Error in useEffect:', error);
-        setErrorMsg('Error initializing map');
+  const initializeLocation = useCallback(async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Vui lòng cấp quyền truy cập vị trí');
+        return;
       }
-    })();
+
+      const { coords } = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setLocation(coords);
+
+      // Animate to user location
+      mapRef.current?.animateCamera({
+        center: {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        },
+        zoom: 12,
+        duration: 1000,
+      });
+
+    } catch (error) {
+      console.error('Location error:', error);
+      setErrorMsg('Không thể lấy vị trí hiện tại');
+    }
   }, []);
 
-  const fetchMapPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     try {
       const result = await getAllTravelPosts();
-      if (result && Array.isArray(result)) {
+      console.log('Travel Posts Data:', JSON.stringify(result, null, 2));
+      if (Array.isArray(result)) {
         setPosts(result);
       } else {
-        console.error('Invalid posts data:', result);
-        setErrorMsg('Invalid data format');
+        throw new Error('Invalid data format');
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -61,81 +246,61 @@ const MapScreen = ({ navigation }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const PostDetailModal = ({ post, visible, onClose }) => {
-    if (!post) return null;
-    
-    return (
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={visible}
-        onRequestClose={onClose}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#000" />
-            </TouchableOpacity>
-            
-            <ScrollView style={styles.modalScroll}>
-              <View style={styles.imageSlider}>
-                <ScrollView horizontal pagingEnabled>
-                  {post.images?.map((image, index) => (
-                    <Image
-                      key={index}
-                      source={{ uri: image }}
-                      style={styles.postImage}
-                      resizeMode="cover"
-                     
-                    />
-                  ))}
-                </ScrollView>
-              </View>
-              <View style={styles.postContent}>
-                <Text style={styles.postTitle}>{post.title || 'Untitled'}</Text>
-                
-                <TouchableOpacity 
-                  style={styles.authorSection}
-                  onPress={() => {
-                    onClose();
-                    navigation.navigate('UserProfile', { userId: post.author?.id });
-                  }}
-                >
-                  <Image
-                    source={{ 
-                      uri: post.author?.avatar || 'https://via.placeholder.com/50'
-                    }}
-                    style={styles.authorAvatar}
-                    defaultSource={require('../../assets/default-avatar.png')}
-                  />
-                  <View>
-                    <Text style={styles.authorName}>
-                      {post.author?.username || 'Anonymous'}
-                    </Text>
-                    <Text style={styles.authorBio} numberOfLines={2}>
-                      {post.author?.bio || 'No bio available'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-                <Text style={styles.postDescription}>
-                  {post.description || 'No description available'}
-                </Text>
-                <Text style={styles.postDate}>
-                  {post.createdAt ? new Date(post.createdAt).toLocaleDateString('vi-VN', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  }) : 'Date not available'}
-                </Text>
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
+  useEffect(() => {
+    const initialize = async () => {
+      await Promise.all([
+        initializeLocation(),
+        fetchPosts()
+      ]);
+    };
+    initialize();
+  }, [initializeLocation, fetchPosts]);
+
+  const handleMarkerPress = useCallback((post) => {
+    setSelectedPost(post);
+    setModalVisible(true);
+
+    // Animate to marker location
+    const markerCoords = post?.currentLocation?.coordinates;
+    if (markerCoords && mapRef.current) {
+      mapRef.current.animateCamera({
+        center: {
+          latitude: markerCoords[1],
+          longitude: markerCoords[0],
+        },
+        zoom: 15,
+        duration: 500,
+      });
+    }
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setModalVisible(false);
+    setSelectedPost(null);
+  }, []);
+
+  const handleMapReady = useCallback(() => {
+    if (Platform.OS === 'android') {
+      // Fix for Android map not showing markers initially
+      mapRef.current?.fitToElements(true);
+    }
+  }, []);
+
+  const handleDestinationPress = useCallback((coordinates) => {
+    if (coordinates && mapRef.current) {
+      mapRef.current.animateCamera({
+        center: {
+          latitude: coordinates[1],
+          longitude: coordinates[0],
+        },
+        zoom: 15,
+        duration: 1000,
+      });
+      setModalVisible(false);
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -149,6 +314,16 @@ const MapScreen = ({ navigation }) => {
     return (
       <View style={styles.centerContainer}>
         <Text style={styles.errorText}>{errorMsg}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => {
+            setErrorMsg(null);
+            setLoading(true);
+            fetchPosts();
+          }}
+        >
+          <Text style={styles.retryText}>Thử lại</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -156,57 +331,33 @@ const MapScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <MapView
+        ref={mapRef}
         style={styles.map}
-        initialRegion={{
-          latitude: location?.coords?.latitude || 16.0544,
-          longitude: location?.coords?.longitude || 108.2242,
-          latitudeDelta: 8.0,
-          longitudeDelta: 8.0,
-        }}
-        showsUserLocation={true}
-        showsMyLocationButton={true}
+        provider={PROVIDER_GOOGLE}
+        initialCamera={INITIAL_CAMERA}
+        showsUserLocation
+        showsMyLocationButton
+        showsCompass
+        loadingEnabled
+        loadingIndicatorColor="#666666"
+        loadingBackgroundColor="#ffffff"
+        onMapReady={handleMapReady}
       >
-        {posts.map((post, index) => {
-          if (!post?.currentLocation?.coordinates) return null;
-          
-          return (
-            <Marker
-              key={post._id || post.id || `post-${index}`}
-              coordinate={{
-                latitude: post.currentLocation.coordinates[1] || 0,
-                longitude: post.currentLocation.coordinates[0] || 0
-              }}
-              onPress={() => {
-                setSelectedPost(post);
-                setModalVisible(true);
-              }}
-            >
-              <Animated.View style={[
-                styles.markerContainer,
-                selectedPost?._id === post._id && styles.selectedMarker
-              ]}>
-                <Image
-                  source={{ 
-                    uri: post.author?.avatar || 'https://via.placeholder.com/44'
-                  }}
-                  style={styles.markerAvatar}
-                  defaultSource={require('../../assets/default-avatar.png')}
-                />
-                <Text style={styles.markerUsername}>
-                  {post.author?.username || 'Anonymous'}
-                </Text>
-              </Animated.View>
-            </Marker>
-          );
-        })}
+        {posts.map((post) => (
+          <MapMarker
+            key={post._id}
+            post={post}
+            onPress={handleMarkerPress}
+            isSelected={selectedPost?._id === post._id}
+          />
+        ))}
       </MapView>
+
       <PostDetailModal
         post={selectedPost}
         visible={modalVisible}
-        onClose={() => {
-          setModalVisible(false);
-          setSelectedPost(null);
-        }}
+        onClose={handleCloseModal}
+        onDestinationPress={handleDestinationPress}
       />
     </View>
   );
@@ -215,82 +366,108 @@ const MapScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   map: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
   },
-  // Style cho marker trên bản đồ
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
   markerContainer: {
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 4,
+    width: 100,
+    padding: 2,
+  },
+  selectedMarker: {
+    transform: [{ scale: 1.1 }],
   },
   markerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 3,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
     borderColor: '#fff',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.29,
-    shadowRadius: 4.65,
-    elevation: 7,
+    backgroundColor: '#f0f0f0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
   },
   markerUsername: {
-    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backgroundColor: 'rgba(0,0,0,0.75)',
     color: '#fff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     marginTop: 4,
     overflow: 'hidden',
-    maxWidth: 120,
-    textAlign: 'center',
+    maxWidth: '100%',
   },
-  // Style cho Modal
+  retryButton: {
+    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 16,
+    textAlign: 'center',
+    marginHorizontal: 20,
+    marginBottom: 8,
+  },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: height * 0.8,
-    paddingTop: 10,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: height * 0.75,
+    overflow: 'hidden',
   },
   closeButton: {
     position: 'absolute',
-    right: 15,
-    top: 15,
-    zIndex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    right: 16,
+    top: 16,
+    zIndex: 2,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 20,
-    padding: 8,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
   },
   modalScroll: {
     flex: 1,
   },
   imageSlider: {
-    height: height * 0.3,
+    height: height * 0.4,
     width: '100%',
   },
   postImage: {
@@ -301,75 +478,70 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   postTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#1a1a1a',
-    marginBottom: 15,
+    marginBottom: 16,
+    lineHeight: 28,
   },
-  authorSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 15,
-  },
-  authorAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
+  authorInfo: {
+    flex: 1,
   },
   authorName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1a1a1a',
     marginBottom: 4,
   },
-  authorBio: {
-    fontSize: 14,
-    color: '#666',
-    maxWidth: width - 120,
-  },
-  postDescription: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#333',
-    marginBottom: 15,
-  },
   postDate: {
-    fontSize: 14,
-    color: '#666',
-    fontStyle: 'italic',
+    fontSize: 13,
+    color: '#666666',
   },
-  // Loading và Error styles
-  centerContainer: {
+  authorAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#e8e8e8',
+  },
+  authorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 14,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+  },
+  destinationButton: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E8E8E8',
+    overflow: 'hidden',
+  },
+  destinationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  destinationTextContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    marginLeft: 12,
   },
-  errorText: {
-    fontSize: 16,
-    color: '#ff3b30',
-    textAlign: 'center',
-    marginHorizontal: 20,
+  destinationLabel: {
+    fontSize: 12,
+    color: '#666666',
+    marginBottom: 2,
   },
-  // Thêm animation cho marker khi được chọn
-  selectedMarker: {
-    transform: [{ scale: 1.2 }],
-  },
-  // Style cho loading indicator
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+  destinationText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a1a',
   },
 });
 
-export default MapScreen;
+export default memo(MapScreen);

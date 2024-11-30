@@ -31,7 +31,6 @@ const NotificationsScreen = () => {
   // State Management
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState(null);
 
   // Hooks
@@ -87,22 +86,6 @@ const NotificationsScreen = () => {
 
     configureNotifications();
   }, []);
-
-  // Refresh Handler
-  const handleRefresh = useCallback(async () => {
-    if (!userId) return;
-
-    setRefreshing(true);
-    try {
-      const refreshedNotifications = await fetchNotifications(userId);
-      setNotifications(refreshedNotifications);
-    } catch (error) {
-      showErrorMessage('Lỗi', 'Không thể làm mới thông báo');
-      console.error('Refresh Notifications Error:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, [userId]);
 
   // Hàm xử lý điều hướng thông báo
   const handleNotificationNavigation = (notification) => {
@@ -186,36 +169,35 @@ const NotificationsScreen = () => {
 
   // Main Render
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Thông báo</Text>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>Thông báo</Text>
+        </View>
 
-      <FlatList
-        data={notifications}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <NotificationItem
-            notification={item}
-            onPress={() => handleNotificationPress(item)}
-            onDelete={() => handleDeleteNotification(item.id)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={[LOADER_COLOR]}
-          />
-        }
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+        <FlatList
+          data={notifications}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <NotificationItem
+              notification={item}
+              onPress={() => handleNotificationPress(item)}
+              onDelete={() => handleDeleteNotification(item.id)}
+            />
+          )}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8F9FA',

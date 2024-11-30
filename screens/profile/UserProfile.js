@@ -478,21 +478,15 @@ const UserProfile = ({ route }) => {
   }, [activeTab, handlePostPress]);
 
   const handleMessagePress = useCallback(() => {
-    if (!userId) {
+    if (!userId || !userProfile) {
       Alert.alert('Lỗi', 'Không thể tạo cuộc trò chuyện vào lúc này');
       return;
     }
 
-    console.log('Receiver Info:', {
-      receiverId: userId,
-      receiverName: userProfile?.username,
-      receiverAvatar: userProfile?.anh_dai_dien
-    });
-
     navigation.navigate('ChatScreen', {
-      receiverId: userId,
-      receiverName: userProfile?.username || 'Người dùng',
-      receiverAvatar: userProfile?.anh_dai_dien || null
+      userId: userId, // ID của người nhận tin nhắn
+      userName: userProfile.username || 'Người dùng', // Tên người nhận
+      userAvatar: userProfile.anh_dai_dien || null // Avatar của người nhận
     });
   }, [navigation, userId, userProfile]);
 
