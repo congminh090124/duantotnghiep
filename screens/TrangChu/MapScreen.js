@@ -149,6 +149,13 @@ const MapScreen = ({ navigation }) => {
         animateToLocation(post.destination.coordinates[1], post.destination.coordinates[0]);
       }
     };
+
+    const handleUserPress = () => {
+      onClose();
+      navigation.navigate('UserProfile', { 
+        userId: post.author?.id || post.author?._id 
+      });
+    };
     
     return (
       <Modal
@@ -182,29 +189,26 @@ const MapScreen = ({ navigation }) => {
                 
                 <TouchableOpacity 
                   style={styles.authorSection}
-                  onPress={() => {
-                    onClose();
-                    navigation.navigate('UserProfile', { userId: post.author?.id });
-                  }}
+                  onPress={handleUserPress}
                 >
                   <Image
                     source={{ 
                       uri: post.author?.avatar || 'https://via.placeholder.com/50'
                     }}
                     style={styles.authorAvatar}
-                    defaultSource={require('../../assets/default-avatar.png')}
+                
                   />
                   <View>
                     <Text style={styles.authorName}>
                       {post.author?.username || 'Anonymous'}
                     </Text>
                     <Text style={styles.authorBio} numberOfLines={2}>
-                      {post.author?.bio || 'No bio available'}
+                      {post.author?.bio}
                     </Text>
                   </View>
                 </TouchableOpacity>
                 <Text style={styles.postDescription}>
-                  {post.description || 'No description available'}
+                  {post.description}
                 </Text>
                 <Text style={styles.postDate}>
                   {post.createdAt ? new Date(post.createdAt).toLocaleDateString('vi-VN', {
