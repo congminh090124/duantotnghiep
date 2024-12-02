@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
   },
   searchHeaderContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? -getStatusBarHeight() : 95,
+    top: -18,
     left: 0,
     right: 0,
     zIndex: 9999,

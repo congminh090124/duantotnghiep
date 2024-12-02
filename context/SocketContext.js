@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../apiConfig';
 import { showNotificationMessage } from '../screens/thongbao/FlashMessenger';
 import { navigate } from '../navigation/NavigationRef';
+import IncomingCallModal from './IncomingCallModal';
 
 const SocketContext = createContext();
 
@@ -11,6 +12,35 @@ export const SocketProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
     const [userId, setUserId] = useState(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [incomingCall, setIncomingCall] = useState(null);
+
+    const handleAcceptCall = () => {
+        if (socket && incomingCall) {
+            socket.emit('accept_call', { 
+                channelName: incomingCall.channelName,
+                callerId: incomingCall.callerId 
+            });
+
+            navigate('VideoCallScreen', {
+                channelName: incomingCall.channelName,
+                userId: userId,
+                receiverId: incomingCall.callerId
+            });
+
+            setIncomingCall(null);
+        }
+    };
+
+    const handleRejectCall = () => {
+        if (socket && incomingCall) {
+            socket.emit('reject_call', { 
+                channelName: incomingCall.channelName,
+                callerId: incomingCall.callerId 
+            });
+
+            setIncomingCall(null);
+        }
+    };
 
     const initSocket = async () => {
         try {
@@ -42,29 +72,22 @@ export const SocketProvider = ({ children }) => {
                 socketInstance.emit('user_connected', userIdFromStorage);
             });
 
-            socketInstance.on('receive_message', (message) => {
-                console.log('Received new message:', message);
-                
-                showNotificationMessage({
-                    type: 'message',
-                    senderName: message.sender.username,
-                    senderAvatar: message.sender.avatar,
-                    senderId: message.sender._id,
-                    content: message.content,
-                    createdAt: new Date(),
-                    conversationId: message._id,
-                    onPress: () => {
-                        console.log('Notification pressed, navigating to chat...');
-                        navigate('ChatScreen', {
-                            userId: message.sender._id,
-                            userName: message.sender.username,
-                            userAvatar: message.sender.avatar,
-                            conversationId: message._id,
-                            fromNotification: true,
-                            receiverId: message.receiver
-                        });
-                    }
-                });
+            socketInstance.on('incoming_call', (callData) => {
+                console.log('Incoming call:', callData);
+                showNotificationMessage('Cuộc gọi video', 'Bạn có cuộc gọi video đến');
+                setIncomingCall(callData);
+            });
+
+            socketInstance.on('call_canceled', () => {
+                setIncomingCall(null);
+            });
+
+            socketInstance.on('call_timeout', () => {
+                setIncomingCall(null);
+            });
+
+            socketInstance.on('call_ended', () => {
+                setIncomingCall(null);
             });
 
             socketInstance.on('disconnect', (reason) => {
@@ -106,10 +129,18 @@ export const SocketProvider = ({ children }) => {
             socket, 
             userId, 
             isConnected,
+            incomingCall,
+            setIncomingCall,
             initSocket,
             disconnectSocket
         }}>
             {children}
+            <IncomingCallModal
+                visible={!!incomingCall}
+                callData={incomingCall}
+                onAccept={handleAcceptCall}
+                onReject={handleRejectCall}
+            />
         </SocketContext.Provider>
     );
 };

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
     View, Text, Image, FlatList, StyleSheet, TouchableOpacity,
     SafeAreaView, TextInput, KeyboardAvoidingView, Platform,
-    ActivityIndicator, AppState
+    ActivityIndicator, AppState, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
@@ -23,6 +23,7 @@ const ChatScreen = ({ route, navigation }) => {
     const [partnerTyping, setPartnerTyping] = useState(false);
     const typingTimeoutRef = useRef(null);
     const flatListRef = useRef(null);
+    const [isCallLoading, setIsCallLoading] = useState(false);
 
     // Thêm hàm markMessagesAsRead
     const markMessagesAsRead = useCallback(() => {
@@ -212,6 +213,85 @@ const ChatScreen = ({ route, navigation }) => {
         setPage(prev => prev + 1);
     }, [hasMore, loadingMore]);
 
+    // Xử lý khởi tạo cuộc gọi video
+    const initiateVideoCall = useCallback(async () => {
+        if (!partnerOnline) {
+            Alert.alert('Thông báo', 'Người dùng hiện không trực tuyến');
+            return;
+        }
+
+        try {
+            setIsCallLoading(true);
+            const token = await AsyncStorage.getItem('userToken');
+            const response = await axios.post(
+                `${API_ENDPOINTS.socketURL}/api/chat/video-call/init`,
+                { receiverId: chatPartnerId },
+                { headers: { 'Authorization': `Bearer ${token}` }}
+            );
+
+            const { channelName } = response.data;
+            
+            // Thêm thông tin người nhận
+            navigation.navigate('VideoCallScreen', {
+                channelName,
+                userId,
+                receiverId: chatPartnerId,
+                receiverName: userName,
+                receiverAvatar: userAvatar,
+                isInitiator: true
+            });
+
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Không thể bắt đầu cuộc gọi';
+            Alert.alert('Lỗi', errorMessage);
+            console.error('Video call initiation error:', error);
+        } finally {
+            setIsCallLoading(false);
+        }
+    }, [chatPartnerId, userId, partnerOnline, userName, userAvatar]);
+
+    // Thêm xử lý socket events cho cuộc gọi
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleIncomingCall = (callData) => {
+            // Nếu đang trong màn hình chat với người gọi
+            if (callData.callerId === chatPartnerId) {
+                navigation.navigate('VideoCallScreen', {
+                    channelName: callData.channelName,
+                    userId,
+                    receiverId: callData.callerId,
+                    receiverName: userName,
+                    receiverAvatar: userAvatar,
+                    isInitiator: false
+                });
+            }
+        };
+
+        const handleCallRejected = (data) => {
+            if (data.receiverId === chatPartnerId) {
+                Alert.alert('Thông báo', 'Cuộc gọi đã bị từ chối');
+            }
+        };
+
+        const handleCallEnded = (data) => {
+            // Xử lý khi cuộc gọi kết thúc
+            if (data.callerId === chatPartnerId || data.receiverId === chatPartnerId) {
+                // Có thể thêm thông báo hoặc cập nhật UI
+            }
+        };
+
+        socket.on('incoming_call', handleIncomingCall);
+        socket.on('call_rejected', handleCallRejected);
+        socket.on('call_ended', handleCallEnded);
+
+        return () => {
+            socket.off('incoming_call', handleIncomingCall);
+            socket.off('call_rejected', handleCallRejected);
+            socket.off('call_ended', handleCallEnded);
+        };
+    }, [socket, chatPartnerId, userId, userName, userAvatar]);
+
     // Components
     const ChatHeader = useCallback(() => (
         <View style={styles.headerContainer}>
@@ -248,8 +328,26 @@ const ChatScreen = ({ route, navigation }) => {
                     </View>
                 </View>
             </View>
+            <TouchableOpacity 
+                style={[
+                    styles.videoCallButton,
+                    isCallLoading && styles.videoCallButtonDisabled
+                ]}
+                onPress={initiateVideoCall}
+                disabled={isCallLoading || !partnerOnline}
+            >
+                {isCallLoading ? (
+                    <ActivityIndicator size="small" color="#0084ff" />
+                ) : (
+                    <Ionicons 
+                        name="videocam" 
+                        size={24} 
+                        color={partnerOnline ? "#0084ff" : "#999"} 
+                    />
+                )}
+            </TouchableOpacity>
         </View>
-    ), [partnerOnline, partnerTyping, userName, userAvatar]);
+    ), [partnerOnline, partnerTyping, userName, userAvatar, isCallLoading]);
 
     const renderMessage = useCallback(({ item }) => {
         const isUserMessage = item.sender._id === userId;
@@ -540,6 +638,14 @@ errorMessage: {
     backgroundColor: '#ffebee'
 },
 sendButtonDisabled: {
+    opacity: 0.5
+},
+videoCallButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0'
+},
+videoCallButtonDisabled: {
     opacity: 0.5
 }
 });
