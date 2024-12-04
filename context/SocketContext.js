@@ -30,10 +30,12 @@ export const SocketProvider = ({ children }) => {
 
             const socketInstance = io(API_ENDPOINTS.socketURL, {
                 auth: { token },
-                transports: ['websocket'],
+                transports: ['websocket', 'polling'],
                 reconnection: true,
                 reconnectionAttempts: 5,
-                reconnectionDelay: 1000
+                reconnectionDelay: 1000,
+                rejectUnauthorized: false,
+                timeout: 10000
             });
 
             socketInstance.on('connect', () => {
