@@ -250,61 +250,57 @@ const UserListScreen = ({ navigation }) => {
         </TouchableOpacity>
     ), [navigation]);
 
-    const renderConversation = useCallback(({ item }) => (
-        <TouchableOpacity 
-            style={styles.userItem}
-            onPress={() => navigation.navigate('ChatScreen', { 
-                userId: item.with._id, 
-                userName: item.with.username,
-                userAvatar: item.with.avatar 
-            })}
-        >
-            <View style={styles.avatarContainer}>
-                <Image 
-                    source={{ uri: item.with.avatar || 'https://via.placeholder.com/50' }} 
-                    style={styles.avatar} 
-                />
-                <View style={[
-                    styles.chatOnlineBadge,
-                    { backgroundColor: item.with.isOnline ? '#4CAF50' : 'transparent' }
-                ]} />
-            </View>
-            <View style={styles.userInfo}>
-                <View style={styles.nameTimeContainer}>
-                    <Text style={[
-                        styles.userName,
-                        item.unreadCount > 0 && styles.unreadName
-                    ]}>
-                        {item.with.username}
-                    </Text>
-                    <Text style={[
-                        styles.timeText,
-                        item.unreadCount > 0 && styles.unreadTime
-                    ]}>
-                        {formatMessageTime(item.lastMessage?.createdAt)}
-                    </Text>
+    const renderConversation = useCallback(({ item }) => {
+        const canMessage = item.blockStatus?.canMessage !== false;
+        const blockMessage = item.blockStatus?.isBlocked ? 
+            'Bạn đã chặn người dùng này' : 
+            item.blockStatus?.isBlockedBy ? 
+                'Bạn đã bị chặn bởi người dùng này' : '';
+
+        return (
+            <TouchableOpacity 
+                style={[
+                    styles.userItem,
+                    !canMessage && styles.blockedConversation
+                ]}
+                onPress={() => navigation.navigate('ChatScreen', { 
+                    userId: item.with._id, 
+                    userName: item.with.username,
+                    userAvatar: item.with.avatar,
+                    blockStatus: item.blockStatus 
+                })}
+            >
+                <View style={styles.avatarContainer}>
+                    <Image 
+                        source={{ uri: item.with.avatar || 'https://via.placeholder.com/50' }} 
+                        style={styles.avatar} 
+                    />
+                    <View style={[
+                        styles.chatOnlineBadge,
+                        { backgroundColor: item.with.isOnline ? '#4CAF50' : 'transparent' }
+                    ]} />
                 </View>
-                <View style={styles.lastMessageContainer}>
-                    <Text 
-                        style={[
+                <View style={styles.userInfo}>
+                    <View style={styles.nameTimeContainer}>
+                        <Text style={styles.userName}>
+                            {item.with.username}
+                        </Text>
+                        <Text style={styles.timeText}>
+                            {formatMessageTime(item.lastMessage?.createdAt)}
+                        </Text>
+                    </View>
+                    <View style={styles.lastMessageContainer}>
+                        <Text style={[
                             styles.lastMessage,
-                            item.unreadCount > 0 && styles.unreadMessage
-                        ]} 
-                        numberOfLines={1}
-                    >
-                        {item.lastMessage?.content}
-                    </Text>
-                    {item.unreadCount > 0 && (
-                        <View style={styles.unreadBadge}>
-                            <Text style={styles.unreadCount}>
-                                {item.unreadCount}
-                            </Text>
-                        </View>
-                    )}
+                            !canMessage && styles.blockedMessage
+                        ]} numberOfLines={1}>
+                            {!canMessage ? blockMessage : item.lastMessage?.content}
+                        </Text>
+                    </View>
                 </View>
-            </View>
-        </TouchableOpacity>
-    ), [navigation]);
+            </TouchableOpacity>
+        );
+    }, [navigation]);
 
     if (loading) {
         return (
@@ -490,6 +486,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
+  blockedConversation: {
+    opacity: 0.7,
+    backgroundColor: '#f8f8f8'
+  },
+  blockedMessage: {
+    fontStyle: 'italic',
+    color: '#999'
+  }
 });
 
 export default UserListScreen;

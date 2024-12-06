@@ -7,7 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSocket } from '../../context/SocketContext';
 import axios from 'axios';
-import { API_ENDPOINTS } from '../../apiConfig';
+import { API_ENDPOINTS, unblockUser } from '../../apiConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ChatScreen = ({ route, navigation }) => {
@@ -24,6 +24,7 @@ const ChatScreen = ({ route, navigation }) => {
     const typingTimeoutRef = useRef(null);
     const flatListRef = useRef(null);
     const [isCallLoading, setIsCallLoading] = useState(false);
+    const [blockStatus, setBlockStatus] = useState(route.params.blockStatus || {});
 
     // Thêm hàm markMessagesAsRead
     const markMessagesAsRead = useCallback(() => {
@@ -215,8 +216,11 @@ const ChatScreen = ({ route, navigation }) => {
 
     // Xử lý khởi tạo cuộc gọi video
     const initiateVideoCall = useCallback(async () => {
-        if (!partnerOnline) {
-            Alert.alert('Thông báo', 'Người dùng hiện không trực tuyến');
+        if (!partnerOnline || !blockStatus.canMessage) {
+            Alert.alert('Thông báo', 
+                !partnerOnline ? 'Người dùng hiện không trực tuyến' : 
+                'Không thể gọi video do đã chặn hoặc bị chặn'
+            );
             return;
         }
 
@@ -248,7 +252,7 @@ const ChatScreen = ({ route, navigation }) => {
         } finally {
             setIsCallLoading(false);
         }
-    }, [chatPartnerId, userId, partnerOnline, userName, userAvatar]);
+    }, [chatPartnerId, userId, partnerOnline, userName, userAvatar, blockStatus.canMessage]);
 
     // Thêm xử lý socket events cho cuộc gọi
     useEffect(() => {
@@ -334,7 +338,7 @@ const ChatScreen = ({ route, navigation }) => {
                     isCallLoading && styles.videoCallButtonDisabled
                 ]}
                 onPress={initiateVideoCall}
-                disabled={isCallLoading || !partnerOnline}
+                disabled={isCallLoading || !partnerOnline || !blockStatus.canMessage}
             >
                 {isCallLoading ? (
                     <ActivityIndicator size="small" color="#0084ff" />
@@ -347,7 +351,7 @@ const ChatScreen = ({ route, navigation }) => {
                 )}
             </TouchableOpacity>
         </View>
-    ), [partnerOnline, partnerTyping, userName, userAvatar, isCallLoading]);
+    ), [partnerOnline, partnerTyping, userName, userAvatar, isCallLoading, blockStatus.canMessage]);
 
     const renderMessage = useCallback(({ item }) => {
         const isUserMessage = item.sender._id === userId;
@@ -398,6 +402,106 @@ const ChatScreen = ({ route, navigation }) => {
         );
     }, [userId, userAvatar]);
 
+    // Thêm hàm xử lý mở chặn
+    const handleUnblock = useCallback(async () => {
+        Alert.alert(
+            'Xác nhận bỏ chặn',
+            `Bạn có chắc chắn muốn bỏ chặn ${userName}? Họ sẽ có thể:
+            • Nhắn tin cho bạn
+            • Gọi video với bạn
+            • Xem trạng thái online của bạn`,
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Bỏ chặn',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const response = await unblockUser(chatPartnerId);
+                            if (response.success || response.message) {
+                                // Cập nhật block status
+                                setBlockStatus(prev => ({
+                                    ...prev,
+                                    isBlocked: false,
+                                    canMessage: true
+                                }));
+                                
+                                // Thông báo cho socket server
+                                if (socket) {
+                                    socket.emit('user_unblocked', { 
+                                        unblockedUserId: chatPartnerId 
+                                    });
+                                }
+
+                                Alert.alert('Thành công', `Đã bỏ chặn ${userName}`);
+                            }
+                        } catch (error) {
+                            console.error('Error unblocking user:', error);
+                            Alert.alert('Lỗi', 'Không thể bỏ chặn người dùng này');
+                        }
+                    }
+                }
+            ]
+        );
+    }, [chatPartnerId, userName, socket]);
+
+    // Cập nhật component BlockMessage
+    const BlockMessage = useCallback(() => {
+        if (!blockStatus.isBlocked && !blockStatus.isBlockedBy) return null;
+
+        const message = blockStatus.isBlocked ? 
+            'Bạn đã chặn người dùng này' : 
+            'Bạn đã bị người dùng này chặn';
+
+        return (
+            <View style={styles.blockMessageContainer}>
+                <Text style={styles.blockMessageText}>{message}</Text>
+                {blockStatus.isBlocked && (
+                    <TouchableOpacity 
+                        style={styles.unblockButton}
+                        onPress={handleUnblock}
+                    >
+                        <Text style={styles.unblockText}>Bỏ chặn</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+        );
+    }, [blockStatus, handleUnblock]);
+
+    // Cập nhật input container để disable khi bị block
+    const renderInputContainer = () => {
+        if (!blockStatus.canMessage) {
+            return <BlockMessage />;
+        }
+
+        return (
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={styles.input}
+                    value={inputMessage}
+                    onChangeText={handleTyping}
+                    placeholder="Nhập tin nhắn..."
+                    multiline
+                    editable={blockStatus.canMessage}
+                />
+                <TouchableOpacity 
+                    style={[
+                        styles.sendButton,
+                        (!inputMessage.trim() || !blockStatus.canMessage) && styles.sendButtonDisabled
+                    ]}
+                    onPress={sendMessage}
+                    disabled={!inputMessage.trim() || !blockStatus.canMessage}
+                >
+                    <Ionicons 
+                        name="send" 
+                        size={24} 
+                        color={inputMessage.trim() && blockStatus.canMessage ? "#0084ff" : "#999"} 
+                    />
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -427,30 +531,7 @@ const ChatScreen = ({ route, navigation }) => {
                     ) : null}
                     contentContainerStyle={styles.messagesList}
                 />
-                
-                <View style={styles.inputContainer}>
-                    <TextInput
-                        style={styles.input}
-                        value={inputMessage}
-                        onChangeText={handleTyping}
-                        placeholder="Nhập tin nhắn..."
-                        multiline
-                    />
-                    <TouchableOpacity 
-                        style={[
-                            styles.sendButton,
-                            !inputMessage.trim() && styles.sendButtonDisabled
-                        ]}
-                        onPress={sendMessage}
-                        disabled={!inputMessage.trim()}
-                    >
-                        <Ionicons 
-                            name="send" 
-                            size={24} 
-                            color={inputMessage.trim() ? "#0084ff" : "#999"} 
-                        />
-                    </TouchableOpacity>
-                </View>
+                {renderInputContainer()}
             </KeyboardAvoidingView>
         </SafeAreaView>
     );
@@ -647,6 +728,30 @@ videoCallButton: {
 },
 videoCallButtonDisabled: {
     opacity: 0.5
+},
+blockMessageContainer: {
+    padding: 15,
+    backgroundColor: '#f8f8f8',
+    borderTopWidth: 1,
+    borderTopColor: '#e4e6eb',
+    alignItems: 'center'
+},
+blockMessageText: {
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 10
+},
+unblockButton: {
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 5,
+    backgroundColor: '#ff3b30'
+},
+unblockText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600'
 }
 });
 

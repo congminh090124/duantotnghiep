@@ -15,11 +15,13 @@ import { useNavigation } from '@react-navigation/native';
 import { getBlockedUsers, unblockUser } from '../../apiConfig';
 import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
+import { useSocket } from '../../context/SocketContext';
 
 const BlockedUsers = () => {
   const [blockedUsers, setBlockedUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+  const { socket } = useSocket();
 
   useEffect(() => {
     fetchBlockedUsers();
@@ -27,43 +29,50 @@ const BlockedUsers = () => {
 
   const fetchBlockedUsers = async () => {
     try {
+      setLoading(true);
       const response = await getBlockedUsers();
-      console.log('Raw API Response:', response);
 
       if (response && response.success && Array.isArray(response.data)) {
         setBlockedUsers(response.data);
       } else {
         console.error('Invalid response structure:', response);
-        throw new Error('Không thể lấy danh sách người dùng bị chặn');
+        throw new Error('Không thể lấy danh sách nguời dùng bị chặn');
       }
     } catch (error) {
       console.error('Error fetching blocked users:', error);
-      Alert.alert(
-        'Lỗi',
-        'Không thể tải danh sách người dùng bị chặn',
-        [{ text: 'OK' }]
-      );
+      Alert.alert('Lỗi', 'Không thể tải danh sách người dùng bị chặn');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUnblock = async (userId) => {
+  const handleUnblock = async (userId, username) => {
     Alert.alert(
       'Xác nhận bỏ chặn',
-      'Bạn có chắc chắn muốn bỏ chặn người dùng này?',
+      `Bạn có chắc chắn muốn bỏ chặn ${username}? Họ sẽ có thể:
+      • Nhắn tin cho bạn
+      • Gọi video với bạn
+      • Xem trạng thái online của bạn`,
       [
         { text: 'Hủy', style: 'cancel' },
         {
           text: 'Bỏ chặn',
+          style: 'destructive',
           onPress: async () => {
             try {
               const response = await unblockUser(userId);
               if (response.success || response.message) {
+                // Cập nhật danh sách người bị chặn
                 setBlockedUsers(prevUsers => 
                   prevUsers.filter(user => user.id !== userId)
                 );
-                Alert.alert('Thành công', 'Đã bỏ chặn người dùng');
+                
+                // Thông báo cho socket server về việc bỏ chặn
+                if (socket) {
+                  socket.emit('user_unblocked', { unblockedUserId: userId });
+                }
+
+                Alert.alert('Thành công', `Đã bỏ chặn ${username}`);
               }
             } catch (error) {
               console.error('Error unblocking user:', error);
@@ -76,44 +85,43 @@ const BlockedUsers = () => {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.userItem}>
-      <Image 
-        source={{ 
-          uri: item.avatar || 'https://via.placeholder.com/50'
-        }}
-        style={styles.avatar}
-      />
-      <View style={styles.userInfo}>
-        <Text style={styles.username}>
-          {item.username || 'Người dùng'}
-        </Text>
-        <Text style={styles.email}>
-          {item.email || ''}
-        </Text>
-        {item.blockedAt && (
-          <Text style={styles.blockedDate}>
-            Đã chặn: {new Date(item.blockedAt).toLocaleDateString('vi-VN')}
-          </Text>
-        )}
-      </View>
-      <TouchableOpacity 
-        style={styles.unblockButton}
-        onPress={() => handleUnblock(item.id)}
-      >
-        <Text style={styles.unblockText}>Bỏ chặn</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#0095f6" />
+    <TouchableOpacity 
+        style={styles.userItem}
+        onPress={() => navigation.navigate('ChatScreen', {
+            userId: item.id,
+            userName: item.username,
+            userAvatar: item.avatar,
+            blockStatus: {
+                isBlocked: true,
+                isBlockedBy: false,
+                canMessage: false
+            }
+        })}
+    >
+        <Image 
+            source={{ uri: item.avatar || 'https://via.placeholder.com/50' }}
+            style={styles.avatar}
+        />
+        <View style={styles.userInfo}>
+            <Text style={styles.username}>{item.username || 'Người dùng'}</Text>
+            <Text style={styles.email}>{item.email || ''}</Text>
+            {item.blockedAt && (
+                <Text style={styles.blockedDate}>
+                    Đã chặn: {format(new Date(item.blockedAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                </Text>
+            )}
         </View>
-      </SafeAreaView>
-    );
-  }
+        <TouchableOpacity 
+            style={styles.unblockButton}
+            onPress={(e) => {
+                e.stopPropagation(); // Ngăn không cho navigate khi bấm nút bỏ chặn
+                handleUnblock(item.id, item.username);
+            }}
+        >
+            <Text style={styles.unblockText}>Bỏ chặn</Text>
+        </TouchableOpacity>
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -127,12 +135,24 @@ const BlockedUsers = () => {
         <Text style={styles.title}>Người dùng đã chặn</Text>
       </View>
 
-      {blockedUsers.length === 0 ? (
+      {loading ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#0095f6" />
+        </View>
+      ) : blockedUsers.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Ionicons name="ban-outline" size={48} color="#666" />
           <Text style={styles.emptyText}>
             Bạn chưa chặn người dùng nào
           </Text>
+          <Text style={styles.emptySubText}>
+            Khi bạn chặn ai đó, họ sẽ không thể:
+          </Text>
+          <View style={styles.bulletPoints}>
+            <Text style={styles.bulletPoint}>• Nhắn tin cho bạn</Text>
+            <Text style={styles.bulletPoint}>• Gọi video với bạn</Text>
+            <Text style={styles.bulletPoint}>• Xem trạng thái online của bạn</Text>
+          </View>
         </View>
       ) : (
         <FlatList
@@ -197,7 +217,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 5,
-    backgroundColor: '#0095f6',
+    backgroundColor: '#ff3b30', // Màu đỏ để nhấn mạnh hành động bỏ chặn
   },
   unblockText: {
     color: '#fff',
@@ -221,12 +241,28 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
   },
+  emptySubText: {
+    marginTop: 20,
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  bulletPoints: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingLeft: 20,
+  },
+  bulletPoint: {
+    fontSize: 14,
+    color: '#666',
+    marginVertical: 4,
+  },
   blockedDate: {
     fontSize: 12,
     color: '#666',
     marginTop: 2,
     fontStyle: 'italic'
-  },
+  }
 });
 
 export default BlockedUsers;
