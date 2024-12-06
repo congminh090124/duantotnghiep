@@ -34,7 +34,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "cb2d27d8-3906-49c3-9449-06089e889898"
+        "projectId": "f8b16585-bf36-4410-af4b-68a2d0f57a53"
       }
     },
     "plugins": [
@@ -44,6 +44,7 @@
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
       ]
-    ]
+    ],
+    "owner": "cminh9124"
   }
 }
