@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, RefreshControl, Alert, PixelRatio, TextInput, Animated } from 'react-native';
 import Swiper from 'react-native-swiper';
@@ -10,8 +10,10 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getStatusBarHeight } from 'react-native-status-bar-height';
 import { getLocationNameFromCoords } from '../service/geocoding';
+import { memo } from 'react';
+import { Image as ExpoImage } from 'expo-image';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const BOTTOM_TAB_HEIGHT = Platform.OS === 'ios' ? 85 : 65;
+const BOTTOM_TAB_HEIGHT = Platform.OS === 'ios' ? 115 : -60;
 const ITEM_HEIGHT = SCREEN_HEIGHT - BOTTOM_TAB_HEIGHT;
 
 // Tính toán tỷ lệ scale dựa trên màn hình
@@ -24,7 +26,34 @@ const normalize = (size) => {
   return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 2;
 };
 
+// Thêm component ImageRenderer được tối ưu hóa
+const ImageRenderer = memo(({ image }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  const imageStyle = useMemo(() => ({
+    ...styles.image,
+    backgroundColor: '#1a1a1a',
+    opacity: imageLoaded ? 1 : 0,
+  }), [imageLoaded]);
 
+  return (
+    <View style={styles.imageWrapper}>
+      <ExpoImage
+        source={image}
+        style={imageStyle}
+        contentFit="cover"
+        transition={300}
+        onLoadEnd={() => setImageLoaded(true)}
+        cachePolicy="memory-disk"
+      />
+      {!imageLoaded && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="small" color="white" />
+        </View>
+      )}
+    </View>
+  );
+});
 
 const UserImages = React.memo(({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
@@ -97,6 +126,22 @@ const UserImages = React.memo(({ post }) => {
     }
   }, [post.images]);
 
+  const renderImages = useMemo(() => {
+    if (!post.images || post.images.length === 0) {
+      return (
+        <View style={styles.slide}>
+          <Text style={styles.noImageText}>No images available</Text>
+        </View>
+      );
+    }
+
+    return post.images.map((image, index) => (
+      <View key={index} style={styles.slide}>
+        <ImageRenderer image={image} />
+      </View>
+    ));
+  }, [post.images]);
+
   if (!imagesLoaded) {
     return (
       <View style={[styles.imageContainer, styles.loadingContainer]}>
@@ -113,29 +158,15 @@ const UserImages = React.memo(({ post }) => {
         showsButtons={false}
         containerStyle={styles.swiperContainer}
         loadMinimal={true}
-        loadMinimalSize={1}
+        loadMinimalSize={2}
         showsPagination={true}
         paginationStyle={styles.paginationStyle}
         dotStyle={styles.dotStyle}
         activeDotStyle={styles.activeDotStyle}
         horizontal={true}
-        removeClippedSubviews={false}
+        removeClippedSubviews={true}
       >
-        {post.images && post.images.length > 0 ? (
-          post.images.map((image, index) => (
-            <View key={index} style={styles.slide}>
-              <Image
-                source={{ uri: image }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            </View>
-          ))
-        ) : (
-          <View style={styles.slide}>
-            <Text style={styles.noImageText}>No images available</Text>
-          </View>
-        )}
+        {renderImages}
       </Swiper>
       <View style={styles.overlay}>
         <UserInfo post={post} />
@@ -322,27 +353,6 @@ const ActionButtons = React.memo(({
   </View>
 ));
 
-const SearchHeader = React.memo(() => {
-  const navigation = useNavigation();
-  
-  return (
-    <View style={styles.searchHeaderContainer}>
-      <LinearGradient
-        colors={['rgba(0,0,0,0.8)', 'rgba(0,0,0,0)']}
-        style={styles.searchHeaderGradient}
-      >
-        <TouchableOpacity 
-          style={styles.searchBar}
-          onPress={() => navigation.navigate('TravelSearch')}
-        >
-          <Search stroke="white" width={20} height={20} />
-          <Text style={styles.searchPlaceholder}>Tìm kiếm...</Text>
-        </TouchableOpacity>
-      </LinearGradient>
-    </View>
-  );
-});
-
 const MainScreen = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -392,7 +402,15 @@ const MainScreen = () => {
 
   return (
     <View style={styles.container}>
-      <SearchHeader />
+      <View style={styles.searchContainer}>
+        <TouchableOpacity 
+          style={styles.searchBar}
+          onPress={() => navigation.navigate('TravelSearch')}
+        >
+          <Search stroke="white" width={20} height={20} />
+          <Text style={styles.searchPlaceholder}>Tìm kiếm...</Text>
+        </TouchableOpacity>
+      </View>
       <FlatList
         ref={flatListRef}
         data={posts}
@@ -434,6 +452,7 @@ const MainScreen = () => {
 const TrangTimBanDuLich = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   useEffect(() => {
     fetchPosts();
@@ -450,7 +469,6 @@ const TrangTimBanDuLich = () => {
     }
   };
 
-  // Thêm listener cho thay đổi orientation
   useEffect(() => {
     const updateLayout = () => {
       const { width, height } = Dimensions.get('window');
@@ -465,6 +483,15 @@ const TrangTimBanDuLich = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <View style={styles.searchContainer}>
+        <TouchableOpacity 
+          style={styles.searchBar}
+          onPress={() => navigation.navigate('TravelSearch')}
+        >
+          <Search stroke="white" width={20} height={20} />
+          <Text style={styles.searchPlaceholder}>Tìm kiếm...</Text>
+        </TouchableOpacity>
+      </View>
       <MainScreen />
     </SafeAreaView>
   );
@@ -474,7 +501,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
-    height: ITEM_HEIGHT,
   },
   imageContainer: {
     width: SCREEN_WIDTH,
@@ -483,7 +509,8 @@ const styles = StyleSheet.create({
   },
   imageWrapper: {
     width: '100%',
-    height: '50%', // Set the height to 50% of the screen
+    height: '100%',
+    backgroundColor: '#1a1a1a',
   },
   swiperContainer: {
     width: SCREEN_WIDTH,
@@ -500,19 +527,18 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+    ...Platform.select({
+      ios: {
+        backfaceVisibility: 'hidden',
+        transform: [{ perspective: 1000 }],
+      },
+    }),
   },
   noImageText: {
     color: '#fff',
     fontSize: 16,
   },
-  overlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    padding: '5%',
-  },
+
   userInfo: {
     // Styles for user info container
   },
@@ -584,26 +610,20 @@ const styles = StyleSheet.create({
     color: '#888',
     fontSize: 12,
   },
-  searchHeaderContainer: {
+  searchContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
+    top: Platform.OS === 'ios' ? 20 : 120,
     left: 0,
     right: 0,
-    zIndex: 9999,
-  },
-  searchHeaderGradient: {
-    paddingTop: Platform.OS === 'ios' ? getStatusBarHeight() + 15 : 20,
-    paddingBottom: 10,
+    zIndex: 1000,
+    paddingHorizontal: 16,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    marginHorizontal: 10,
-    marginTop: Platform.OS === 'ios' ? -10 : -5,
+    borderRadius: 25,
+    padding: 12,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
     shadowColor: '#000',
@@ -618,7 +638,7 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     color: 'rgba(255, 255, 255, 0.8)',
     marginLeft: 10,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   postContent: {
@@ -739,7 +759,8 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? 85 : 65,
+    bottom: Platform.OS === 'ios' ? 55 :50, // Reduced from 100/60 to 20/10
+    
     left: 0,
     right: 0,
     width: SCREEN_WIDTH,
@@ -755,8 +776,9 @@ const styles = StyleSheet.create({
   contentWrapper: {
     width: SCREEN_WIDTH,
     padding: 15,
+  
     paddingBottom: 25,
-    marginBottom: -20,
+    marginBottom: -10,
   },
   headerRow: {
     width: '100%',

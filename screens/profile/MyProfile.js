@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect, state } from 'react';
-import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator, RefreshControl, Modal, Animated } from 'react-native';
+import { Dimensions, View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, Alert, SafeAreaView, ActivityIndicator, RefreshControl, Modal, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getUserProfile, updateAvatar, getUserPosts, getFollowers, getFollowing, getMyTravelPosts } from '../../apiConfig';
@@ -11,6 +11,8 @@ import { getLocationNameFromCoords } from '../service/geocoding';
 
 const windowWidth = Dimensions.get('window').width;
 const imageSize = (windowWidth - 40) / 2;
+
+const BOTTOM_NAV_HEIGHT = Platform.OS === 'ios' ? 85 : 65;
 
 const MyProfile = () => {
   const navigation = useNavigation();
@@ -57,9 +59,11 @@ const MyProfile = () => {
 
   useFocusEffect(
     useCallback(() => {
-      fetchData();
+      if (!profileData) {
+        fetchData();
+      }
       return () => { };
-    }, [fetchData])
+    }, [fetchData, profileData])
   );
 
   const onRefresh = useCallback(() => {
@@ -187,7 +191,7 @@ const MyProfile = () => {
                   // Xóa toàn bộ AsyncStorage
                   await AsyncStorage.clear();
                   
-                  // Reset navigation và chuyển đến màn hình đăng nhập
+                  // Reset navigation và chuyển đn màn hình đăng nhập
                   navigation.reset({
                     index: 0,
                     routes: [{ name: 'DangNhap' }],
@@ -222,7 +226,7 @@ const MyProfile = () => {
       const destination = locations.destination ? locations.destination.split(',') : [];
 
       if (currentLocation.length < 2 || destination.length < 2) {
-        return 'Chưa cập nhật vị trí';
+        return 'Chưa cập nhật v�� trí';
       }
 
       const currentLocationName = currentLocation.slice(0, 2).join(',');
@@ -380,7 +384,7 @@ const MyProfile = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0095F6" />
+          <ActivityIndicator size="large" color="#FF6B6B" />
           <Text style={styles.loadingText}>Đang tải...</Text>
         </View>
       </SafeAreaView>
@@ -404,6 +408,11 @@ const MyProfile = () => {
             tintColor="#0095F6" // iOS
           />
         }
+        showsVerticalScrollIndicator={false}
+        style={styles.scrollView}
+        contentContainerStyle={{
+          paddingBottom: BOTTOM_NAV_HEIGHT
+        }}
       >
         <View style={styles.header}>
           <View style={styles.usernameContainer}>
@@ -690,7 +699,11 @@ const PersonalInfo = ({ profileData }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#fff',
+    paddingBottom: BOTTOM_NAV_HEIGHT,
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -850,8 +863,8 @@ const styles = StyleSheet.create({
   postGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 8,
-    paddingTop: 8,
+    paddingHorizontal: 5,
+    paddingBottom: BOTTOM_NAV_HEIGHT,
   },
   postItem: {
     width: (windowWidth - 32) / 2,
@@ -1003,10 +1016,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: 10,
+    fontSize: 16,
     color: '#666',
+    fontWeight: '500',
   },
   postStats: {
     flexDirection: 'row',

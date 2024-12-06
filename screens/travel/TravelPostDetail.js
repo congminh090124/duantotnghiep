@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,15 @@ import {
   Dimensions,
   StatusBar,
   Modal,
+  FlatList,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTravelPostDetail, toggleLikeTravelPost } from '../../apiConfig';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ReportForm from '../report/ReportForm';
+import { Image as ExpoImage } from 'expo-image';
 
 const { width } = Dimensions.get('window');
 
@@ -33,6 +36,34 @@ const Header = ({ navigation }) => (
     <View style={styles.rightPlaceholder} />
   </View>
 );
+
+const ImageRenderer = memo(({ image }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  const imageStyle = useMemo(() => ({
+    ...styles.postImage,
+    backgroundColor: '#1a1a1a',
+    opacity: imageLoaded ? 1 : 0,
+  }), [imageLoaded]);
+
+  return (
+    <View style={styles.imageWrapper}>
+      <ExpoImage
+        source={image}
+        style={imageStyle}
+        contentFit="cover"
+        transition={300}
+        onLoadEnd={() => setImageLoaded(true)}
+        cachePolicy="memory-disk"
+      />
+      {!imageLoaded && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="small" color="white" />
+        </View>
+      )}
+    </View>
+  );
+});
 
 const TravelPostDetail = ({ route, navigation }) => {
   const { postId, currentUserId } = route.params;
@@ -183,6 +214,10 @@ const TravelPostDetail = ({ route, navigation }) => {
     </View>
   );
 
+  const renderImageItem = useCallback(({ item }) => (
+    <ImageRenderer image={item} />
+  ), []);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -205,36 +240,32 @@ const TravelPostDetail = ({ route, navigation }) => {
       <Header navigation={navigation} />
       <ScrollView>
         <View style={styles.imageContainer}>
-          <ScrollView
+          <FlatList
+            data={post.images}
+            renderItem={renderImageItem}
+            keyExtractor={(item, index) => index.toString()}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            onScroll={e => {
-              const offset = e.nativeEvent.contentOffset.x;
-              setCurrentImageIndex(Math.round(offset / width));
+            onMomentumScrollEnd={(event) => {
+              const newIndex = Math.floor(event.nativeEvent.contentOffset.x / width);
+              setCurrentImageIndex(newIndex);
             }}
-            scrollEventThrottle={16}
-          >
-            {post.images.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: image }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
-          <View style={styles.pagination}>
-            {post.images.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.paginationDot,
-                  currentImageIndex === index && styles.paginationDotActive
-                ]}
-              />
-            ))}
-          </View>
+          />
+          
+          {post.images.length > 1 && (
+            <View style={styles.pagination}>
+              {post.images.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.paginationDot,
+                    currentImageIndex === index && styles.paginationDotActive
+                  ]}
+                />
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.detailsContainer}>
@@ -329,26 +360,38 @@ const styles = StyleSheet.create({
     width: width,
     height: width * 0.8,
     position: 'relative',
+    backgroundColor: '#f0f0f0',
   },
-  image: {
+  postImage: {
     width: width,
     height: width * 0.8,
+    ...Platform.select({
+      ios: {
+        backfaceVisibility: 'hidden',
+        transform: [{ perspective: 1000 }],
+      },
+    }),
   },
   pagination: {
     flexDirection: 'row',
     position: 'absolute',
     bottom: 16,
     alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     marginHorizontal: 4,
   },
   paginationDotActive: {
-    backgroundColor: '#fff',
+    width: 8,
+    height: 8,
+    backgroundColor: '#000',
+    transform: [{scale: 1.2}],
   },
   detailsContainer: {
     padding: 16,
@@ -467,7 +510,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   rightPlaceholder: {
-    width: 40, // Để cân bằng với backButton
+    width: 40, // Để cn bằng với backButton
   },
   moreButton: {
     marginLeft: 'auto',
@@ -493,6 +536,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 15,
     color: '#FF3B30',
+  },
+  imageWrapper: {
+    width: width,
+    height: width * 0.8,
+    backgroundColor: '#1a1a1a',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
