@@ -38,7 +38,7 @@ import TravelSearch from './screens/travel/TravelSearch'
 
 import UserListScreen from './screens/chat/UserListScreen';
 import ChatScreen from './screens/chat/ChatScreen';
-
+import VideoCallScreen from './screens/chat/VideoCallScreen';
 
 
 import Settings from './screens/menuProfile/setting';
@@ -225,6 +225,11 @@ const App = () => {
               key="chatScreen"
               name="ChatScreen"
               component={ChatScreen}
+            />
+            <Stack.Screen
+              key="VideoCallScreen"
+              name="VideoCallScreen"
+              component={VideoCallScreen}
             />
 
             {/* Settings Screens */}

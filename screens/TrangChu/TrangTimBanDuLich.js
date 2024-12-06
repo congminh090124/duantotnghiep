@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+
 import { View, Image, StyleSheet, Dimensions, FlatList, Text, TouchableOpacity, SafeAreaView, ActivityIndicator, Platform, RefreshControl, Alert, PixelRatio, TextInput, Animated } from 'react-native';
 import Swiper from 'react-native-swiper';
 import { Heart, MessageCircle, Users, Search } from 'react-native-feather';
@@ -9,8 +10,9 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getStatusBarHeight } from 'react-native-status-bar-height';
 import { getLocationNameFromCoords } from '../service/geocoding';
-
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const BOTTOM_TAB_HEIGHT = Platform.OS === 'ios' ? 85 : 65;
+const ITEM_HEIGHT = SCREEN_HEIGHT - BOTTOM_TAB_HEIGHT;
 
 // Tính toán tỷ lệ scale dựa trên màn hình
 const scale = SCREEN_WIDTH / 320; 
@@ -22,13 +24,7 @@ const normalize = (size) => {
   return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 2;
 };
 
-// Tính toán vị trí bottom cho actionButtonsContainer
-const getBottomPosition = () => {
-  if (Platform.OS === 'ios') {
-    return SCREEN_HEIGHT > 800 ? '35%' : '30%'; // iPhone Plus vs Regular
-  }
-  return SCREEN_HEIGHT > 700 ? '40%' : '35%'; // Android Large vs Regular
-};
+
 
 const UserImages = React.memo(({ post }) => {
   const [isLiked, setIsLiked] = useState(false);
@@ -85,7 +81,7 @@ const UserImages = React.memo(({ post }) => {
   const handleMessage = useCallback(() => {
     navigation.navigate('ChatScreen', {
       userId: post.author._id,
-      userName: post.author.username, // Đổi tên param để khớp với ChatScreen
+      userName: post.author.username, 
       userAvatar: post.author.avatar
     });
   }, [navigation, post.author]);
@@ -114,6 +110,7 @@ const UserImages = React.memo(({ post }) => {
       <Swiper
         loop={false}
         style={styles.wrapper}
+        showsButtons={false}
         containerStyle={styles.swiperContainer}
         loadMinimal={true}
         loadMinimalSize={1}
@@ -121,6 +118,8 @@ const UserImages = React.memo(({ post }) => {
         paginationStyle={styles.paginationStyle}
         dotStyle={styles.dotStyle}
         activeDotStyle={styles.activeDotStyle}
+        horizontal={true}
+        removeClippedSubviews={false}
       >
         {post.images && post.images.length > 0 ? (
           post.images.map((image, index) => (
@@ -128,8 +127,7 @@ const UserImages = React.memo(({ post }) => {
               <Image
                 source={{ uri: image }}
                 style={styles.image}
-                resizeMode="contain"
-                onError={(e) => console.error('Image load error:', e.nativeEvent.error)}
+                resizeMode="cover"
               />
             </View>
           ))
@@ -402,14 +400,14 @@ const MainScreen = () => {
         keyExtractor={(item) => item._id}
         pagingEnabled
         showsVerticalScrollIndicator={false}
-        snapToInterval={SCREEN_HEIGHT}
+        snapToInterval={ITEM_HEIGHT}
         snapToAlignment="start"
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
         getItemLayout={(data, index) => ({
-          length: SCREEN_HEIGHT,
-          offset: SCREEN_HEIGHT * index,
+          length: ITEM_HEIGHT,
+          offset: ITEM_HEIGHT * index,
           index,
         })}
         refreshControl={
@@ -419,6 +417,10 @@ const MainScreen = () => {
             tintColor="white"
           />
         }
+        contentContainerStyle={[
+          styles.flatListContent,
+          { paddingBottom: 0 }
+        ]}
         removeClippedSubviews={true}
         maxToRenderPerBatch={3}
         updateCellsBatchingPeriod={100}
@@ -471,33 +473,33 @@ const TrangTimBanDuLich = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000', // Black background for a TikTok-like feel
+    backgroundColor: '#000',
+    height: ITEM_HEIGHT,
   },
   imageContainer: {
-    flex: 1,
-    width: '100%',
-    height: SCREEN_HEIGHT,
-    bottom: Platform.OS === 'ios' 
-      ? SCREEN_HEIGHT > 800 ? '18%' : '15%'  // iPhone Plus vs Regular
-      : SCREEN_HEIGHT > 700 ? '8%' : '6%',   // Android Large vs Regular
+    width: SCREEN_WIDTH,
+    height: ITEM_HEIGHT,
+    backgroundColor: '#000',
   },
   imageWrapper: {
     width: '100%',
     height: '50%', // Set the height to 50% of the screen
   },
   swiperContainer: {
-    height: '100%', // Ensure Swiper takes full height of its container
+    width: SCREEN_WIDTH,
+    height: ITEM_HEIGHT,
   },
+  wrapper: {},
   slide: {
-    flex: 1,
+    width: SCREEN_WIDTH,
+    height: ITEM_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000', // Add a background color
   },
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: 10,
+    resizeMode: 'cover',
   },
   noImageText: {
     color: '#fff',
@@ -551,7 +553,7 @@ const styles = StyleSheet.create({
   actionButtonsContainer: {
     position: 'absolute',
     right: Platform.OS === 'ios' ? 12 : 10,
-    bottom: '30%',
+    bottom: Platform.OS === 'ios' ? '40%' : '35%',
     alignItems: 'center',
     padding: 0,
     zIndex: 1000,
@@ -561,11 +563,11 @@ const styles = StyleSheet.create({
     height: SCREEN_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000', // Black background during loading
+    backgroundColor: '#000', 
   },
   feedItem: {
     padding: 15,
-    backgroundColor: '#000', // Dark feed background
+    backgroundColor: '#000', 
     borderBottomWidth: 1,
     borderBottomColor: '#333',
   },
@@ -584,7 +586,7 @@ const styles = StyleSheet.create({
   },
   searchHeaderContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? -getStatusBarHeight() : 95,
+    top: Platform.OS === 'ios' ? 50 : 20,
     left: 0,
     right: 0,
     zIndex: 9999,
@@ -737,7 +739,7 @@ const styles = StyleSheet.create({
   },
   overlayContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'android' ? '10%' : '40',
+    bottom: Platform.OS === 'ios' ? 85 : 65,
     left: 0,
     right: 0,
     width: SCREEN_WIDTH,
@@ -904,6 +906,9 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: -1, height: 1 },
     textShadowRadius: 10
+  },
+  flatListContent: {
+    flexGrow: 1,
   },
 });
 

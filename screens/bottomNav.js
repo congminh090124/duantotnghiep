@@ -75,22 +75,27 @@ const BottomTabs = () => {
         screenOptions={({ route }) => ({
           tabBarStyle: {
             height: Platform.OS === 'ios' ? 85 : 65,
-            paddingTop: 12,
-            paddingBottom: Platform.OS === 'ios' ? 25 : 12,
             backgroundColor: '#FFFFFF',
             position: 'absolute',
-            borderTopWidth: 1,
-            borderTopColor: 'rgba(0, 0, 0, 0.06)',
+            borderTopWidth: 0.5,
+            borderTopColor: 'rgba(0, 0, 0, 0.1)',
             elevation: 0,
             shadowColor: '#000',
             shadowOffset: {
               width: 0,
-              height: -3,
+              height: -2,
             },
-            shadowOpacity: 0.05,
-            shadowRadius: 8,
+            shadowOpacity: 0.1,
+            shadowRadius: 4,
           },
-          tabBarIcon: ({ focused, size }) => {
+          tabBarActiveTintColor: '#FF6B6B',
+          tabBarInactiveTintColor: '#9E9E9E',
+          tabBarShowLabel: true, // Hiển thị label cho dễ sử dụng
+          tabBarLabelStyle: {
+            fontSize: 11,
+            marginBottom: Platform.OS === 'ios' ? 0 : -4,
+          },
+          tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
             switch (route.name) {
@@ -102,7 +107,30 @@ const BottomTabs = () => {
                 break;
               case 'Add':
                 iconName = 'add-circle';
-                break;
+                return (
+                  <View style={{
+                    width: 56,
+                    height: 56,
+                    marginTop: -30,
+                    borderRadius: 28,
+                    backgroundColor: '#FFFFFF',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 5,
+                    elevation: 5,
+                    borderWidth: 3,
+                    borderColor: '#FF6B6B',
+                  }}>
+                    <Ionicons
+                      name={iconName}
+                      size={32}
+                      color="#FF6B6B"
+                    />
+                  </View>
+                );
               case 'Notifications':
                 iconName = focused ? 'notifications' : 'notifications-outline';
                 break;
@@ -111,49 +139,14 @@ const BottomTabs = () => {
                 break;
             }
 
-            if (route.name === 'Add') {
-              return (
-                <View style={{
-                  width: 50,
-                  height: 50,
-                  marginTop: -30,
-                  borderRadius: 25,
-                  backgroundColor: '#FFFFFF',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  shadowColor: '#000',
-                  shadowOffset: {
-                    width: 0,
-                    height: 4,
-                  },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 8,
-                  elevation: 5,
-                }}>
-                  <Ionicons
-                    name={iconName}
-                    size={44}
-                    color="#FF6B6B"
-                    style={{
-                      marginTop: Platform.OS === 'ios' ? 0 : -2,
-                    }}
-                  />
-                </View>
-              );
-            }
-
             return (
-              <View style={{
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
+              <View style={{ alignItems: 'center' }}>
                 <Ionicons
                   name={iconName}
-                  size={26}
-                  color={focused ? '#FF6B6B' : '#9E9E9E'}
+                  size={24}
+                  color={color}
                   style={{
                     transform: [{ scale: focused ? 1.1 : 1 }],
-                    opacity: focused ? 1 : 0.8,
                   }}
                 />
                 {focused && (
@@ -163,18 +156,22 @@ const BottomTabs = () => {
                     borderRadius: 2,
                     backgroundColor: '#FF6B6B',
                     marginTop: 4,
+                    position: 'absolute',
+                    bottom: -8,
                   }}/>
                 )}
               </View>
             );
           },
-          tabBarShowLabel: false,
         })}
       >
         <Tab.Screen 
           name="Home" 
-          component={TopTabNavigator} 
-          options={{ headerShown: false }}
+          component={TopTabNavigator}
+          options={{
+            headerShown: false,
+            tabBarLabel: 'Trang chủ'
+          }}
           listeners={{
             tabPress: (e) => handleTabPress(e, { name: 'Home' }),
           }}
@@ -209,7 +206,14 @@ const BottomTabs = () => {
           options={{ headerShown: false }}
         />
       </Tab.Navigator>
-      <AddOptionsModal isVisible={isModalVisible} onClose={toggleModal} />
+      <AddOptionsModal 
+        isVisible={isModalVisible} 
+        onClose={toggleModal}
+        style={{
+          margin: 0,
+          justifyContent: 'flex-end',
+        }}
+      />
     </>
   );
 };

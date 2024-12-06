@@ -130,14 +130,16 @@ const MyProfile = () => {
       navigation.navigate('TravelPostDetail', {
         postId: post._id,
         title: post.title || 'Chi tiết bài viết',
+      
       });
     } else {
       navigation.navigate('PostDetailScreen', {
         postId: post._id,
         title: post.title || 'Chi tiết bài viết',
+        
       });
     }
-  }, [navigation, activeTab]);
+  }, [navigation, activeTab, profileData]);
 
   const renderStatItem = useCallback(({ label, value, onPress }) => (
     <TouchableOpacity
