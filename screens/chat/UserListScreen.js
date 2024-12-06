@@ -228,7 +228,12 @@ const UserListScreen = ({ navigation }) => {
                 userId: item._id, 
                 userName: item.username,
                 userAvatar: item.avatar,
-                isOnline: item.isOnline 
+                isOnline: item.isOnline,
+                blockStatus: {
+                    isBlocked: false,
+                    isBlockedBy: false,
+                    canMessage: true
+                }
             })}
         >
             <View style={[
