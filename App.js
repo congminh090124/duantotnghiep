@@ -8,6 +8,7 @@ import { navigationRef, initializeNotificationListener } from './navigation/Navi
 
 // Import BottomTabs
 import BottomTabs from './screens/bottomNav';
+import OnboardingScreen from './screens/OnboardingScreen';
 
 // Import screens
 import QuenMatKhauScreen from './screens/auth/QuenMatKhauScreen';
@@ -102,7 +103,7 @@ const App = () => {
       <SocketProvider>
         <NavigationContainer ref={navigationRef}>
           <Stack.Navigator
-            initialRouteName="DangNhap"
+            initialRouteName="OnboardingScreen"
             screenOptions={{
               headerShown: false
             }}
@@ -287,6 +288,13 @@ const App = () => {
               name="ReportDetail"
               component={ReportDetail}
             />
+            
+            <Stack.Screen
+              key="OnboardingScreen"
+              name="OnboardingScreen"
+              component={OnboardingScreen}
+            />
+            
 
           </Stack.Navigator>
 
@@ -307,6 +315,7 @@ const App = () => {
             }}
             duration={3000}
           />
+
         </NavigationContainer>
       </SocketProvider>
     </AppWrapper>
