@@ -414,7 +414,8 @@ const UserProfile = ({ route }) => {
     if (activeTab === 'travel') {
       navigation.navigate('TravelPostDetail', { 
         postId: post._id,
-        title: post.title || 'Chi tiết bài viết du lịch'
+        title: post.title || 'Chi tiết bài viết du lịch',
+        currentUserId: currentUserId
       });
     } else {
       navigation.navigate('PostDetailScreen', { 

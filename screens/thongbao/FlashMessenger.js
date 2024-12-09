@@ -1,7 +1,12 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet, Platform } from 'react-native';
 import { showMessage } from "react-native-flash-message";
-import { handleNotificationNavigation } from '../../navigation/NavigationRef';
+
+const handlePress = (notification) => {
+  if (notification.onPress) {
+    notification.onPress();
+  }
+};
 
 export const showNotificationMessage = (notification) => {
   const time = new Date(notification.createdAt).toLocaleTimeString('vi-VN', {
@@ -49,9 +54,7 @@ export const showNotificationMessage = (notification) => {
     ),
     style: styles.notification,
     onPress: () => {
-      if (notification.onPress) {
-        notification.onPress();
-      }
+      handlePress(notification);
     },
   });
 };
@@ -65,7 +68,7 @@ export const showPostNotification = (postData) => {
     senderId: postData.authorId,
     post: postData._id,
     onPress: () => {
-      handleNotificationNavigation({
+      handlePress({
         type: 'new_post',
         post: postData._id
       });
@@ -81,7 +84,7 @@ export const showLikeNotification = (likeData) => {
     createdAt: new Date(),
     senderId: likeData.userId,
     onPress: () => {
-      handleNotificationNavigation({
+      handlePress({
         type: 'like',
         senderId: likeData.userId,
         senderName: likeData.userName,
@@ -100,7 +103,7 @@ export const showCommentNotification = (commentData) => {
     senderId: commentData.userId,
     content: commentData.comment,
     onPress: () => {
-      handleNotificationNavigation({
+      handlePress({
         type: 'comment',
         senderId: commentData.userId,
         senderName: commentData.userName,
@@ -118,7 +121,7 @@ export const showFollowNotification = (followData) => {
     createdAt: new Date(),
     senderId: followData.followerId,
     onPress: () => {
-      handleNotificationNavigation({
+      handlePress({
         type: 'follow',
         senderId: followData.followerId,
         senderName: followData.followerName,
@@ -168,7 +171,7 @@ export const showMessageNotification = (messageData) => {
     conversationId: messageData.conversationId,
     onPress: () => {
       console.log('Message notification pressed'); // Debug log
-      handleNotificationNavigation({
+      handlePress({
         type: 'message',
         senderId: messageData.senderId,
         senderName: messageData.senderName,

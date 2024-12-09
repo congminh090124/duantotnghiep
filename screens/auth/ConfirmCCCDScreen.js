@@ -9,6 +9,7 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
 
   useEffect(() => {
       if (route.params?.cccdData) {
+          console.log('Nhận được dữ liệu CCCD trong ConfirmScreen:', route.params.cccdData);
           setCccdData(route.params.cccdData);
        
       }
@@ -37,25 +38,18 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
       }
         
       try {
-          const response = await fetch("https://lobster-upward-sunbeam.ngrok-free.app/api/scan/update-cccd", {
+          console.log('Sending CCCD data:', cccdData); // Thêm log để debug
+          const response = await fetch("https://moral-simple-lioness.ngrok-free.app/api/scan/update-cccd", {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
                   'Authorization': `Bearer ${token}`,
               },
-              body: JSON.stringify({
-                  cccd: cccdData[0]?.id,
-                  name: cccdData[0]?.name,
-                  dob: cccdData[0]?.dob,
-                  sex: cccdData[0]?.sex,
-                  nationality: cccdData[0]?.nationality,
-                  home: cccdData[0]?.home,
-                  address: cccdData[0]?.address,
-              }),
+              body: JSON.stringify(cccdData), // Gửi trực tiếp cccdData
           });
 
           const data = await response.json();
-      
+          console.log('Server response:', data); // Thêm log để debug
 
           if (response.ok) {
               Alert.alert('Success', 'Cập nhật thông tin CCCD thành công');
@@ -69,14 +63,10 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
       }
   };
 
-  const handleEdit = () => {
-      navigation.goBack();
-  };
-
   const InfoItem = ({ label, value }) => (
       <View style={styles.infoItem}>
           <Text style={styles.label}>{label}:</Text>
-          <Text style={styles.value}>{value}</Text>
+          <Text style={styles.value}>{value || 'Không có'}</Text>
       </View>
   );
 
@@ -86,23 +76,30 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
           
           {cccdData ? (
               <View style={styles.infoContainer}>
-                  <InfoItem label="Số CCCD" value={cccdData[0]?.id || 'Không có'} />
-                  <InfoItem label="Họ và tên" value={cccdData[0]?.name || 'Không có'} />
-                  <InfoItem label="Ngày sinh" value={cccdData[0]?.dob || 'Không có'} />
-                  <InfoItem label="Giới tính" value={cccdData[0]?.sex || 'Không có'} />
-                  <InfoItem label="Quốc tịch" value={cccdData[0]?.nationality || 'Không có'} />
-                  <InfoItem label="Quê quán" value={cccdData[0]?.home || 'Không có'} />
-                  <InfoItem label="Nơi thường trú" value={cccdData[0]?.address || 'Không có'} />
+                  <InfoItem label="Số CCCD" value={cccdData.cccd} />
+                  <InfoItem label="Họ và tên" value={cccdData.name} />
+                  <InfoItem 
+                      label="Ngày sinh" 
+                      value={
+                          cccdData.dob ? 
+                          new Date(cccdData.dob).toLocaleDateString('vi-VN') : 
+                          'Không có'
+                      } 
+                  />
+                  <InfoItem label="Giới tính" value={cccdData.sex} />
+                  <InfoItem label="Quốc tịch" value={cccdData.nationality} />
+                  <InfoItem label="Quê quán" value={cccdData.home} />
+                  <InfoItem label="Nơi thường trú" value={cccdData.address} />
               </View>
           ) : (
               <Text style={styles.noDataText}>Không có dữ liệu CCCD</Text>
           )}
 
           <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.button} onPress={handleEdit}>
-                  <Text style={styles.buttonText}>Chỉnh sửa</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={handleConfirm}>
+              <TouchableOpacity 
+                  style={[styles.button, styles.confirmButton]} 
+                  onPress={handleConfirm}
+              >
                   <Text style={styles.buttonText}>Xác nhận</Text>
               </TouchableOpacity>
           </View>
@@ -135,13 +132,17 @@ const styles = StyleSheet.create({
     label: {
         fontWeight: 'bold',
         fontSize: 16,
+        flex: 1,
     },
     value: {
         fontSize: 16,
+        flex: 2,
+        textAlign: 'right',
     },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
+        marginTop: 20,
     },
     button: {
         flex: 1,
@@ -163,12 +164,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
         color: 'red',
-    },
-    debugButton: {
-        backgroundColor: '#ff9800',
-        padding: 10,
-        borderRadius: 5,
-        marginTop: 10,
     },
 });
 

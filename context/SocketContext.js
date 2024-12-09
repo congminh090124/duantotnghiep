@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../apiConfig';
@@ -119,27 +119,36 @@ export const SocketProvider = ({ children }) => {
                 socketInstance.emit('user_connected', userIdFromStorage);
             });
 
+            socketInstance.on('receive_message', (message) => {
+                console.log('Tin nhắn mới:', message);
+                
+                showNotificationMessage({
+                    type: 'message',
+                    senderName: message.sender.username,
+                    senderAvatar: message.sender.avatar,
+                    content: message.content,
+                    createdAt: message.createdAt,
+                    onPress: () => {
+                        navigate('ChatScreen', {
+                            userId: message.sender._id,  // ID người gửi
+                            userName: message.sender.username,  // Tên người gửi
+                            userAvatar: message.sender.avatar,  // Avatar người gửi
+                            blockStatus: { canMessage: true }
+                        });
+                    }
+                });
+            });
+
             socketInstance.on('incoming_call', (callData) => {
                 console.log('Incoming call:', callData);
                 showNotificationMessage('Cuộc gọi video', 'Bạn có cuộc gọi video đến');
                 setIncomingCall(callData);
             });
 
-            socketInstance.on('call_canceled', () => {
-                setIncomingCall(null);
-            });
-
-            socketInstance.on('call_timeout', () => {
-                setIncomingCall(null);
-            });
-
-            socketInstance.on('call_ended', () => {
-                setIncomingCall(null);
-            });
-
-            socketInstance.on('call_rejected', () => {
-                setIncomingCall(null);
-            });
+            socketInstance.on('call_canceled', () => setIncomingCall(null));
+            socketInstance.on('call_timeout', () => setIncomingCall(null));
+            socketInstance.on('call_ended', () => setIncomingCall(null));
+            socketInstance.on('call_rejected', () => setIncomingCall(null));
 
             socketInstance.on('disconnect', (reason) => {
                 console.log('Socket disconnected:', reason);
@@ -159,14 +168,12 @@ export const SocketProvider = ({ children }) => {
         }
     };
 
-    const disconnectSocket = () => {
+    const disconnectSocket = useCallback(() => {
         if (socket) {
             socket.disconnect();
             setSocket(null);
-            setIsConnected(false);
-            setUserId(null);
         }
-    };
+    }, [socket]);
 
     useEffect(() => {
         initSocket();

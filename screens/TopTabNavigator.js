@@ -124,10 +124,10 @@ const TopTabNavigator = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
   },
   sceneContainer: {
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     marginTop: Platform.OS === 'ios' ? 40 : TAB_BAR_HEIGHT,
   },
   tabBarContainer: {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 999,
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     paddingTop: Platform.OS === 'ios' ? 6 : 2,
     height: Platform.select({
       ios: 'auto',
@@ -147,20 +147,20 @@ const styles = StyleSheet.create({
       android: 'flex-end',
     }),
     paddingBottom: Platform.OS === 'ios' ? 6 : 2,
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 1,
+      height: 2,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
     elevation: 3,
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#000',
+    backgroundColor: '#fff',
     height: Platform.select({
       ios: 36,
       android: TAB_BAR_HEIGHT * 0.4,
@@ -179,26 +179,25 @@ const styles = StyleSheet.create({
       android: 6,
     }),
     marginHorizontal: 4,
-    borderRadius: 10,
-    position: 'relative',
-    backgroundColor: '#000',
+    borderRadius: 20,
+    backgroundColor: 'transparent',
   },
   tabBarLabel: {
-    color: 'rgba(255, 255, 255, 0.45)',
+    color: 'rgba(0, 0, 0, 0.5)',
     fontSize: Platform.select({
-      ios: 14,
+      ios: 15,
       android: SCREEN_WIDTH * 0.035,
     }),
     textTransform: 'none',
-    fontWeight: '400',
-    letterSpacing: 0.2,
+    fontWeight: '500',
+    letterSpacing: 0.3,
   },
   tabBarLabelActive: {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontWeight: '500',
+    color: '#000',
+    fontWeight: '600',
   },
   tabItemActive: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#f5f5f5',
   }
 });
 

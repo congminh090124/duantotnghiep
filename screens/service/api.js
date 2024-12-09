@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'https://lobster-upward-sunbeam.ngrok-free.app';
+const API_URL = 'https://moral-simple-lioness.ngrok-free.app';
 
 export const scanCCCD = async (imageUri) => {
   try {
