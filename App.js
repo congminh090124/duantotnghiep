@@ -5,6 +5,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { SocketProvider } from './context/SocketContext';
 import FlashMessage from "react-native-flash-message";
 import { navigationRef, initializeNotificationListener } from './navigation/NavigationRef';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import BottomTabs
 import BottomTabs from './screens/bottomNav';
@@ -62,6 +63,9 @@ const Stack = createStackNavigator();
 
 // Main App component
 const App = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     let unsubscribe;
     
@@ -70,6 +74,20 @@ const App = () => {
     };
 
     initNotifications();
+
+    // Kiểm tra trạng thái đăng nhập khi app khởi động
+    const checkLoginStatus = async () => {
+      try {
+        const token = await AsyncStorage.getItem('token');
+        setIsLoggedIn(!!token);
+      } catch (error) {
+        console.error('Error checking login status:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkLoginStatus();
 
     return () => {
       if (unsubscribe) {
@@ -99,12 +117,24 @@ const App = () => {
     return children;
   };
 
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000' }}>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor="transparent"
+          translucent={true}
+        />
+      </View>
+    );
+  }
+
   return (
     <AppWrapper>
       <SocketProvider>
         <NavigationContainer ref={navigationRef}>
           <Stack.Navigator
-            initialRouteName="OnboardingScreen"
+            initialRouteName={isLoggedIn ? "TrangChu" : "OnboardingScreen"}
             screenOptions={{
               headerShown: false
             }}

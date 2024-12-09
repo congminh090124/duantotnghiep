@@ -28,7 +28,12 @@ const LoginScreen = () => {
       
       if (userToken && userData) {
         await initSocket();
-        navigation.navigate('TrangChu');
+        const savedEmail = await AsyncStorage.getItem('savedEmail');
+        const savedPassword = await AsyncStorage.getItem('savedPassword');
+        if (savedEmail && savedPassword) {
+          setEmail(savedEmail);
+          setPassword(savedPassword);
+        }
       }
     } catch (error) {
       console.error('Error checking existing token:', error);
@@ -46,24 +51,24 @@ const LoginScreen = () => {
       const response = await login(userData);
       
       if (response.token && response.user) {
-        // Lưu thông tin đăng nhập
         await AsyncStorage.multiSet([
           ['userToken', response.token],
           ['userData', JSON.stringify(response.user)],
           ['userID', response.user.id.toString()],
-          // Thêm email và password để có thể tự động đăng nhập
           ['savedEmail', email],
-          ['savedPassword', password]
+          ['savedPassword', password],
+          ['isLoggedIn', 'true']
         ]);
     
         await initSocket();
-        navigation.navigate('TrangChu');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'TrangChu' }],
+        });
       } else {
-        console.log('Login failed: No token or user data in response');
         Alert.alert('Lỗi', 'Đăng nhập không thành công. Vui lòng thử lại.');
       }
     } catch (error) {
-      console.error('Login error:', error);
       Alert.alert('Lỗi', `Đăng nhập không thành công: ${error.message}`);
     }
   };

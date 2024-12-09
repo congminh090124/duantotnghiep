@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   StyleSheet, 
   Image, 
@@ -12,30 +12,65 @@ import { useNavigation } from '@react-navigation/native';
 import Onboarding from 'react-native-onboarding-swiper';
 import { StatusBar } from 'expo-status-bar';
 import { Image as ExpoImage } from 'expo-image'; // Optimized image component
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
 const OnboardingScreen = () => {
   const navigation = useNavigation();
+  const [isLoading, setIsLoading] = useState(true);
+  const [shouldShowOnboarding, setShouldShowOnboarding] = useState(false);
 
-  // Memoized Dot Component with React.useCallback for performance
-  const DotComponent = React.useCallback(({ selected }) => {
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
+
+  const checkLoginStatus = async () => {
+    try {
+      const isLoggedIn = await AsyncStorage.getItem('isLoggedIn');
+      const userToken = await AsyncStorage.getItem('userToken');
+      
+      if (isLoggedIn === 'true' && userToken) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'TrangChu' }],
+        });
+      } else {
+        setShouldShowOnboarding(true);
+      }
+    } catch (error) {
+      console.error('Error checking login status:', error);
+      setShouldShowOnboarding(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGetStarted = useCallback(() => {
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'DangNhap' }],
+    });
+  }, [navigation]);
+
+  const DotComponent = useCallback(({ selected }) => {
     return (
       <View
-        style={{
-          width: selected ? 28 : 8,
-          height: 8,
-          borderRadius: 4,
-          marginHorizontal: 3,
-          backgroundColor: selected ? '#FF385C' : 'rgba(0, 0, 0, 0.3)',
-          transition: 'all 0.2s',
-        }}
-      />
+        style={[
+          styles.dot,
+          {
+            width: selected ? 24 : 6,
+            backgroundColor: selected ? '#FF385C' : 'rgba(255, 255, 255, 0.5)',
+            transform: [{ scale: selected ? 1 : 0.9 }],
+          }
+        ]}
+      >
+        {selected && <View style={styles.dotInner} />}
+      </View>
     );
   }, []);
 
-  // Memoized Next Button Component
-  const NextButtonComponent = React.useCallback(({ scrollTo }) => {
+  const NextButtonComponent = useCallback(({ scrollTo }) => {
     return (
       <TouchableOpacity 
         style={[styles.navigationButton, styles.rightButton]} 
@@ -46,11 +81,7 @@ const OnboardingScreen = () => {
     );
   }, []);
 
-  // Memoized Done Button Component
- 
-
-  // Memoized Skip Button Component
-  const SkipButtonComponent = React.useCallback(({ scrollTo }) => {
+  const SkipButtonComponent = useCallback(({ scrollTo }) => {
     return (
       <TouchableOpacity 
         style={[styles.navigationButton, styles.leftButton]} 
@@ -60,6 +91,11 @@ const OnboardingScreen = () => {
       </TouchableOpacity>
     );
   }, []);
+
+  // Nếu đang loading hoặc không nên hiển thị onboarding, return null
+  if (isLoading || !shouldShowOnboarding) {
+    return null;
+  }
 
   return (
     <>
@@ -102,7 +138,7 @@ const OnboardingScreen = () => {
               </View>
             ),
             title: 'An Toàn & Tin Cậy',
-            subtitle: 'Cộng đồng du lịch được xác thực, đánh giá chi tiết từ những chuyến đi trước',
+            subtitle: 'Cng đồng du lịch được xác thực, đánh giá chi tiết từ những chuyến đi trước',
             titleStyles: styles.title,
             subTitleStyles: styles.subtitle,
           },
@@ -142,7 +178,7 @@ const OnboardingScreen = () => {
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity 
                     style={styles.doneButton}
-                    onPress={() => navigation.navigate('DangNhap')}
+                    onPress={handleGetStarted}
                   >
                     <Text style={styles.doneButtonText}>Bắt đầu ngay</Text>
                   </TouchableOpacity>
@@ -156,6 +192,8 @@ const OnboardingScreen = () => {
           },
         ]}
         DotComponent={DotComponent}
+        NextButtonComponent={NextButtonComponent}
+        SkipButtonComponent={SkipButtonComponent}
         showSkip={false}
         showNext={false}
         showDone={false}
@@ -170,6 +208,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+    paddingBottom: Platform.select({
+      ios: height * 0.08,
+      android: height * 0.06,
+    }),
   },
   imageContainer: {
     width: width,
@@ -292,24 +334,32 @@ const styles = StyleSheet.create({
       android: height * 0.06,
     }),
   },
-  // Style cho dots
-  dotStyle: {
-    width: Platform.select({ ios: 8, android: 8 }),
-    height: Platform.select({ ios: 8, android: 8 }),
-    borderRadius: 4,
-    marginHorizontal: 3,
-    backgroundColor: selected => selected ? '#FF385C' : 'rgba(255, 255, 255, 0.3)',
+  dot: {
+    height: 6,
+    borderRadius: 3,
+    marginHorizontal: 4,
+    transition: 'all 0.2s ease',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.5,
+        shadowOpacity: 0.22,
+        shadowRadius: 2.22,
       },
       android: {
-        elevation: selected => selected ? 3 : 1,
+        elevation: 3,
       },
     }),
+  },
+  dotInner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 3,
+    transform: [{ scale: 0.5 }],
   },
 });
 
