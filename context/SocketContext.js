@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import io from 'socket.io-client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS } from '../apiConfig';
@@ -168,14 +168,12 @@ export const SocketProvider = ({ children }) => {
         }
     };
 
-    const disconnectSocket = () => {
+    const disconnectSocket = useCallback(() => {
         if (socket) {
             socket.disconnect();
             setSocket(null);
-            setIsConnected(false);
-            setUserId(null);
         }
-    };
+    }, [socket]);
 
     useEffect(() => {
         initSocket();

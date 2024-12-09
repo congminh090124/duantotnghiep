@@ -90,11 +90,7 @@ const BottomTabs = () => {
           },
           tabBarActiveTintColor: '#FF6B6B',
           tabBarInactiveTintColor: '#9E9E9E',
-          tabBarShowLabel: true, // Hiển thị label cho dễ sử dụng
-          tabBarLabelStyle: {
-            fontSize: 11,
-            marginBottom: Platform.OS === 'ios' ? 0 : -4,
-          },
+          tabBarShowLabel: false,
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
 
@@ -170,7 +166,6 @@ const BottomTabs = () => {
           component={TopTabNavigator}
           options={{
             headerShown: false,
-            tabBarLabel: 'Trang chủ'
           }}
           listeners={{
             tabPress: (e) => handleTabPress(e, { name: 'Home' }),

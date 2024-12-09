@@ -15,6 +15,26 @@ const LoginScreen = () => {
   const navigation = useNavigation();
   const { initSocket } = useSocket();
 
+  // Thêm useEffect để kiểm tra token khi màn hình được load
+  useEffect(() => {
+    checkExistingToken();
+  }, []);
+
+  // Thêm hàm kiểm tra token
+  const checkExistingToken = async () => {
+    try {
+      const userToken = await AsyncStorage.getItem('userToken');
+      const userData = await AsyncStorage.getItem('userData');
+      
+      if (userToken && userData) {
+        await initSocket();
+        navigation.navigate('TrangChu');
+      }
+    } catch (error) {
+      console.error('Error checking existing token:', error);
+    }
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Lỗi', 'Vui lòng nhập email và mật khẩu');
@@ -22,21 +42,22 @@ const LoginScreen = () => {
     }
   
     try {
-  
       const userData = { email, password };
       const response = await login(userData);
-     
       
       if (response.token && response.user) {
+        // Lưu thông tin đăng nhập
         await AsyncStorage.multiSet([
           ['userToken', response.token],
           ['userData', JSON.stringify(response.user)],
-          ['userID', response.user.id.toString()]
+          ['userID', response.user.id.toString()],
+          // Thêm email và password để có thể tự động đăng nhập
+          ['savedEmail', email],
+          ['savedPassword', password]
         ]);
     
         await initSocket();
-    
-      navigation.navigate('TrangChu')
+        navigation.navigate('TrangChu');
       } else {
         console.log('Login failed: No token or user data in response');
         Alert.alert('Lỗi', 'Đăng nhập không thành công. Vui lòng thử lại.');

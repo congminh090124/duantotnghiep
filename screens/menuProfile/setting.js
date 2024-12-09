@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useSocket } from '../../context/SocketContext';
 
 const Settings = () => {
   const navigation = useNavigation();
   const [isVerified, setIsVerified] = useState(false);
+  const { disconnectSocket } = useSocket();
 
   const handleChangePassword = () => {
     navigation.navigate('ChangePassword');
@@ -29,6 +32,43 @@ const Settings = () => {
 
   const handleReportHistory = () => {
     navigation.navigate('ReportHistory');
+  };
+
+  const handleLogout = async () => {
+    try {
+      Alert.alert(
+        'Xác nhận đăng xuất',
+        'Bạn có chắc chắn muốn đăng xuất?',
+        [
+          {
+            text: 'Hủy',
+            style: 'cancel'
+          },
+          {
+            text: 'Đăng xuất',
+            onPress: async () => {
+              try {
+                await disconnectSocket();
+                
+                await AsyncStorage.clear();
+                
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'DangNhap' }],
+                });
+              } catch (error) {
+                console.error('Logout error:', error);
+                Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
+              }
+            },
+            style: 'destructive'
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
+    }
   };
 
   return (
@@ -68,6 +108,12 @@ const Settings = () => {
         <Text style={styles.optionText}>Lịch sử báo cáo</Text>
         <Ionicons name="chevron-forward-outline" size={24} color="gray" />
       </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.option, styles.logoutOption]} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={24} color="red" style={styles.icon} />
+        <Text style={[styles.optionText, styles.logoutText]}>Đăng xuất</Text>
+        <Ionicons name="chevron-forward-outline" size={24} color="red" />
+      </TouchableOpacity>
     </View>
   );
 };
@@ -97,6 +143,14 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: 16,
+  },
+  logoutOption: {
+    marginTop: 20,
+    borderColor: 'red',
+    borderWidth: 1,
+  },
+  logoutText: {
+    color: 'red',
   },
 });
 
