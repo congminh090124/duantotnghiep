@@ -14,30 +14,75 @@ export const SocketProvider = ({ children }) => {
     const [isConnected, setIsConnected] = useState(false);
     const [incomingCall, setIncomingCall] = useState(null);
 
-    const handleAcceptCall = () => {
+    const handleAcceptCall = async () => {
         if (socket && incomingCall) {
-            socket.emit('accept_call', { 
-                channelName: incomingCall.channelName,
-                callerId: incomingCall.callerId 
-            });
+            try {
+                const response = await fetch(`${API_ENDPOINTS.socketURL}/api/chat/video-call/accept`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
+                    },
+                    body: JSON.stringify({
+                        channelName: incomingCall.channelName,
+                        callerId: incomingCall.callerId
+                    })
+                });
 
-            navigate('VideoCallScreen', {
-                channelName: incomingCall.channelName,
-                userId: userId,
-                receiverId: incomingCall.callerId
-            });
+                const data = await response.json();
+                
+                if (data.success) {
+                    socket.emit('accept_call', { 
+                        channelName: incomingCall.channelName,
+                        callerId: incomingCall.callerId 
+                    });
 
+                    navigate('VideoCallScreen', {
+                        channelName: incomingCall.channelName,
+                        userId: userId,
+                        receiverId: incomingCall.callerId,
+                        isInitiator: false
+                    });
+                } else {
+                    showNotificationMessage('Lỗi', 'Không thể kết nối cuộc gọi');
+                }
+            } catch (error) {
+                console.error('Error accepting call:', error);
+                showNotificationMessage('Lỗi', 'Đã xảy ra lỗi khi chấp nhận cuộc gọi');
+            }
             setIncomingCall(null);
         }
     };
 
-    const handleRejectCall = () => {
+    const handleRejectCall = async () => {
         if (socket && incomingCall) {
-            socket.emit('reject_call', { 
-                channelName: incomingCall.channelName,
-                callerId: incomingCall.callerId 
-            });
+            try {
+                const response = await fetch(`${API_ENDPOINTS.socketURL}/api/chat/video-call/reject`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${await AsyncStorage.getItem('userToken')}`
+                    },
+                    body: JSON.stringify({
+                        channelName: incomingCall.channelName,
+                        callerId: incomingCall.callerId
+                    })
+                });
 
+                const data = await response.json();
+                
+                if (data.success) {
+                    socket.emit('reject_call', { 
+                        channelName: incomingCall.channelName,
+                        callerId: incomingCall.callerId 
+                    });
+                } else {
+                    showNotificationMessage('Lỗi', 'Không thể từ chối cuộc gọi');
+                }
+            } catch (error) {
+                console.error('Error rejecting call:', error);
+                showNotificationMessage('Lỗi', 'Đã xảy ra lỗi khi từ chối cuộc gọi');
+            }
             setIncomingCall(null);
         }
     };
@@ -89,6 +134,10 @@ export const SocketProvider = ({ children }) => {
             });
 
             socketInstance.on('call_ended', () => {
+                setIncomingCall(null);
+            });
+
+            socketInstance.on('call_rejected', () => {
                 setIncomingCall(null);
             });
 

@@ -1,56 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator, FlatList, Modal, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, Image, StyleSheet, SafeAreaView, TouchableOpacity, Dimensions, ActivityIndicator, FlatList, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { showPostWithID } from '../../apiConfig';
 import ReportForm from '../report/ReportForm';
-import { Image as ExpoImage } from 'expo-image';
 
 const { width, height } = Dimensions.get('window');
-
-const ImageRenderer = memo(({ image }) => {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  
-  return (
-    <View style={styles.imageWrapper}>
-      <ExpoImage
-        source={image}
-        style={[
-          styles.postImage,
-          {
-            backgroundColor: '#1a1a1a',
-            opacity: imageLoaded ? 1 : 0,
-          }
-        ]}
-        contentFit="cover"
-        transition={300}
-        onLoadEnd={() => setImageLoaded(true)}
-        cachePolicy="memory-disk"
-      />
-      {!imageLoaded && (
-        <View style={styles.loadingOverlay}>
-          <ActivityIndicator size="small" color="white" />
-        </View>
-      )}
-    </View>
-  );
-});
-
-const PostImages = memo(({ images, onImageIndexChange }) => {
-  return (
-    <FlatList
-      data={images}
-      renderItem={({ item }) => <ImageRenderer image={item} />}
-      keyExtractor={(_, index) => index.toString()}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      onMomentumScrollEnd={(event) => {
-        const newIndex = Math.floor(event.nativeEvent.contentOffset.x / width);
-        onImageIndexChange(newIndex);
-      }}
-    />
-  );
-});
 
 const PostDetailScreen = ({ route, navigation }) => {
   const { postId, currentUserId } = route.params;
@@ -105,6 +59,14 @@ const PostDetailScreen = ({ route, navigation }) => {
     );
   }
 
+  const renderImageItem = ({ item }) => (
+    <Image
+      source={{ uri: item }}
+      style={styles.postImage}
+      resizeMode="cover"
+    />
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -140,9 +102,17 @@ const PostDetailScreen = ({ route, navigation }) => {
 
         {/* Post Image */}
         {post.images && post.images.length > 0 && (
-          <PostImages 
-            images={post.images}
-            onImageIndexChange={setCurrentImageIndex}
+          <FlatList
+            data={post.images}
+            renderItem={renderImageItem}
+            keyExtractor={(item, index) => index.toString()}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(event) => {
+              const newIndex = Math.floor(event.nativeEvent.contentOffset.x / width);
+              setCurrentImageIndex(newIndex);
+            }}
           />
         )}
 
@@ -261,12 +231,7 @@ const styles = StyleSheet.create({
   postImage: {
     width: width,
     height: height * 0.6,
-    ...Platform.select({
-      ios: {
-        backfaceVisibility: 'hidden',
-        transform: [{ perspective: 1000 }],
-      },
-    }),
+    resizeMode: 'cover',
   },
   imageIndicatorContainer: {
     flexDirection: 'row',
@@ -351,17 +316,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 15,
     color: '#FF3B30',
-  },
-  imageWrapper: {
-    width: width,
-    height: height * 0.6,
-    backgroundColor: '#1a1a1a',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });
 

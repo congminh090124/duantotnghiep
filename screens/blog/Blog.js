@@ -4,7 +4,6 @@ import { toggleLikePost, addComment, getComments, getToken, getFeedPosts } from 
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Image as ExpoImage } from 'expo-image';
 const LIKE_COLOR = '#FF6B6B';
 const UNLIKE_COLOR = '#757575';
 
@@ -215,7 +214,7 @@ const BlogPage = () => {
           <Image
             source={{ uri: post.user.avatar }}
             style={styles.avatar}
-            onError={(error) => console.log('Avatar load error:', error)}
+            onError={(e) => console.log('Avatar load error:', e.nativeEvent.error)}
           />
         ) : (
           <View style={[styles.avatar, styles.placeholderAvatar]}>
@@ -235,7 +234,7 @@ const BlogPage = () => {
         <Image
           source={{ uri: post.images[0] }}
           style={styles.postImage}
-          onError={(error) => console.log('Post image load error:', error)}
+          onError={(e) => console.log('Post image load error:', e.nativeEvent.error)}
         />
       )}
     </TouchableOpacity>
@@ -304,7 +303,7 @@ const BlogPage = () => {
                       <Image
                         source={{ uri: item.userAvatar }}
                         style={styles.commentAvatar}
-                        onError={(error) => console.log('Comment avatar load error:', error)}
+                        onError={(e) => console.log('Comment avatar load error:', e.nativeEvent.error)}
                       />
                     ) : (
                       <View style={[styles.commentAvatar, styles.placeholderAvatar]}>
@@ -334,9 +333,11 @@ const BlogPage = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
-      </View>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -357,17 +358,14 @@ const BlogPage = () => {
         renderItem={renderPost}
         keyExtractor={(item) => item._id}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={['#FF6B6B']}
-            tintColor="#FF6B6B"
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        contentContainerStyle={{
-          paddingBottom: Platform.OS === 'ios' ? 90 : 70,
-        }}
-        showsVerticalScrollIndicator={false}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            {/* <Text style={styles.headerText}>Social Feed</Text> */}
+          </View>
+        }
+        contentContainerStyle={styles.flatListContent}
       />
     </SafeAreaView>
   );
@@ -376,16 +374,60 @@ const BlogPage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#F8F9FA',
+    paddingTop: Platform.OS === 'android' ? 25 : 0,
+  },
+  header: {
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     backgroundColor: '#fff',
-    marginTop: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAEAEA',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1A1A1A',
+    letterSpacing: 0.5,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 20,
+  },
+  errorText: {
+    color: '#DC3545',
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
   },
   postCard: {
+
     backgroundColor: '#fff',
-    marginBottom: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    marginHorizontal: 12,
+    marginVertical: 8,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 4,
   },
   userInfo: {
     flexDirection: 'row',
@@ -397,19 +439,17 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     marginRight: 12,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#fff',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    contentFit: 'cover',
+    shadowRadius: 2,
   },
   placeholderAvatar: {
     backgroundColor: '#E8E8E8',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: 'transparent',
   },
   username: {
     fontSize: 16,
@@ -432,10 +472,8 @@ const styles = StyleSheet.create({
   postImage: {
     width: '100%',
     height: 250,
-    borderRadius: 12,
+    borderRadius: 0,
     marginBottom: 12,
-    marginTop: 8,
-    contentFit: 'cover',
   },
   interactionInfo: {
     flexDirection: 'row',
@@ -523,8 +561,6 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 1,
     borderColor: '#EAEAEA',
-    contentFit: 'cover',
-    backgroundColor: '#F5F5F5',
   },
   commentUser: {
     fontWeight: '600',
@@ -555,11 +591,9 @@ const styles = StyleSheet.create({
   interactionItemDisabled: {
     opacity: 0.7,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+  flatListContent: {
+    paddingTop: 50,
+    paddingBottom: 80,
   },
 });
 

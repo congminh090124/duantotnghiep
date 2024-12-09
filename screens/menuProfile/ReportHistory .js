@@ -8,9 +8,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   Image,
-  Alert,
-  Platform,
-  StatusBar
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -143,15 +141,14 @@ const ReportHistory = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight + 10,
+    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    padding: 16,
+    backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },

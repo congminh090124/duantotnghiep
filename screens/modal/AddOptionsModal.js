@@ -8,7 +8,7 @@ const AddOptionsModal = ({ isVisible, onClose }) => {
   const options = [
     { title: 'Đăng bài', screen: 'TaoTrangTimBanDuLich' },
     { title: 'Tạo blog', screen: 'CreatePost' },
-   
+    { title: 'Đăng ký du lịch', screen: 'DangKiDulichScreen' },
     { title: 'Đăng ký TNV', screen: 'DangKiTinhNguyenVienScreen' },
   ];
 
