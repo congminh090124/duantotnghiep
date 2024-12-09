@@ -53,7 +53,18 @@ const VerifyIDScreen = () => {
                 } else {
                     if (frontData) {
                         console.log('Dữ liệu mặt trước trước khi chuyển màn hình:', frontData);
-                        navigation.navigate('ConfirmCCCDScreen', { cccdData: frontData });
+                        const cccdDataToSend = {
+                            cccd: frontData.cccd || '',
+                            name: frontData.name || '',
+                            dob: frontData.dob || '',
+                            sex: frontData.sex || '',
+                            nationality: frontData.nationality || '',
+                            home: frontData.home || '',
+                            address: frontData.address || ''
+                        };
+                        navigation.navigate('ConfirmCCCDScreen', {
+                            cccdData: cccdDataToSend
+                        });
                     } else {
                         Alert.alert('Lỗi', 'Không tìm thấy dữ liệu mặt trước. Vui lòng thử lại.');
                     }
@@ -61,7 +72,7 @@ const VerifyIDScreen = () => {
             } catch (error) {
                 console.error('Lỗi khi quét CCCD:', error);
                 Alert.alert('Lỗi', 'Không thể quét CCCD. Vui lòng thử lại.');
-                setImage(null);  // Reset image to allow retaking
+                setImage(null);
             }
         }
     };

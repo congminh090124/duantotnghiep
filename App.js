@@ -41,6 +41,7 @@ import ChatScreen from './screens/chat/ChatScreen';
 import VideoCallScreen from './screens/chat/VideoCallScreen';
 
 
+
 import Settings from './screens/menuProfile/setting';
 import ChangePassword from './screens/menuProfile/ChangePassword';
 import PostManager from './screens/menuProfile/Post-manager';
@@ -231,6 +232,7 @@ const App = () => {
               name="VideoCallScreen"
               component={VideoCallScreen}
             />
+          
 
             {/* Settings Screens */}
             <Stack.Screen

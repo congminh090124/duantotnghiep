@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import {
   View,
   Text,
@@ -11,11 +11,16 @@ import {
   SafeAreaView,
   Dimensions,
   StatusBar,
+  Modal,
+  FlatList,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTravelPostDetail, toggleLikeTravelPost } from '../../apiConfig';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ReportForm from '../report/ReportForm';
+import { Image as ExpoImage } from 'expo-image';
 
 const { width } = Dimensions.get('window');
 
@@ -32,8 +37,36 @@ const Header = ({ navigation }) => (
   </View>
 );
 
+const ImageRenderer = memo(({ image }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  
+  const imageStyle = useMemo(() => ({
+    ...styles.postImage,
+    backgroundColor: '#1a1a1a',
+    opacity: imageLoaded ? 1 : 0,
+  }), [imageLoaded]);
+
+  return (
+    <View style={styles.imageWrapper}>
+      <ExpoImage
+        source={image}
+        style={imageStyle}
+        contentFit="cover"
+        transition={300}
+        onLoadEnd={() => setImageLoaded(true)}
+        cachePolicy="memory-disk"
+      />
+      {!imageLoaded && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="small" color="white" />
+        </View>
+      )}
+    </View>
+  );
+});
+
 const TravelPostDetail = ({ route, navigation }) => {
-  const { postId } = route.params;
+  const { postId, currentUserId } = route.params;
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -41,22 +74,8 @@ const TravelPostDetail = ({ route, navigation }) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLikeLoading, setIsLikeLoading] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState(null);
-
-  useEffect(() => {
-    const getCurrentUser = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('userData');
-        if (userData) {
-          const { id } = JSON.parse(userData);
-          setCurrentUserId(id);
-        }
-      } catch (error) {
-        Alert.alert('Lỗi', 'Không thể lấy thông tin người dùng');
-      }
-    };
-    getCurrentUser();
-  }, []);
+  const [isReportVisible, setIsReportVisible] = useState(false);
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const fetchPostData = useCallback(async () => {
     try {
@@ -166,6 +185,39 @@ const TravelPostDetail = ({ route, navigation }) => {
     }
   }, [post, getLocationName]);
 
+  const handleMenuPress = useCallback(() => {
+    setIsMenuVisible(true);
+  }, []);
+
+  const handleReportPress = useCallback(() => {
+    setIsMenuVisible(false);
+    setTimeout(() => {
+      setIsReportVisible(true);
+    }, 300);
+  }, []);
+
+  const renderAuthorSection = () => (
+    <View style={styles.authorContainer}>
+      <Image
+        source={{ uri: post.author?.avatar }}
+        style={styles.authorAvatar}
+      />
+      <Text style={styles.authorName}>{post.author?.username}</Text>
+      {post.author?.id !== currentUserId && (
+        <TouchableOpacity 
+          style={styles.moreButton}
+          onPress={handleMenuPress}
+        >
+          <Ionicons name="ellipsis-horizontal" size={24} color="#000" />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+  const renderImageItem = useCallback(({ item }) => (
+    <ImageRenderer image={item} />
+  ), []);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -188,48 +240,38 @@ const TravelPostDetail = ({ route, navigation }) => {
       <Header navigation={navigation} />
       <ScrollView>
         <View style={styles.imageContainer}>
-          <ScrollView
+          <FlatList
+            data={post.images}
+            renderItem={renderImageItem}
+            keyExtractor={(item, index) => index.toString()}
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            onScroll={e => {
-              const offset = e.nativeEvent.contentOffset.x;
-              setCurrentImageIndex(Math.round(offset / width));
+            onMomentumScrollEnd={(event) => {
+              const newIndex = Math.floor(event.nativeEvent.contentOffset.x / width);
+              setCurrentImageIndex(newIndex);
             }}
-            scrollEventThrottle={16}
-          >
-            {post.images.map((image, index) => (
-              <Image
-                key={index}
-                source={{ uri: image }}
-                style={styles.image}
-                resizeMode="cover"
-              />
-            ))}
-          </ScrollView>
-          <View style={styles.pagination}>
-            {post.images.map((_, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.paginationDot,
-                  currentImageIndex === index && styles.paginationDotActive
-                ]}
-              />
-            ))}
-          </View>
+          />
+          
+          {post.images.length > 1 && (
+            <View style={styles.pagination}>
+              {post.images.map((_, index) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.paginationDot,
+                    currentImageIndex === index && styles.paginationDotActive
+                  ]}
+                />
+              ))}
+            </View>
+          )}
         </View>
 
         <View style={styles.detailsContainer}>
           <Text style={styles.title}>{post.title}</Text>
 
-          <View style={styles.authorContainer}>
-            <Image
-              source={{ uri: post.author?.avatar }}
-              style={styles.authorAvatar}
-            />
-            <Text style={styles.authorName}>{post.author?.username}</Text>
-          </View>
+          {renderAuthorSection()}
 
           {renderLikeButton()}
 
@@ -263,6 +305,38 @@ const TravelPostDetail = ({ route, navigation }) => {
           )}
         </View>
       </ScrollView>
+
+      {/* Menu Modal */}
+      <Modal
+        transparent
+        visible={isMenuVisible}
+        onRequestClose={() => setIsMenuVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1} 
+          onPress={() => setIsMenuVisible(false)}
+        >
+          <View style={styles.menuContainer}>
+            <TouchableOpacity 
+              style={styles.menuItem}
+              onPress={handleReportPress}
+            >
+              <Ionicons name="warning-outline" size={24} color="#FF3B30" />
+              <Text style={styles.menuText}>Báo cáo bài viết</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Report Form */}
+      <ReportForm
+        isVisible={isReportVisible}
+        onClose={() => setIsReportVisible(false)}
+        targetId={postId}
+        targetType="TravelPost"
+        onSubmit={() => setIsReportVisible(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -286,26 +360,38 @@ const styles = StyleSheet.create({
     width: width,
     height: width * 0.8,
     position: 'relative',
+    backgroundColor: '#f0f0f0',
   },
-  image: {
+  postImage: {
     width: width,
     height: width * 0.8,
+    ...Platform.select({
+      ios: {
+        backfaceVisibility: 'hidden',
+        transform: [{ perspective: 1000 }],
+      },
+    }),
   },
   pagination: {
     flexDirection: 'row',
     position: 'absolute',
     bottom: 16,
     alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     marginHorizontal: 4,
   },
   paginationDotActive: {
-    backgroundColor: '#fff',
+    width: 8,
+    height: 8,
+    backgroundColor: '#000',
+    transform: [{scale: 1.2}],
   },
   detailsContainer: {
     padding: 16,
@@ -424,7 +510,43 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   rightPlaceholder: {
-    width: 40, // Để cân bằng với backButton
+    width: 40, // Để cn bằng với backButton
+  },
+  moreButton: {
+    marginLeft: 'auto',
+    padding: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    padding: 15,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+  },
+  menuText: {
+    fontSize: 16,
+    marginLeft: 15,
+    color: '#FF3B30',
+  },
+  imageWrapper: {
+    width: width,
+    height: width * 0.8,
+    backgroundColor: '#1a1a1a',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 

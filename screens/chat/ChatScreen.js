@@ -258,20 +258,6 @@ const ChatScreen = ({ route, navigation }) => {
     useEffect(() => {
         if (!socket) return;
 
-        const handleIncomingCall = (callData) => {
-            // Nếu đang trong màn hình chat với người gọi
-            if (callData.callerId === chatPartnerId) {
-                navigation.navigate('VideoCallScreen', {
-                    channelName: callData.channelName,
-                    userId,
-                    receiverId: callData.callerId,
-                    receiverName: userName,
-                    receiverAvatar: userAvatar,
-                    isInitiator: false
-                });
-            }
-        };
-
         const handleCallRejected = (data) => {
             if (data.receiverId === chatPartnerId) {
                 Alert.alert('Thông báo', 'Cuộc gọi đã bị từ chối');
@@ -285,12 +271,10 @@ const ChatScreen = ({ route, navigation }) => {
             }
         };
 
-        socket.on('incoming_call', handleIncomingCall);
         socket.on('call_rejected', handleCallRejected);
         socket.on('call_ended', handleCallEnded);
 
         return () => {
-            socket.off('incoming_call', handleIncomingCall);
             socket.off('call_rejected', handleCallRejected);
             socket.off('call_ended', handleCallEnded);
         };
