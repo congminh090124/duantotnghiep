@@ -39,7 +39,7 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
         
       try {
           console.log('Sending CCCD data:', cccdData); // Thêm log để debug
-          const response = await fetch("https://moral-simple-lioness.ngrok-free.app/api/scan/update-cccd", {
+          const response = await fetch("https://www.adminftravel.xyz/api/scan/update-cccd", {
               method: 'POST',
               headers: {
                   'Content-Type': 'application/json',
@@ -53,7 +53,7 @@ const ConfirmCCCDScreen = ({ route, navigation }) => {
 
           if (response.ok) {
               Alert.alert('Success', 'Cập nhật thông tin CCCD thành công');
-              navigation.goBack(); 
+              navigation.navigate('TrangChu'); 
           } else {
               Alert.alert('Error', data.message || 'Failed to update CCCD information');
           }

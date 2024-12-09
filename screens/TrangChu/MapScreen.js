@@ -256,7 +256,7 @@ const MapScreen = ({ navigation }) => {
         const options = {
           method: 'GET',
           headers: {
-            'x-rapidapi-key': '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f',
+            'x-rapidapi-key': '057cd37262msh2a608699c67234ap104731jsn4fa717c7768d',
             'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
           }
         };
@@ -266,6 +266,21 @@ const MapScreen = ({ navigation }) => {
         setShowSuggestions(true);
       } catch (error) {
         console.error('Error fetching suggestions:', error);
+        if (error.response?.status === 429) {
+          Alert.alert(
+            'Thông báo',
+            'Đã vượt quá giới hạn tìm kiếm. Vui lòng thử lại sau ít phút.',
+            [{ text: 'OK' }]
+          );
+        } else {
+          Alert.alert(
+            'Lỗi',
+            'Không thể tìm kiếm địa điểm. Vui lòng thử lại sau.',
+            [{ text: 'OK' }]
+          );
+        }
+        setSearchResults([]);
+        setShowSuggestions(false);
       }
     } else {
       setSearchResults([]);

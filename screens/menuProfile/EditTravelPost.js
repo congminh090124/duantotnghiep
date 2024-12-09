@@ -25,7 +25,7 @@ import debounce from 'lodash/debounce';
 
 const { width } = Dimensions.get('window');
 const inputWidth = width - 40;
-const RAPID_API_KEY = 'f2a097fff0mshc9e7deae19d8053p11d780jsn906b698f08d0';
+const RAPID_API_KEY = '057cd37262msh2a608699c67234ap104731jsn4fa717c7768d';
 
 const EditTravelPost = () => {
   const route = useRoute();
@@ -167,7 +167,7 @@ const EditTravelPost = () => {
       const options = {
         method: 'GET',
         headers: {
-          'x-rapidapi-key': 'YOUR_RAPIDAPI_KEY',
+          'x-rapidapi-key': RAPID_API_KEY,
           'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
         }
       };

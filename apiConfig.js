@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-const API_BASE_URL = 'https://lobster-upward-sunbeam.ngrok-free.app';
+const API_BASE_URL = 'https://www.adminftravel.xyz';
 
 export const API_ENDPOINTS = {
   register: `${API_BASE_URL}/api/users/register`,
