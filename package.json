@@ -25,18 +25,21 @@
     "expo-blur": "~14.0.1",
     "expo-camera": "~16.0.9",
     "expo-constants": "^17.0.3",
+    "expo-file-system": "~18.0.4",
     "expo-haptics": "~14.0.0",
+    "expo-image": "~2.0.3",
     "expo-image-manipulator": "~13.0.5",
     "expo-image-picker": "~16.0.3",
     "expo-linear-gradient": "~14.0.1",
     "expo-location": "~18.0.3",
     "expo-media-library": "~17.0.3",
     "expo-notifications": "~0.29.11",
+    "expo-status-bar": "~2.0.0",
     "expo-web-browser": "~14.0.1",
     "firebase": "^10.14.0",
     "lodash": "^4.17.21",
     "react": "18.3.1",
-    "react-native": "^0.76.3",
+    "react-native": "0.76.3",
     "react-native-feather": "^1.1.2",
     "react-native-flash-message": "^0.4.2",
     "react-native-gesture-handler": "~2.20.2",
@@ -59,9 +62,7 @@
     "socket.io-client": "^4.8.0",
     "twilio-video": "^2.28.1",
     "typescript": "~5.3.3",
-    "expo-image": "~2.0.3",
-    "expo-file-system": "~18.0.4",
-    "expo-status-bar": "~2.0.0"
+    "react-native-svg": "15.8.0"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

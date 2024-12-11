@@ -34,7 +34,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "f8b16585-bf36-4410-af4b-68a2d0f57a53"
+        "projectId": "97b0c6d5-93eb-4802-bd2f-62a3417a660d"
       }
     },
     "plugins": [
@@ -45,6 +45,6 @@
         }
       ]
     ],
-    "owner": "cminh9124"
+    "owner": "duyet33"
   }
 }
