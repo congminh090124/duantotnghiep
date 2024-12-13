@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, TextInput, Alert, RefreshControl, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, FlatList,SafeAreaView, TextInput, Alert, RefreshControl, Platform } from 'react-native';
 import { toggleLikePost, addComment, getComments, getToken, getFeedPosts } from '../../apiConfig';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -212,10 +212,10 @@ const BlogPage = () => {
         
       >
         {post.user && post.user.avatar ? (
-          <Image
+          <ExpoImage
             source={{ uri: post.user.avatar }}
             style={styles.avatar}
-            onError={(error) => console.log('Avatar load error:', error)}
+            contentFit="cover"
           />
         ) : (
           <View style={[styles.avatar, styles.placeholderAvatar]}>
@@ -232,10 +232,10 @@ const BlogPage = () => {
       <Text style={styles.postContent}>{post.title}</Text>
 
       {post.images && post.images.length > 0 && (
-        <Image
+        <ExpoImage
           source={{ uri: post.images[0] }}
           style={styles.postImage}
-          onError={(error) => console.log('Post image load error:', error)}
+          contentFit="cover"
         />
       )}
     </TouchableOpacity>
@@ -301,10 +301,10 @@ const BlogPage = () => {
                     onPress={() => handleUserPress(item.user?._id)}
                   >
                     {item.userAvatar ? (
-                      <Image
+                      <ExpoImage
                         source={{ uri: item.userAvatar }}
                         style={styles.commentAvatar}
-                        onError={(error) => console.log('Comment avatar load error:', error)}
+                        contentFit="cover"
                       />
                     ) : (
                       <View style={[styles.commentAvatar, styles.placeholderAvatar]}>

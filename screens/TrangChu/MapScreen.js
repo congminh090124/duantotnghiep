@@ -22,6 +22,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ENDPOINTS, getAllTravelPosts } from '../../apiConfig';
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
+import { Image as ExpoImage } from 'expo-image';
 
 const { width, height } = Dimensions.get('window');
 
@@ -174,12 +175,11 @@ const MapScreen = ({ navigation }) => {
               <View style={styles.imageSlider}>
                 <ScrollView horizontal pagingEnabled>
                   {post.images?.map((image, index) => (
-                    <Image
+                    <ExpoImage
                       key={index}
                       source={{ uri: image }}
                       style={styles.postImage}
-                      resizeMode="cover"
-                     
+                      contentFit="cover"
                     />
                   ))}
                 </ScrollView>
@@ -191,12 +191,12 @@ const MapScreen = ({ navigation }) => {
                   style={styles.authorSection}
                   onPress={handleUserPress}
                 >
-                  <Image
+                  <ExpoImage
                     source={{ 
                       uri: post.author?.avatar || 'https://via.placeholder.com/50'
                     }}
                     style={styles.authorAvatar}
-                
+                    contentFit="cover"
                   />
                   <View>
                     <Text style={styles.authorName}>
@@ -409,12 +409,13 @@ const MapScreen = ({ navigation }) => {
                 styles.markerContainer,
                 selectedPost?._id === post._id && styles.selectedMarker
               ]}>
-                <Image
+                <ExpoImage
                   source={{ 
                     uri: post.author?.avatar || 'https://via.placeholder.com/44'
                   }}
                   style={styles.markerAvatar}
-                  defaultSource={require('../../assets/default-avatar.png')}
+                  contentFit="cover"
+                  placeholder={require('../../assets/default-avatar.png')}
                 />
                 <Text style={styles.markerUsername}>
                   {post.author?.username || 'Anonymous'}
