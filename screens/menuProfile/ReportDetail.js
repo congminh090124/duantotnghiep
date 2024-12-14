@@ -31,7 +31,7 @@ const ReportDetail = () => {
         throw new Error('Invalid report data');
       }
     } catch (error) {
-      console.error('Error fetching report detail:', error);
+     
       Alert.alert('Lỗi', 'Không thể tải thông tin báo cáo');
     } finally {
       setLoading(false);

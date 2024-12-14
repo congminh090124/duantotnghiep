@@ -9,22 +9,7 @@ const XacMinhDanhTinh = () => {
     navigation.navigate('VerifyIDScreen');
   };
 
-  const handleSkip = () => {
-    Alert.alert(
-      'Cảnh báo',
-      'Bạn có chắc muốn bỏ qua xác minh danh tính? Điều này có thể hạn chế một số tính năng của ứng dụng.',
-      [
-        {
-          text: 'Hủy',
-          style: 'cancel',
-        },
-        {
-          text: 'Đồng ý',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
-  };
+ 
 
   return (
     <SafeAreaView style={styles.container}>
@@ -45,9 +30,7 @@ const XacMinhDanhTinh = () => {
         <Text style={styles.buttonText}>Xác Minh Ngay</Text>
       </TouchableOpacity>
       
-      <TouchableOpacity style={[styles.button, styles.skipButton]} onPress={handleSkip}>
-        <Text style={[styles.buttonText, styles.skipButtonText]}>Bỏ Qua</Text>
-      </TouchableOpacity>
+     
     </View>
     </SafeAreaView>
   );

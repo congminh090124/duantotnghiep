@@ -21,7 +21,7 @@ const TravelPostManager = () => {
       const postsWithAddress = await processLocationBatches(data);
       setTravelPosts(postsWithAddress);
     } catch (error) {
-      console.error('Error fetching travel posts:', error);
+     
       Alert.alert('Lỗi', 'Không thể tải danh sách bài viết. Vui lòng thử lại.');
     } finally {
       setLoading(false);
@@ -53,7 +53,7 @@ const TravelPostManager = () => {
      
       return result;
     } catch (error) {
-      console.error('Error formatting date:', error);
+    
       return 'Lỗi định dạng ngày';
     }
   };
@@ -69,7 +69,7 @@ const TravelPostManager = () => {
           );
           Alert.alert('Thành công', 'Bài viết đã được cập nhật');
         } catch (error) {
-          console.error('Lỗi khi cập nhật bài viết:', error);
+       
           Alert.alert('Lỗi', 'Không thể cập nhật bài viết. Vui lòng thử lại.');
         }
       }
@@ -97,7 +97,7 @@ const TravelPostManager = () => {
                 throw new Error('Không nhận được phản hồi xác nhận từ server');
               }
             } catch (error) {
-              console.error('Lỗi khi xóa bài viết:', error);
+             
               Alert.alert(
                 "Lỗi",
                 error.message || "Không thể xóa bài viết. Vui lòng thử lại sau."

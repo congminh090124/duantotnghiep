@@ -293,7 +293,7 @@ const MapScreen = ({ navigation }) => {
       const url = `https://google-map-places.p.rapidapi.com/maps/api/place/details/json?place_id=${placeId}&language=vi&region=vi`;
       const response = await axios.get(url, {
         headers: {
-          'x-rapidapi-key': '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f',
+          'x-rapidapi-key': '057cd37262msh2a608699c67234ap104731jsn4fa717c7768d',
           'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
         }
       });

@@ -5,7 +5,8 @@ import {
   FlatList, 
   StyleSheet, 
   ActivityIndicator, 
-  RefreshControl 
+  RefreshControl,
+  TouchableOpacity
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -96,11 +97,21 @@ const NotificationsScreen = () => {
       'follow': { screen: 'UserProfile', paramKey: 'userId', idField: 'sender' },
       'new_post': { screen: 'PostDetailScreen', paramKey: 'postId', idField: 'post' },
       'mention': { screen: 'PostDetailScreen', paramKey: 'postId', idField: 'post' },
-      'request': { screen: 'UserProfile', paramKey: 'userId', idField: 'sender' }
+      'request': { screen: 'UserProfile', paramKey: 'userId', idField: 'sender' },
+      'report_status_update': { screen: 'ReportDetail', paramKey: 'reportId', idField: 'reportId' }
     };
 
     const navConfig = navigationMap[notification.type];
-    if (!navConfig) return;
+    if (!navConfig) {
+      if (notification.type === 'report_status_update') {
+        const reportId = notification.metadata?.reportId;
+        if (reportId) {
+          navigation.navigate('ReportDetail', { reportId });
+          return;
+        }
+      }
+      return;
+    }
 
     const id = notification[navConfig.idField];
     if (!id) {
@@ -236,6 +247,20 @@ const styles = StyleSheet.create({
     color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
+  },
+  unreadNotification: {
+    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+  },
+  notificationIcon: {
+    marginRight: 12,
+  },
+  notificationTextContainer: {
+    flex: 1,
+  },
+  notificationTime: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginTop: 4,
   },
 });
 

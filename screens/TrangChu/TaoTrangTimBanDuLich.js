@@ -69,7 +69,7 @@ const TaoTrangTimBanDuLich = () => {
         console.log('User profile data:', data);
         setProfileData(data);
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+       
       } finally {
         setLoading(false);
       }
@@ -217,7 +217,7 @@ const TaoTrangTimBanDuLich = () => {
         return response.data.results[0].formatted_address;
       }
     } catch (error) {
-      console.error('Error getting place name:', error);
+    
     }
     return null;
   };
@@ -258,7 +258,7 @@ const TaoTrangTimBanDuLich = () => {
         Alert.alert('Không tìm thấy', 'Không tìm thấy địa điểm này');
       }
     } catch (error) {
-      console.error('Lỗi tìm kiếm:', error);
+    
       Alert.alert('Lỗi', 'Không thể tìm kiếm địa điểm');
     }
     
@@ -287,7 +287,7 @@ const TaoTrangTimBanDuLich = () => {
         setShowMap(false);
         setTempDestination(null);
       } catch (error) {
-        console.error('Error getting place name:', error);
+      
         // Fallback to coordinates if getting place name fails
         setDestinationName(`${tempDestination.latitude.toFixed(2)}, ${tempDestination.longitude.toFixed(2)}`);
       }
@@ -370,7 +370,7 @@ const TaoTrangTimBanDuLich = () => {
         Alert.alert('Thành công', 'Bài viết đã được tạo.');
         navigation.goBack();
       } catch (error) {
-        console.error('Error creating post:', error);
+      
         Alert.alert('Lỗi', `Không thể tạo bài viết: ${error.message}`);
       } finally {
         setIsPosting(false);
@@ -390,7 +390,7 @@ const TaoTrangTimBanDuLich = () => {
         const options = {
           method: 'GET',
           headers: {
-            'x-rapidapi-key': '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f',
+            'x-rapidapi-key': '057cd37262msh2a608699c67234ap104731jsn4fa717c7768d',
             'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
           }
         };
@@ -399,7 +399,7 @@ const TaoTrangTimBanDuLich = () => {
         setSearchResults(response.data.predictions);
         setShowSuggestions(true);
       } catch (error) {
-        console.error('Error fetching suggestions:', error);
+        
       }
     } else {
       setSearchResults([]);
@@ -440,7 +440,7 @@ const TaoTrangTimBanDuLich = () => {
       setHasSearchResult(true);
       setIsMapReady(true);
     } catch (error) {
-      console.error('Error fetching place details:', error);
+     
       Alert.alert('Lỗi', 'Không thể lấy thông tin địa điểm');
     }
   };

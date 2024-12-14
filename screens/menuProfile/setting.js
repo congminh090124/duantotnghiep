@@ -1,14 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSocket } from '../../context/SocketContext';
+import { getUserProfile } from '../../apiConfig';
 
 const Settings = () => {
   const navigation = useNavigation();
   const [isVerified, setIsVerified] = useState(false);
   const { disconnectSocket } = useSocket();
+
+  useEffect(() => {
+    checkVerificationStatus();
+  }, []);
+
+  const checkVerificationStatus = async () => {
+    try {
+      const profileData = await getUserProfile();
+      setIsVerified(profileData.xacMinhDanhTinh);
+      
+    } catch (error) {
+     
+    }
+  };
 
   const handleChangePassword = () => {
     navigation.navigate('ChangePassword');
@@ -16,9 +31,23 @@ const Settings = () => {
 
   const handleIdentityVerification = () => {
     if (isVerified) {
-      Alert.alert('Đã xác minh', 'Danh tính của bạn đã được xác minh.');
+      Alert.alert(
+        'Đã xác minh',
+        'Danh tính của bạn đã được xác minh.',
+        [
+          {
+            text: 'OK',
+            onPress: () => console.log('OK Pressed')
+          }
+        ]
+      );
     } else {
-      navigation.navigate('IdentityVerification');
+      navigation.navigate('IdentityVerification', {
+        onVerificationComplete: () => {
+          setIsVerified(true);
+          checkVerificationStatus();
+        }
+      });
     }
   };
 
@@ -57,7 +86,7 @@ const Settings = () => {
                   routes: [{ name: 'DangNhap' }],
                 });
               } catch (error) {
-                console.error('Logout error:', error);
+               
                 Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
               }
             },
@@ -66,7 +95,7 @@ const Settings = () => {
         ]
       );
     } catch (error) {
-      console.error('Logout error:', error);
+     
       Alert.alert('Lỗi', 'Không thể đăng xuất. Vui lòng thử lại.');
     }
   };

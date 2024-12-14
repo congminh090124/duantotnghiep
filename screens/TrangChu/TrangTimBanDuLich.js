@@ -359,7 +359,7 @@ const MainScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-
+  const navigation = useNavigation();
   const fetchPosts = useCallback(async () => {
     try {
       const fetchedPosts = await getAllTravelPosts();

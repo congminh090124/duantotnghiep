@@ -26,6 +26,11 @@ const VerifyIDScreen = () => {
     }, [isFront]);
 
     const takePicture = async () => {
+        if (image) {
+            setImage(null);
+            return;
+        }
+
         if (cameraRef.current && cameraReady) {
             try {
                 const picture = await cameraRef.current.takePictureAsync();

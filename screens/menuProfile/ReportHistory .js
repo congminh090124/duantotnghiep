@@ -39,7 +39,7 @@ const ReportHistory = () => {
         throw new Error(response.message || 'Không thể tải danh sách báo cáo');
       }
     } catch (error) {
-      console.error('Error fetching reports:', error);
+     
       Alert.alert('Lỗi', 'Không thể tải danh sách báo cáo');
     } finally {
       setLoading(false);
