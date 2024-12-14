@@ -138,6 +138,24 @@ const NotificationsScreen = () => {
       showErrorMessage('Lỗi', 'Không thể xử lý thông báo');
     }
   };
+  const getNotificationContent = (notification) => {
+    switch (notification.type) {
+     
+      case 'travel_request':
+        return {
+          icon: 'airplane-outline',
+          message: `${notification.sender.username} muốn đi du lịch cùng bạn`,
+          color: '#2ecc71'
+        };
+      default:
+        return {
+          icon: 'notifications-outline',
+          message: 'Bạn có thông báo mới',
+          color: '#3498db'
+        };
+    }
+  };
+
 
   // Delete Notification Handler
   const handleDeleteNotification = async (notificationId) => {

@@ -50,6 +50,7 @@ import PostManager from './screens/menuProfile/Post-manager';
 import EditPost from './screens/menuProfile/EditPost';
 import EditTravelPost from './screens/menuProfile/EditTravelPost';
 import BlockedUsers from './screens/menuProfile/BlockedUsers';
+import Support from './screens/Support';
 
 import ReportForm from './screens/report/ReportForm';
 
@@ -326,8 +327,12 @@ const App = () => {
               name="OnboardingScreen"
               component={OnboardingScreen}
             />
-            
-
+             <Stack.Screen
+              key="Support"
+              name="Support"
+              component={Support}
+            />
+          
           </Stack.Navigator>
 
           {/* Chỉ giữ lại một FlashMessage component ở đây với cấu hình đầy đủ */}

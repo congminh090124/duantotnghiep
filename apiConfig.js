@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
   searchTravelPosts: `${API_BASE_URL}/api/travel-posts/a/search`,
   searchTravelPostsByLocation: `${API_BASE_URL}/api/travel-posts/search-by-location`,
   searchTravelPostsByDate: `${API_BASE_URL}/api/travel-posts/search-by-date`,
+  NOTIFICATIONS: `${API_BASE_URL}/api/notifications`,
   chat: {
     history: `${API_BASE_URL}/api/chat/history`,
     conversations: `${API_BASE_URL}/api/chat/conversations`,
@@ -48,6 +49,7 @@ export const API_ENDPOINTS = {
     adminUpdate: `${API_BASE_URL}/api/reports/admin`,
     userDetail: `${API_BASE_URL}/api/reports/user`,
   },
+  
 };
 
 
@@ -91,7 +93,7 @@ export const editPost = async (postId, { title, images, newImages }) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in editPost:', error);
+    
     throw error;
   }
 };
@@ -117,7 +119,7 @@ export const deletePost = async (postId) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in deleteTravelPost:', error);
+   
     throw error;
   }
 };
@@ -193,7 +195,7 @@ export const editTravelPost = async (postId, postData) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in editTravelPost:', error);
+   
     throw error;
   }
 };
@@ -221,7 +223,7 @@ export const deleteTravelPost = async (postId) => {
 
     return data;
   } catch (error) {
-    console.error('Error in deleteTravelPost:', error);
+   
     throw error;
   }
 };
@@ -248,7 +250,7 @@ export const forgotPassword = async (email) => {
     });
     return handleResponse(response);
   } catch (error) {
-    console.error('Error in forgotPassword:', error);
+   
     throw error;
   }
 };
@@ -265,7 +267,7 @@ export const resetPassword = async (email, otp, newPassword) => {
     });
     return handleResponse(response);
   } catch (error) {
-    console.error('Error in resetPassword:', error);
+   
     throw error;
   }
 };
@@ -290,7 +292,7 @@ export const changePassword = async (currentPassword, newPassword) => {
     }
     return await response.json();
   } catch (error) {
-    console.error('Error changing password:', error);
+   
     throw error;
   }
 };
@@ -319,7 +321,7 @@ export const getMyTravelPosts = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching user travel posts:', error);
+    
     throw error;
   }
 };
@@ -348,11 +350,33 @@ export const getAllTravelPosts = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in getAllTravelPosts:', error);
+    
     throw error;
   }
 };
+export const sendTravelRequest = async (recipientId, senderId, postId) => {
+  try {
+    const response = await fetch(`${API_ENDPOINTS.NOTIFICATIONS}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        recipient: recipientId,
+        sender: senderId,
+        type: 'travel_request', // Đảm bảo type khớp với enum trong schema
+        post: postId
+      })
+    });
 
+    const data = await response.json();
+    return data;
+  } catch (error) {
+   
+    throw error;
+  }
+};
 export const getUserPosts = async () => {
   try {
     const token = await getToken();
@@ -374,7 +398,7 @@ export const getUserPosts = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in getUserPosts:', error);
+    
     throw error;
   }
 };
@@ -401,7 +425,7 @@ export const showPostWithID = async (postId) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in showPostWithID:', error);
+    
     throw error;
   }
 };
@@ -439,7 +463,7 @@ export const createPost = async (postData) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in createPost:', error);
+    
     throw error;
   }
 };
@@ -480,7 +504,7 @@ export const createPostTravel = async (postData) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in createPostTravel:', error);
+    
     throw error;
   }
 };
@@ -488,7 +512,7 @@ export const saveToken = async (token) => {
   try {
     await AsyncStorage.setItem('userToken', token);
   } catch (error) {
-    console.error('Lỗi khi lưu token:', error);
+  
   }
 };
 
@@ -497,7 +521,7 @@ export const getToken = async () => {
   try {
     return await AsyncStorage.getItem('userToken');
   } catch (error) {
-    console.error('Lỗi khi lấy token:', error);
+   
     return null;
   }
 };
@@ -523,7 +547,7 @@ export const login = async (credentials) => {
     
     return data;
   } catch (error) {
-    console.error('Lỗi khi đăng nhập:', error);
+  
     throw error;
   }
 };
@@ -550,7 +574,7 @@ export const register = async (userData) => {
     }
     return data;
   } catch (error) {
-    console.error('Lỗi khi đăng ký:', error);
+   
     throw error;
   }
 };
@@ -579,7 +603,7 @@ export const getUserProfileTravel = async () => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error response body:', errorText);
+    
       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
@@ -587,7 +611,7 @@ export const getUserProfileTravel = async () => {
     
     return data;
   } catch (error) {
-    console.error('Lỗi khi lấy thông tin cá nhân:', error);
+   
     throw error;
   }
 };
@@ -611,7 +635,7 @@ export const getUserProfile = async () => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Error response body:', errorText);
+     
       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
@@ -622,7 +646,7 @@ export const getUserProfile = async () => {
       xacMinhDanhTinh: data.xac_minh_danh_tinh
     };
   } catch (error) {
-    console.error('Lỗi khi lấy thông tin cá nhân:', error);
+   
     throw error;
   }
 };
@@ -658,7 +682,7 @@ export const updateAvatar = async (imageUri) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error updating avatar:', error);
+   
     throw error;
   }
 };
@@ -681,7 +705,7 @@ export const updateProfile = async (profileData) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error updating profile:', error);
+   
     throw error;
   }
 };
@@ -705,7 +729,7 @@ export const getAllPostsMap = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in getAllPosts:', error);
+    
     throw error;
   }
 };
@@ -729,8 +753,7 @@ export const getAllPosts = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error in getAllPosts:', error);
-    throw error;
+   
   }
 };
 export const toggleLikePost = async (postId) => {
@@ -757,7 +780,7 @@ export const toggleLikePost = async (postId) => {
   
     return data;
   } catch (error) {
-    console.error('Error toggling like:', error);
+   
     throw error;
   }
 };
@@ -785,7 +808,7 @@ export const addComment = async (postId, content) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error adding comment:', error);
+   
     throw error;
   }
 };
@@ -802,7 +825,7 @@ export const getComments = async (postId) => {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error('Error fetching comments:', error);
+   
     throw error;
   }
 };
@@ -827,11 +850,11 @@ export const getUserProfileById = async (userId) => {
     try {
       return JSON.parse(responseText);
     } catch (e) {
-      console.error('JSON parse error:', e);
+     
       throw new Error(`Invalid JSON response: ${responseText}`);
     }
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    
     throw error;
   }
 };
@@ -859,7 +882,7 @@ export const getUserPostsWithID = async (userId) => {
 
     return data;
   } catch (error) {
-    console.error('Error fetching user posts:', error);
+    
     throw error;
   }
 };
@@ -879,7 +902,7 @@ export const followUser = async (userId) => {
     }
     return await response.json();
   } catch (error) {
-    console.error('Error following user:', error);
+  
     throw error;
   }
 };
@@ -899,7 +922,7 @@ export const unfollowUser = async (userId) => {
     }
     return await response.json();
   } catch (error) {
-    console.error('Error unfollowing user:', error);
+   
     throw error;
   }
 };
@@ -938,7 +961,7 @@ export const getFollowers = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching followers:', error);
+  
     throw error;
   }
 };
@@ -964,7 +987,7 @@ export const getFollowing = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching following users:', error);
+   
     throw error;
   }
 };
@@ -993,7 +1016,7 @@ export const getTravelPostDetail = async (postId) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching travel post detail:', error);
+    
     throw error;
   }
 };
@@ -1021,7 +1044,7 @@ export const getRelatedTravelPosts = async (postId) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching related posts:', error);
+   
     throw error;
   }
 };
@@ -1056,7 +1079,7 @@ export const toggleLikeTravelPost = async (postId) => {
       message: data.message
     };
   } catch (error) {
-    console.error('Error in toggleLikeTravelPost:', error);
+   
     return {
       success: false,
       message: error.message || 'Failed to toggle like'
@@ -1089,7 +1112,7 @@ export const searchTravelPostsByLocation = async ({ latitude, longitude, radius 
 
     return await response.json();
   } catch (error) {
-    console.error('Error searching travel posts by location:', error);
+    
     throw error;
   }
 };
@@ -1125,7 +1148,7 @@ export const searchTravelPostsByDate = async ({ startDate, endDate }) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error searching travel posts by date:', error);
+    
     throw error;
   }
 };
@@ -1147,7 +1170,7 @@ export const getUserTravelPosts = async (userId) => {
     const data = await response.json();
     return data.posts; // Trả về mảng posts từ response
   } catch (error) {
-    console.error('Error fetching user travel posts:', error);
+   
     throw error;
   }
 };
@@ -1174,7 +1197,7 @@ export const blockUser = async (userId) => {
 
     return data;
   } catch (error) {
-    console.error('Error blocking user:', error);
+   
     throw error;
   }
 };
@@ -1201,7 +1224,7 @@ export const unblockUser = async (userId) => {
 
     return data;
   } catch (error) {
-    console.error('Error unblocking user:', error);
+   
     throw error;
   }
 };
@@ -1229,7 +1252,7 @@ export const getBlockedUsers = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error getting blocked users:', error);
+    
     throw error;
   }
 };
@@ -1257,7 +1280,7 @@ export const getBlockStatus = async (userId) => {
 
     return data;
   } catch (error) {
-    console.error('Error checking block status:', error);
+    
     throw error;
   }
 };
@@ -1302,7 +1325,7 @@ export const searchTravelPosts = async ({ query, page = 1, limit = 10 }) => {
     return data;
 
   } catch (error) {
-    console.error('Error searching travel posts:', error);
+
     throw error;
   }
 };
@@ -1331,7 +1354,7 @@ export const createReport = async (reportData) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error creating report:', error);
+   
     throw error;
   }
 };
@@ -1358,7 +1381,7 @@ export const getMyReports = async () => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching reports:', error);
+
     throw error;
   }
 };
@@ -1385,7 +1408,7 @@ export const getReportDetail = async (reportId) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error fetching report details:', error);
+  
     throw error;
   }
 };

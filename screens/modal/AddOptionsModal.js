@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal,Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const AddOptionsModal = ({ isVisible, onClose }) => {
@@ -14,7 +14,15 @@ const AddOptionsModal = ({ isVisible, onClose }) => {
 
   const handleOptionPress = (screen) => {
     onClose();
-    navigation.navigate(screen);
+    if (screen === 'DangKiTinhNguyenVienScreen') {
+      Alert.alert(
+        "Thông báo",
+        "Chức năng này đang được phát triển và sẽ sớm ra mắt!",
+        [{ text: "OK" }]
+      );
+    } else {
+      navigation.navigate(screen);
+    }
   };
 
   return (

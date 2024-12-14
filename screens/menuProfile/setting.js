@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSocket } from '../../context/SocketContext';
 import { getUserProfile } from '../../apiConfig';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Settings = () => {
   const navigation = useNavigation();
@@ -101,6 +102,7 @@ const Settings = () => {
   };
 
   return (
+   
     <View style={styles.container}>
       <Text style={styles.title}>Cài đặt</Text>
 
@@ -138,11 +140,7 @@ const Settings = () => {
         <Ionicons name="chevron-forward-outline" size={24} color="gray" />
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.option, styles.logoutOption]} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={24} color="red" style={styles.icon} />
-        <Text style={[styles.optionText, styles.logoutText]}>Đăng xuất</Text>
-        <Ionicons name="chevron-forward-outline" size={24} color="red" />
-      </TouchableOpacity>
+     
     </View>
   );
 };
@@ -152,11 +150,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     padding: 20,
+    top:"3%"
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 30,
   },
   option: {
     flexDirection: 'row',
