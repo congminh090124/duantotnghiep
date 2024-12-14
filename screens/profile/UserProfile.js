@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Location from 'expo-location';
 import { getUserProfileById, getUserPostsWithID, followUser, unfollowUser, getUserTravelPosts, blockUser, unblockUser, getBlockStatus, getToken, API_ENDPOINTS } from '../../apiConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getLocationNameFromCoords } from '../service/geocoding';
 
 import BlockedProfileView from '../report/BlockedProfileView';
 import ReportForm from '../report/ReportForm';
@@ -103,82 +104,32 @@ const PersonalInfo = ({ userProfile }) => {
 };
 
 const PostItem = React.memo(({ post, activeTab, onPress }) => {
-  const [locationName, setLocationName] = useState('No location');
+  const [locationName, setLocationName] = useState('Đang tải...');
 
   useEffect(() => {
-    const getLocationName = async () => {
-      // Log dữ liệu location từ post
-      console.log('Post Location Data:', {
-        postId: post._id,
-        location: post.location,
-        title: post.title
-      });
-
-      // Kiểm tra nếu location là GeoJSON format
-      if (post.location?.coordinates) {
-        try {
-          // GeoJSON coordinates là [longitude, latitude]
-          const result = await Location.reverseGeocodeAsync({
-            longitude: post.location.coordinates[0],
-            latitude: post.location.coordinates[1]
-          });
-
-          console.log('Geocoding Result:', result);
-
-          if (result[0]) {
-            const address = [
-              result[0].street,
-              result[0].district,
-              result[0].city,
-              result[0].region,
-            ].filter(Boolean).join(', ');
-            console.log('Formatted Address:', address);
-            setLocationName(address || 'No location');
-          }
-        } catch (error) {
-          console.error('Geocoding error:', error);
-          setLocationName('No location');
+    const getLocation = async () => {
+      try {
+        let coordinates;
+        if (activeTab === 'travel') {
+          coordinates = post.destination?.coordinates || post.currentLocation?.coordinates;
+        } else {
+          coordinates = post.location?.coordinates;
         }
-      } else if (activeTab === 'travel') {
-        // Đối với travel posts, thử lấy địa điểm từ destination hoặc currentLocation
-        try {
-          const location = post.destination || post.currentLocation;
-          if (location?.coordinates) {
-            const result = await Location.reverseGeocodeAsync({
-              longitude: location.coordinates[0],
-              latitude: location.coordinates[1]
-            });
 
-            if (result[0]) {
-              const address = [
-                result[0].street,
-                result[0].district,
-                result[0].city,
-                result[0].region,
-              ].filter(Boolean).join(', ');
-              setLocationName(address || 'No location');
-            }
-          }
-        } catch (error) {
-          console.error('Travel post location error:', error);
-          setLocationName('No location');
+        if (coordinates) {
+          const address = await getLocationNameFromCoords(coordinates);
+          setLocationName(address);
+        } else {
+          setLocationName('Không có địa điểm');
         }
+      } catch (error) {
+        console.error('Error getting location:', error);
+        setLocationName('Không thể tải địa điểm');
       }
     };
 
-    getLocationName();
+    getLocation();
   }, [post.location, post.destination, post.currentLocation, activeTab]);
-
-  // Log render của PostItem
-  console.log('Rendering PostItem:', {
-    postId: post._id,
-    title: post.title,
-    locationName,
-    activeTab,
-    hasLocation: post.location?.coordinates ? 'yes' : 'no',
-    hasDestination: post.destination?.coordinates ? 'yes' : 'no',
-    hasCurrentLocation: post.currentLocation?.coordinates ? 'yes' : 'no'
-  });
 
   return (
     <TouchableOpacity 
@@ -206,7 +157,7 @@ const PostItem = React.memo(({ post, activeTab, onPress }) => {
       
       <View style={styles.postInfo}>
         <Text style={styles.postTitle} numberOfLines={1}>
-          {post.title || 'Untitled'}
+          {post.title || 'Chưa có tiêu đề'}
         </Text>
         
         {activeTab === 'travel' && (
@@ -218,7 +169,7 @@ const PostItem = React.memo(({ post, activeTab, onPress }) => {
             {post.startDate && (
               <Text style={styles.travelDate}>
                 <Ionicons name="calendar-outline" size={12} color="#666" />
-                {new Date(post.startDate).toLocaleDateString()}
+                {new Date(post.startDate).toLocaleDateString('vi-VN')}
               </Text>
             )}
           </>
@@ -314,12 +265,7 @@ const UserProfile = ({ route }) => {
           getUserTravelPosts(userId)
         ]);
         
-        // Log dữ liệu fetch được
-        console.log('Fetched User Data:', {
-          profile: profileData,
-          normalPosts: postsData,
-          travelPosts: travelPostsData
-        });
+       
 
         setUserProfile(profileData);
         setNormalPosts(postsData);
@@ -400,11 +346,7 @@ const UserProfile = ({ route }) => {
 
   const handlePostPress = useCallback((post) => {
     // Log khi user nhấn vào post
-    console.log('Post Pressed:', {
-      postId: post._id,
-      title: post.title,
-      activeTab
-    });
+   
 
     if (!post?._id) {
       Alert.alert('Lỗi', 'Không thể mở bài viết này');
@@ -582,13 +524,6 @@ const UserProfile = ({ route }) => {
   };
 
   // Log mỗi khi activeTab thay đổi
-  useEffect(() => {
-    console.log('Active Tab Changed:', {
-      activeTab,
-      normalPostsCount: normalPosts.length,
-      travelPostsCount: travelPosts.length
-    });
-  }, [activeTab, normalPosts.length, travelPosts.length]);
 
   const renderHeader = useCallback(() => (
     <View style={styles.header}>
