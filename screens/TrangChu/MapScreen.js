@@ -63,7 +63,7 @@ const MapScreen = ({ navigation }) => {
   const fetchPosts = useCallback(async () => {
     try {
       const result = await getAllTravelPosts();
-      console.log('Travel Posts Data:', JSON.stringify(result, null, 2));
+      //console.log('Travel Posts Data:', JSON.stringify(result, null, 2));
       if (Array.isArray(result)) {
         setPosts(result);
       } else {
@@ -704,7 +704,7 @@ const styles = StyleSheet.create({
   },
   searchContainer: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
+    top: Platform.OS === 'ios' ? 50 : 120,
     left: 20,
     right: 20,
     zIndex: 1,

@@ -454,6 +454,8 @@ const ChatScreen = ({ route, navigation }) => {
 
     // Cập nhật input container để disable khi bị block
     const renderInputContainer = () => {
+        const canSend = inputMessage.trim().length > 0 && !blockStatus.isBlocked;
+        
         return (
             <View style={styles.inputContainer}>
                 <TextInput
@@ -462,19 +464,20 @@ const ChatScreen = ({ route, navigation }) => {
                     onChangeText={handleTyping}
                     placeholder="Nhập tin nhắn..."
                     multiline
+                    editable={!blockStatus.isBlocked}
                 />
                 <TouchableOpacity 
                     style={[
                         styles.sendButton,
-                        !inputMessage.trim() && styles.sendButtonDisabled
+                        !canSend && styles.sendButtonDisabled
                     ]}
                     onPress={sendMessage}
-                    disabled={!inputMessage.trim()}
+                    disabled={!canSend}
                 >
                     <Ionicons 
                         name="send" 
                         size={24} 
-                        color={inputMessage.trim() ? "#0084ff" : "#999"} 
+                        color={canSend ? "#fff" : "#999"} 
                     />
                 </TouchableOpacity>
             </View>
@@ -584,13 +587,13 @@ const styles = StyleSheet.create({
   sendButton: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0084ff',
+    width: 40,
+    height: 40,
     borderRadius: 20,
-    paddingHorizontal: 20,
+    backgroundColor: '#0084ff',
   },
-  sendButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  sendButtonDisabled: {
+    backgroundColor: '#f0f2f5',
   },
   headerContainer: {
     flexDirection: 'row',

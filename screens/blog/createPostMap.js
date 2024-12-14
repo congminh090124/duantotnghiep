@@ -41,7 +41,7 @@ const PostCreationScreen = () => {
     const fetchUserProfile = async () => {
       try {
         const data = await getUserProfile();
-        console.log('User profile data:', data);
+        //console.log('User profile data:', data);
         setProfileData(data);
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -99,7 +99,7 @@ const PostCreationScreen = () => {
 
   const handleAddImages = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: [ImagePicker.MediaType.IMAGE],  // Sử dụng MediaType thay vì MediaTypeOptions
       allowsMultipleSelection: true,
       aspect: [4, 3],
       quality: 1,

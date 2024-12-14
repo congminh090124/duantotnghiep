@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    marginTop: 0,
+    marginTop: '30%',
   },
   postCard: {
     backgroundColor: '#fff',
