@@ -16,7 +16,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BOTTOM_TAB_HEIGHT = Platform.OS === 'ios' ? 115 : -60;
 const ITEM_HEIGHT = SCREEN_HEIGHT - BOTTOM_TAB_HEIGHT;
 
-// Tính toán tỷ lệ scale dựa trên màn hình
+
 const scale = SCREEN_WIDTH / 320; 
 const normalize = (size) => {
   const newSize = size * scale;
@@ -110,11 +110,24 @@ const UserImages = React.memo(({ post }) => {
   const handleMessage = useCallback(() => {
     navigation.navigate('ChatScreen', {
       userId: post.author._id,
-      userName: post.author.username, 
-      userAvatar: post.author.avatar
+      userName: post.author.username,
+      userAvatar: post.author.avatar,
+      blockStatus: {
+        isBlocked: false,
+        isBlockedBy: false,
+        canMessage: true
+      }
     });
   }, [navigation, post.author]);
-  const handleTravelTogether = useCallback(() => console.log('Muốn đi du lịch cùng', post.author.username), [post.author.username]);
+  const handleTravelTogether = useCallback(() => {
+    Alert.alert(
+      "Thông báo",
+      "Chức năng này đang được phát triển và sẽ sớm ra mắt!",
+      [
+        { text: "OK", onPress: () => console.log("OK Pressed") }
+      ]
+    );
+  }, []);
 
   useEffect(() => {
     if (post.images && post.images.length > 0) {
@@ -271,7 +284,7 @@ const UserInfo = React.memo(({ post }) => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.postTitle}>{post.title}</Text>
+        <ExpandableTitle title={post.title} />
         
         <View style={styles.dateContainer}>
           <Text style={styles.dateText}>
@@ -305,6 +318,29 @@ const UserInfo = React.memo(({ post }) => {
         )}
       </View>
     </View>
+  );
+});
+
+const ExpandableTitle = React.memo(({ title }) => {
+  const [expanded, setExpanded] = useState(false);
+  const maxLines = 2;
+
+  return (
+    <TouchableOpacity 
+      style={styles.titleContainer}
+      onPress={() => setExpanded(!expanded)}
+      activeOpacity={0.8}
+    >
+      <Text
+        style={[
+          styles.postTitle,
+          expanded && styles.expandedTitle
+        ]}
+        numberOfLines={expanded ? undefined : maxLines}
+      >
+        {title}
+      </Text>
+    </TouchableOpacity>
   );
 });
 
@@ -671,9 +707,13 @@ const styles = StyleSheet.create({
   },
   postTitle: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+    lineHeight: 28,
   },
   dateContainer: {
    
@@ -931,6 +971,35 @@ const styles = StyleSheet.create({
   },
   flatListContent: {
     flexGrow: 1,
+  },
+  postTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 5,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+    lineHeight: 28,
+  },
+  
+  
+  titleContainer: {
+    marginBottom: 8,
+    paddingVertical: 4,
+  },
+  
+  postTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '700', 
+    lineHeight: 28, 
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: -1, height: 1 },
+    textShadowRadius: 10,
+  },
+  expandedTitle: {
+    marginBottom: 4,
   },
 });
 

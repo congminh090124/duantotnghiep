@@ -32,7 +32,7 @@ const MyProfile = () => {
   const normalPosts = useMemo(() =>
     posts.filter(post => post.type !== 'travel'), [posts]
   );
-
+ 
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -490,8 +490,15 @@ const MyProfile = () => {
           <TouchableOpacity style={styles.editButton} onPress={handleEditProfile}>
             <Text style={styles.editButtonText}>Chỉnh sửa</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.shareButton}>
-            <Text style={styles.shareButtonText}>Chia sẻ trang cá nhân</Text>
+          <TouchableOpacity style={styles.shareButton} 
+           onPress={() => Alert.alert(
+            "Thông báo",
+            "Chức năng này đang được phát triển và sẽ sớm ra mắt!"
+          
+          )}
+          
+          >
+            <Text  style={styles.shareButtonText}>Chia sẻ trang cá nhân</Text>
           </TouchableOpacity>
         </View>
 
@@ -572,7 +579,12 @@ const MyProfile = () => {
               <Ionicons name="settings-outline" size={24} color="black" />
               <Text style={styles.menuItemText}>Cài đặt</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuItemPress('volunteer')}>
+            <TouchableOpacity style={styles.menuItem} 
+             onPress={() => Alert.alert(
+              "Thông báo",
+              "Chức năng này đang được phát triển và sẽ sớm ra mắt!"
+            
+            )}>
               <Ionicons name="person-add-outline" size={24} color="black" />
               <Text style={styles.menuItemText}>Đăng ký TNV</Text>
             </TouchableOpacity>

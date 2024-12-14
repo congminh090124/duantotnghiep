@@ -161,7 +161,7 @@ const PostDetailScreen = ({ route, navigation }) => {
           </View>
         )}
 
-        {/* Interaction Buttons */}
+        {/* Interaction Buttons */} 
        
 
         {/* Likes Count */}
@@ -169,7 +169,7 @@ const PostDetailScreen = ({ route, navigation }) => {
 
         {/* Caption */}
         <View style={styles.captionContainer}>
-          <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text>
+          {/* <Text style={styles.username}>{post.user ? post.user.username : 'Unknown User'}</Text> */}
           <Text style={styles.caption}>{post.title || 'No caption'}</Text>
         </View>
 
@@ -306,15 +306,21 @@ const styles = StyleSheet.create({
   captionContainer: {
     flexDirection: 'row',
     padding: 16,
-    paddingTop: 8,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   caption: {
     color: '#FFFFFF',
     marginLeft: 8,
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 15,
+    lineHeight: 22,
     flex: 1,
+    fontWeight: '400',
+    letterSpacing: 0.3,
+    textAlign: 'left',
+    paddingRight: 10,
   },
+  
   postDate: {
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 12,

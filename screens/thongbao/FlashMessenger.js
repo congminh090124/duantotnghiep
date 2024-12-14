@@ -33,6 +33,12 @@ export const showNotificationMessage = (notification) => {
         return 'đã gửi yêu cầu kết bạn';
       case 'message':
         return notification.content || 'đã gửi cho bạn một tin nhắn';
+      case 'travel_request':
+        return 'muốn đi du lịch cùng bạn';
+      case 'accept_travel_request':
+        return 'đã chấp nhận lời mời đi du lịch của bạn';
+      case 'reject_travel_request':
+        return 'đã từ chối lời mời đi du lịch của bạn';
       default:
         return 'Thông báo mới';
     }

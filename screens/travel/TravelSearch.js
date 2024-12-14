@@ -20,7 +20,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { searchTravelPosts } from '../../apiConfig';
 import * as Location from 'expo-location';
-
+import { getLocationNameFromCoords } from '../service/geocoding';
 const { width } = Dimensions.get('window');
 const STATUSBAR_HEIGHT = Platform.OS === 'ios' ? 20 : StatusBar.currentHeight;
 
@@ -104,17 +104,11 @@ const TravelSearch = ({ navigation }) => {
     setRefreshing(true);
     handleSearch(true);
   }, [handleSearch]);
-
-  const getTranslatedLocationName = async (lat, lng, postId, locationType) => {
+  const getLocationName = async (coordinates, postId, locationType) => {
     try {
-      const [location] = await Location.reverseGeocodeAsync({ 
-        latitude: lat, 
-        longitude: lng 
-      });
-      
-      const locationName = location ? 
-        `${location.city || ''}, ${location.region || ''}, ${location.country || ''}` : 
-        'Unknown location';
+      if (!coordinates) return;
+
+      const locationName = await getLocationNameFromCoords(coordinates);
 
       setLocationNames(prev => ({
         ...prev,
@@ -124,39 +118,35 @@ const TravelSearch = ({ navigation }) => {
         }
       }));
     } catch (error) {
-      console.error('Error translating location:', error);
+      console.error('Error getting location name:', error);
       setLocationNames(prev => ({
         ...prev,
         [postId]: {
           ...prev[postId],
-          [locationType]: 'Unknown location'
+          [locationType]: 'Không xác định'
         }
       }));
     }
   };
-
   useEffect(() => {
     results.forEach(item => {
       if (item.currentLocation?.coordinates) {
-        getTranslatedLocationName(
-          item.currentLocation.coordinates[1],
-          item.currentLocation.coordinates[0],
+        getLocationName(
+          item.currentLocation.coordinates,
           item._id,
           'current'
         );
       }
       
       if (item.destination?.coordinates) {
-        getTranslatedLocationName(
-          item.destination.coordinates[1],
-          item.destination.coordinates[0],
+        getLocationName(
+          item.destination.coordinates,
           item._id,
           'destination'
         );
       }
     });
   }, [results]);
-
   const renderItem = ({ item }) => (
     <TouchableOpacity
       onPress={() => navigation.navigate('TravelPostDetail', { postId: item._id })}
@@ -173,11 +163,17 @@ const TravelSearch = ({ navigation }) => {
         <View style={styles.postContent}>
           <View style={styles.headerRow}>
             <View style={styles.authorContainer}>
-              <Image 
-                source={{ uri: item.author.avatar }} 
-                style={styles.authorAvatar}
-              />
-              <Text style={styles.authorName}>{item.author.username}</Text>
+              {item.author ? (
+                <>
+                  <Image 
+                    source={{ uri: item.author.avatar }} 
+                    style={styles.authorAvatar}
+                  />
+                  <Text style={styles.authorName}>{item.author.username}</Text>
+                </>
+              ) : (
+                <Text style={styles.authorName}>Unknown Author</Text>
+              )}
             </View>
             <View style={styles.likesContainer}>
               <Ionicons name="heart" size={16} color="#ff4757" />
@@ -238,7 +234,7 @@ const TravelSearch = ({ navigation }) => {
               style={styles.searchInput}
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Search travel posts..."
+              placeholder="Tìm kiếm bài du lịch..."
               placeholderTextColor="#666"
               returnKeyType="search"
               onSubmitEditing={() => handleSearch(true)}
@@ -276,7 +272,7 @@ const TravelSearch = ({ navigation }) => {
               <Text style={styles.emptyText}>
                 {searchQuery.trim() 
                   ? 'No results found' 
-                  : 'Start searching for travel posts'}
+                  : 'Bắt đầu tìm kiếm bài du lịch nào !'}
               </Text>
             </View>
           )}

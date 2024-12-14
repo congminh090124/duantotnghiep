@@ -36,7 +36,7 @@ const LoginScreen = () => {
         }
       }
     } catch (error) {
-      console.error('Error checking existing token:', error);
+     
     }
   };
 
