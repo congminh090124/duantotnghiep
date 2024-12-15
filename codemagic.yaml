@@ -2,14 +2,20 @@ workflows:
   ios-workflow:
     name: iOS Workflow
     environment:
-      node: 18.x
+      node: 20.11.1  # Phiên bản Node mới nhất năm 2024
       xcode: latest
+      vars:
+        EXPO_CLI_VERSION: latest
+        EAS_CLI_VERSION: latest
     scripts:
-      - name: Install Expo CLI
-        script: npm install -g expo-cli
+      - name: Install global dependencies
+        script: |
+          npm install -g npm@latest
+          npm install -g expo-cli@$EXPO_CLI_VERSION
+          npm install -g eas-cli@$EAS_CLI_VERSION
       
-      - name: Install dependencies
-        script: npm install
+      - name: Install project dependencies
+        script: npm ci
       
       - name: Prebuild Expo
         script: npx expo prebuild --clean
