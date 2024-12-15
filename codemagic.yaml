@@ -11,11 +11,9 @@ workflows:
         script: |
           npm install -g expo-cli eas-cli
           yarn install
-      - name: Login to Expo
-        script: |
-           eas login --token $EXPO_TOKEN
       - name: Build iOS app
         script: |
+          export EXPO_TOKEN=$EXPO_TOKEN
           eas build -p ios --non-interactive --profile production
     artifacts:
       - build/**/*
