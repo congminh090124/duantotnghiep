@@ -4,10 +4,11 @@
     "appVersionSource": "remote"
   },
   "build": {
-    "preview": {
+    "development": {
       "ios": {
         "distribution": "internal"
       }
     }
   }
 }
+
