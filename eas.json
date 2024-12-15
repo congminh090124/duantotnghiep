@@ -1,14 +1,13 @@
 {
   "cli": {
-    "version": ">= 14.0.2",
-    "appVersionSource": "remote"
+    "version": ">=3.6.0"
   },
   "build": {
     "ios": {
       "release": {
-        "buildType": "release",  
-        "distribution":  "internal",
-        "credentialsSource": "remote"  
+        "workflow": "managed",
+        "credentialsSource": "remote",
+        "distribution": "internal"
       }
     }
   }
