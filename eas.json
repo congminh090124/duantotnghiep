@@ -1,14 +1,22 @@
 {
   "cli": {
-    "version": ">= 3.12.0",
-    "appVersionSource": "remote"
+    "version": ">= 3.0.0"
   },
   "build": {
-    "development": {
+    "production": {
       "ios": {
-        "distribution": "internal"
+        "workflow": "managed",
+        "credentialsSource": "remote",
+        "distribution": "app-store"
+      },
+      "android": {
+        "workflow": "managed",
+        "credentialsSource": "remote",
+        "buildType": "apk"
       }
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
-
