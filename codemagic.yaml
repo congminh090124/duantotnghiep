@@ -4,7 +4,6 @@ workflows:
     environment:
       node: 20.11.1
       xcode: latest
-      EXPO_TOKEN: $EXPO_TOKEN  # Thêm dòng này nếu build trên CI/CD
     scripts:
       - name: Install global dependencies
         script: |
@@ -14,8 +13,14 @@ workflows:
       
       - name: Install project dependencies
         script: npm ci
-      
-      - name: Build iOS
+
+      - name: Log in to Expo
         script: |
-          eas login || echo "Using EXPO_TOKEN"
-          npx eas build -p ios --non-interactive
+          if [ -n "$EXPO_TOKEN" ]; then
+            echo "Using EXPO_TOKEN for authentication"
+          else
+            eas login --username $EXPO_USERNAME --password $EXPO_PASSWORD
+          fi
+
+      - name: Build iOS
+        script: npx eas build -p ios --non-interactive
