@@ -1,23 +1,14 @@
 scripts:
-
   - name: Run Expo Prebuild
-
-    script: | 
-
+    script: |
       npx expo prebuild
 
   - name: Set Info.plist values
-
-    script: | 
-
+    script: |
       PLIST=$CM_BUILD_DIR/$XCODE_SCHEME/Info.plist
-
       PLIST_BUDDY=/usr/libexec/PlistBuddy
-
       $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
 
   - name: Install CocoaPods dependencies
-
     script: |
-
-    cd ios && pod install    
+      cd ios && pod install
