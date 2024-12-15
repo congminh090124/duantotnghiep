@@ -4,8 +4,6 @@ workflows:
     environment:
       node: 20.11.1
       xcode: latest
-    environment_variables:
-      EXPO_TOKEN: $EXPO_TOKEN  # Sử dụng biến từ group
     scripts:
       - name: Install global dependencies
         script: |
@@ -15,12 +13,6 @@ workflows:
       
       - name: Install project dependencies
         script: npm ci
-      
-      - name: Authenticate with Expo
-        script: npx eas login -t $EXPO_TOKEN
-      
-      - name: Prebuild Expo
-        script: npx expo prebuild --clean
       
       - name: Build iOS
         script: npx eas build -p ios --non-interactive
