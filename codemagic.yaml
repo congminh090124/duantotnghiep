@@ -14,7 +14,8 @@ workflows:
       
       # Đăng nhập vào Expo (dùng token)
       - name: Login to Expo
-        script: eas login --token $EXPO_TOKEN
+        script: |
+    echo $EXPO_TOKEN | eas login --token
       
       # Build ứng dụng iOS
       - name: Build iOS app
