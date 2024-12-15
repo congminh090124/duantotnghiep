@@ -3,19 +3,14 @@ workflows:
     name: iOS Workflow
     environment:
       groups:
-        - account
-    platforms:
-      ios:
-        build: expo build:ios --no-wait
-        publish: expo publish
-        artifacts:
-          - build/ios/*.ipa
+        - account  # Các nhóm biến môi trường có thể cần
     scripts:
       - name: Install dependencies
         script: |
           npm install
-          # Cài đặt các dependencies của dự án React Native
+          # Cài đặt dependencies của dự án React Native
 
-      - name: Build and deploy to Expo
+      - name: Build iOS app
         script: |
           expo build:ios --no-wait --release-channel production
+          # Build ứng dụng iOS
