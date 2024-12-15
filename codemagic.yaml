@@ -1,14 +1,28 @@
 workflows:
-  react_native_ios:
-    name: Build React Native iOS App
+  build_expo_ios:
+    name: Build Expo iOS App
     environment:
+      node: latest
       groups:
         - default
-      xcode: latest
     scripts:
+      # Cài đặt EAS CLI
       - name: Install dependencies
-        script: yarn install
-      - name: Build iOS
-        script: xcodebuild -workspace ios/duantotnghiep.xcworkspace -scheme duantotnghiep -configuration Debug
+        script: |
+          npm install -g eas-cli
+          yarn install
+      
+      # Đăng nhập vào Expo (dùng token)
+      - name: Login to Expo
+        script: eas login --token $EXPO_TOKEN
+      
+      # Build ứng dụng iOS
+      - name: Build iOS app
+        script: eas build -p ios --non-interactive
+
     artifacts:
-      - build/ios/*.ipa
+      - build/**/*
+    publishing:
+      email:
+        recipients:
+          - cminh24dz@gmail.com
