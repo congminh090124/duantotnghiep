@@ -1,19 +1,11 @@
 workflows:
-  build_expo_ios:
-    name: Build Expo iOS App
+  ios-workflow:
+    name: iOS Workflow
     environment:
-      node: latest
-      xcode: latest
       vars:
-        EXPO_TOKEN: ZKtzX7ClhbWVXJfpS3CdSaz5d_roT2A0_ekruBgr  
+        EXPO_CLI_VERSION: 5.x
     scripts:
-      - name: Install dependencies
-        script: |
-          npm install -g expo-cli eas-cli
-          yarn install
-      - name: Build iOS app
-        script: |
-          export EXPO_TOKEN=$EXPO_TOKEN
-          eas build -p ios --non-interactive --profile production
-    artifacts:
-      - build/**/*
+      - npm install -g expo-cli
+      - expo prebuild --clean
+      - eas build:configure
+      - eas build -p ios --non-interactive
