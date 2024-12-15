@@ -13,7 +13,7 @@ workflows:
           yarn install
       - name: Login to Expo
         script: |
-          echo $EXPO_TOKEN | eas login --username duyet33 --password duyet204
+           eas login --token $EXPO_TOKEN
       - name: Build iOS app
         script: |
           eas build -p ios --non-interactive --profile production
