@@ -2,25 +2,25 @@ workflows:
   ios-workflow:
     name: iOS Workflow
     environment:
-      node: 20.11.1
-      xcode: latest
+      node: latest  # Sử dụng phiên bản Node.js mới nhất
+      xcode: latest  # Sử dụng phiên bản Xcode mới nhất
     scripts:
       - name: Install global dependencies
         script: |
           npm install -g npm@latest
-          npm install -g expo-cli
-          npm install -g eas-cli
-      
+          npm install -g expo-cli@latest
+          npm install -g eas-cli@latest
+
       - name: Install project dependencies
         script: npm ci
 
-      - name: Log in to Expo
+      - name: Build iOS
         script: |
           if [ -n "$EXPO_TOKEN" ]; then
+            export EXPO_TOKEN=$EXPO_TOKEN
             echo "Using EXPO_TOKEN for authentication"
           else
-            eas login --username $EXPO_USERNAME --password $EXPO_PASSWORD
+            echo "EXPO_TOKEN is missing!"
+            exit 1
           fi
-
-      - name: Build iOS
-        script: npx eas build -p ios --non-interactive
+          npx eas build -p ios --non-interactive
