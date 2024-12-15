@@ -4,20 +4,17 @@ workflows:
     environment:
       node: latest
       groups:
-        - deloy
+        - deploy
     scripts:
-      # Cài đặt EAS CLI
       - name: Install dependencies
         script: |
           npm install -g eas-cli
           yarn install
       
-      # Đăng nhập vào Expo (dùng token)
       - name: Login to Expo
         script: |
-    echo $EXPO_TOKEN | eas login --token
+          echo "$EXPO_TOKEN" | eas login --token
       
-      # Build ứng dụng iOS
       - name: Build iOS app
         script: eas build -p ios --non-interactive
 
