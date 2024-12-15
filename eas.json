@@ -1,12 +1,13 @@
 {
   "cli": {
-    "version": ">= 12.6.0",
-    "appVersionSource": "remote"
+    "version": ">= 12.6.0"
   },
   "build": {
-    "preview": {
+    "development": {
       "ios": {
-        "enterpriseProvisioning": "universal"
+        "developmentClient": true,
+        "distribution": "internal",
+        "simulator": true
       }
     }
   }
