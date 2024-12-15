@@ -1,0 +1,14 @@
+workflows:
+  react_native_ios:
+    name: Build React Native iOS App
+    environment:
+      groups:
+        - default
+      xcode: latest
+    scripts:
+      - name: Install dependencies
+        script: yarn install
+      - name: Build iOS
+        script: xcodebuild -workspace ios/duantotnghiep.xcworkspace -scheme duantotnghiep -configuration Debug
+    artifacts:
+      - build/ios/*.ipa
