@@ -3,24 +3,19 @@ workflows:
     name: Build Expo iOS App
     environment:
       node: latest
-      groups:
-        - deploy
+      xcode: latest
+      vars:
+        EXPO_TOKEN: ZKtzX7ClhbWVXJfpS3CdSaz5d_roT2A0_ekruBgr  
     scripts:
       - name: Install dependencies
         script: |
-          npm install -g eas-cli
+          npm install -g expo-cli eas-cli
           yarn install
-      
       - name: Login to Expo
         script: |
-          echo "$EXPO_TOKEN" | eas login --token
-      
+          echo $EXPO_TOKEN | eas login --token
       - name: Build iOS app
-        script: eas build -p ios --non-interactive
-
+        script: |
+          eas build -p ios --non-interactive --profile production
     artifacts:
       - build/**/*
-    publishing:
-      email:
-        recipients:
-          - cminh24dz@gmail.com
