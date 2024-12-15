@@ -7,16 +7,21 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          # Cài đặt Expo CLI mới
+          # Cài đặt Expo CLI
           npm install -g expo-cli
           
-          # Cài đặt các dependencies cho dự án, bao gồm react-native
+          # Cài đặt các dependencies cho dự án
           npm install
 
       - name: Run Expo Prebuild
         script: |
-          # Chạy prebuild của Expo để chuẩn bị các file cần thiết
+          # Chạy Expo Prebuild để chuẩn bị dự án
           npx expo prebuild
+
+      - name: Install EAS CLI
+        script: |
+          # Cài đặt EAS CLI để sử dụng trong build
+          npm install -g eas-cli
 
       - name: Set Info.plist values
         script: |
@@ -32,5 +37,5 @@ workflows:
 
       - name: Build iOS app with EAS
         script: |
-          # Sử dụng EAS CLI để build ứng dụng iOS
+          # Sử dụng EAS để build ứng dụng iOS
           eas build -p ios --profile release
