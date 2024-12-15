@@ -2,38 +2,40 @@ workflows:
   ios-workflow:
     name: iOS Workflow
     environment:
-      vars:
-        EXPO_CLI_VERSION: 5.x
+      groups:
+        - account  # Các nhóm biến môi trường nếu cần
     scripts:
-      - npm install -g expo-cli
-      - expo prebuild --clean
-      - eas build:configure
-      - eas build -p ios --non-interacworkflows:
-  ios-expo-build:
-    name: iOS Expo Build
-    environment:
-      node: 18.x
-      xcode: latest
-      vars:
-        EXPO_CLI_VERSION: latest
-    scripts:
-      - name: Install Expo CLI
-        script: npm install -g expo-cli
-
       - name: Install dependencies
-        script: npm install
-
-      - name: Prebuild Expo
-        script: expo prebuild --clean
-
-      - name: Configure EAS
         script: |
-          npm install -g eas-cli
-          eas build:configure
+          # Cài đặt Expo CLI
+          npm install -g expo-cli
+          
+          # Cài đặt các dependencies cho dự án
+          npm install
 
-      - name: Build iOS
-        script: eas build -p ios --non-interactive
-    when:
-      branch:
-        - main
-        - mastertive
+      - name: Run Expo Prebuild
+        script: |
+          # Chạy Expo Prebuild để chuẩn bị dự án
+          npx expo prebuild
+
+      - name: Install EAS CLI
+        script: |
+          # Cài đặt EAS CLI để sử dụng trong build
+          npm install -g eas-cli
+
+      - name: Set Info.plist values
+        script: |
+          # Cập nhật giá trị cho Info.plist của iOS
+          PLIST=$CM_BUILD_DIR/$XCODE_SCHEME/Info.plist
+          PLIST_BUDDY=/usr/libexec/PlistBuddy
+          $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
+
+      - name: Install CocoaPods dependencies
+        script: |
+          # Cài đặt CocoaPods cho dự án iOS
+          cd ios && pod install
+
+      - name: Build iOS app with EAS
+        script: |
+          # Sử dụng EAS để build ứng dụng iOS
+          eas build -p ios --profile release
