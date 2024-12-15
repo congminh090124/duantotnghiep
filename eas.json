@@ -5,12 +5,10 @@
   "build": {
     "production": {
       "ios": {
-        "workflow": "managed",
         "credentialsSource": "remote",
-        "distribution": "app-store"
+        "distribution": "store"
       },
       "android": {
-        "workflow": "managed",
         "credentialsSource": "remote",
         "buildType": "apk"
       }
