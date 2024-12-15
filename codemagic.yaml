@@ -7,7 +7,7 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          npm install -g expo-cli
+          npm install -g expo
           npm install
           # Cài đặt dependencies của dự án React Native
 
