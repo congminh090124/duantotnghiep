@@ -4,7 +4,7 @@ workflows:
     environment:
       node: latest
       groups:
-        - default
+        - deloy
     scripts:
       # Cài đặt EAS CLI
       - name: Install dependencies
