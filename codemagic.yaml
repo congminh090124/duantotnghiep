@@ -1,28 +1,16 @@
 workflows:
-  ios-workflow:
-    name: iOS Workflow
+  workflow-name:
+    name: Example Workflow
     environment:
-      node: latest  # Sử dụng phiên bản Node.js mới nhất
-      xcode: latest  # Sử dụng phiên bản Xcode mới nhất
-      vars:
-        EXPO_TOKEN: $EXPO_TOKEN
+      groups:
+        - account  # Đặt tên nhóm môi trường
     scripts:
-      - name: Install global dependencies
+      - name: Install dependencies
         script: |
-          npm install -g npm@latest
-          npm install -g expo-cli@latest
-          npm install -g eas-cli@latest
+          npm install
+          # Cài đặt các dependencies của dự án
 
-      - name: Install project dependencies
-        script: npm ci
-
-      - name: Build iOS
+      - name: Build iOS app
         script: |
-          if [ -n "$EXPO_TOKEN" ]; then
-            export EXPO_TOKEN=$EXPO_TOKEN
-            echo "Using EXPO_TOKEN for authentication"
-          else
-            echo "EXPO_TOKEN is missing!"
-            exit 1
-          fi
-          npx eas build -p ios --non-interactive
+          expo build:ios --no-wait --release-channel production
+          # Build ứng dụng iOS
