@@ -4,6 +4,8 @@ workflows:
     environment:
       node: latest  # Sử dụng phiên bản Node.js mới nhất
       xcode: latest  # Sử dụng phiên bản Xcode mới nhất
+      vars:
+        EXPO_TOKEN: $EXPO_TOKEN
     scripts:
       - name: Install global dependencies
         script: |
