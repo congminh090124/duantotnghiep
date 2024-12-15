@@ -3,15 +3,17 @@ workflows:
     name: iOS Workflow
     environment:
       groups:
-        - account  # Các nhóm biến môi trường có thể cần
+        - account  # Các nhóm biến môi trường nếu cần
     scripts:
       - name: Install dependencies
         script: |
-          npm install -g expo
-          npm install
-          # Cài đặt dependencies của dự án React Native
+          npm install -g expo  # Cài đặt expo CLI mới
+          npm install          # Cài đặt dependencies của dự án, bao gồm react-native
 
-      - name: Build iOS app
+      - name: Install EAS CLI
         script: |
-          expo build:ios --no-wait --release-channel production
-          # Build ứng dụng iOS
+          npm install -g eas-cli  # Cài đặt EAS CLI
+
+      - name: Build iOS app with EAS
+        script: |
+          eas build -p ios --profile production  # Sử dụng EAS để build ứng dụng iOS
