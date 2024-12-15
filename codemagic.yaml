@@ -4,6 +4,7 @@ workflows:
     environment:
       node: 20.11.1
       xcode: latest
+       EXPO_TOKEN: $EXPO_TOKEN
     scripts:
       - name: Install global dependencies
         script: |
