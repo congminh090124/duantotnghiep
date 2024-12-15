@@ -4,8 +4,16 @@ workflows:
     environment:
       groups:
         - account  # Các nhóm biến môi trường nếu cần
+      groups:
+        - account  # Các nhóm biến môi trường nếu cần
     scripts:
       - name: Install dependencies
+        script: |
+          # Cài đặt Expo CLI
+          npm install -g expo-cli
+          
+          # Cài đặt các dependencies cho dự án
+          npm install
         script: |
           # Cài đặt Expo CLI
           npm install -g expo-cli
@@ -17,11 +25,24 @@ workflows:
         script: |
           # Chạy Expo Prebuild để chuẩn bị dự án
           npx expo prebuild
+      - name: Run Expo Prebuild
+        script: |
+          # Chạy Expo Prebuild để chuẩn bị dự án
+          npx expo prebuild
 
+      - name: Install EAS CLI
       - name: Install EAS CLI
         script: |
           # Cài đặt EAS CLI để sử dụng trong build
+          # Cài đặt EAS CLI để sử dụng trong build
           npm install -g eas-cli
+
+      - name: Set Info.plist values
+        script: |
+          # Cập nhật giá trị cho Info.plist của iOS
+          PLIST=$CM_BUILD_DIR/$XCODE_SCHEME/Info.plist
+          PLIST_BUDDY=/usr/libexec/PlistBuddy
+          $PLIST_BUDDY -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
 
       - name: Set Info.plist values
         script: |
