@@ -4,8 +4,8 @@ workflows:
     environment:
       node: 20.11.1
       xcode: latest
-      groups:
-        - deploy  # Sử dụng group deploy
+    environment_variables:
+      EXPO_TOKEN: $EXPO_TOKEN  # Sử dụng biến từ group
     scripts:
       - name: Install global dependencies
         script: |
