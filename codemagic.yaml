@@ -24,7 +24,8 @@ workflows:
       
       - name: Build iOS
         script: npx eas build -p ios --non-interactive
-    when:
-      branch:
-        - main
-        - master
+    triggers:
+      - push:
+          branches:
+            - main
+            - master
