@@ -1,6 +1,6 @@
 workflows:
   unsigned-ios-build:
-    name: Build unsigned iOS App
+    name: Build iOS App
     environment:
       node: 18 # Dùng phiên bản Node.js mới nhất tương thích với React Native
       vars:
