@@ -98,18 +98,25 @@ const PostCreationScreen = () => {
   }, []);
 
   const handleAddImages = useCallback(async () => {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (permissionResult.granted === false) {
+        Alert.alert('Permission to access camera roll is required!');
+        return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: [ImagePicker.MediaType.IMAGE],  // Sử dụng MediaType thay vì MediaTypeOptions
-      allowsMultipleSelection: true,
-      aspect: [4, 3],
-      quality: 1,
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        aspect: [4, 3],
+        quality: 1,
     });
-  
+
     if (!result.canceled && result.assets) {
-      const optimizedImages = await Promise.all(
-        result.assets.map(asset => optimizeImage(asset.uri))
-      );
-      setImages(prevImages => [...prevImages, ...optimizedImages]);
+        const optimizedImages = await Promise.all(
+            result.assets.map(asset => optimizeImage(asset.uri))
+        );
+        setImages(prevImages => [...prevImages, ...optimizedImages]);
     }
   }, [optimizeImage]);
 
