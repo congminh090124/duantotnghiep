@@ -1,22 +1,14 @@
 workflows:
-  ios-workflow:
-    name: iOS Workflow
+  react-native-expo:
+    name: Build Expo App for iOS
     environment:
       vars:
-        EAS_PROJECT_ID: "97b0c6d5-93eb-4802-bd2f-62a3417a660d"
-      groups:
-        - account
+        EXPO_TOKEN: $EXPO_TOKEN # Đặt token Expo của bạn ở đây
     scripts:
       - name: Install dependencies
+        script: npm install
+      - name: EAS Build for iOS
         script: |
-          npm install -g expo-cli eas-cli
-          npm install
-      - name: Prebuild Expo
-        script: |
-          npx expo prebuild
-      - name: Install CocoaPods
-        script: |
-          cd ios && pod install
-      - name: Build iOS app
-        script: |
-          eas build -p ios --profile release
+          eas build --platform ios --profile development
+    artifacts:
+      - output/*.ipa
