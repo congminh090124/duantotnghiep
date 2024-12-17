@@ -331,7 +331,7 @@ const MyProfile = () => {
         const names = {};
         const postsToProcess = activeTab === 'posts' ? normalPosts : travelPosts;
         
-        // Xử lý tối đa 5 bài viết một lần
+     
         const processInBatches = async (posts) => {
           const batchSize = 5;
           
@@ -350,7 +350,7 @@ const MyProfile = () => {
                     };
                   }
                 } else {
-                  // Xử lý bài viết du lịch
+                 
                   names[post._id] = {
                     current: post.currentLocation?.coordinates ? 
                       await getLocationNameFromCoords(post.currentLocation.coordinates) : 

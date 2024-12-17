@@ -222,48 +222,7 @@ const TaoTrangTimBanDuLich = () => {
     return null;
   };
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-  
-    try {
-      const url = `https://google-map-places.p.rapidapi.com/maps/api/geocode/json?address=${encodeURIComponent(searchQuery)}&language=vi&region=vi&result_type=administrative_area_level_1&location_type=APPROXIMATE`;
-      const options = {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f',
-          'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
-        }
-      };
-
-      const response = await axios.get(url, options);
-
-      if (response.data.results.length > 0) {
-        const result = response.data.results[0];
-        const { lat, lng } = result.geometry.location;
-        const searchLocation = {
-          latitude: lat,
-          longitude: lng,
-          latitudeDelta: 0.0922,
-          longitudeDelta: 0.0421,
-        };
-        
-        setDestination(searchLocation);
-        setDestinationName(result.formatted_address);
-        mapRef.current?.animateToRegion(searchLocation, 1000);
-        
-        // Đặt các state ngay lập tức
-        setHasSearchResult(true);
-        setIsMapReady(true);
-      } else {
-        Alert.alert('Không tìm thấy', 'Không tìm thấy địa điểm này');
-      }
-    } catch (error) {
-    
-      Alert.alert('Lỗi', 'Không thể tìm kiếm địa điểm');
-    }
-    
-    Keyboard.dismiss();
-  };
+ 
 
   const handleMapRegionChange = (region) => {
     setMapRegion(region);
@@ -390,7 +349,7 @@ const TaoTrangTimBanDuLich = () => {
         const options = {
           method: 'GET',
           headers: {
-            'x-rapidapi-key': '057cd37262msh2a608699c67234ap104731jsn4fa717c7768d',
+            'x-rapidapi-key': '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f',
             'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
           }
         };
@@ -412,7 +371,7 @@ const TaoTrangTimBanDuLich = () => {
       const url = `https://google-map-places.p.rapidapi.com/maps/api/place/details/json?place_id=${placeId}&language=vi&region=vi`;
       const response = await axios.get(url, {
         headers: {
-          'x-rapidapi-key': '057cd37262msh2a608699c67234ap104731jsn4fa717c7768d',
+          'x-rapidapi-key': '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f',
           'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
         }
       });

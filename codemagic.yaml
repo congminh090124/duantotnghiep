@@ -1,0 +1,17 @@
+workflows:
+  unsigned-ios-build:
+    name: Build iOS App
+    environment:
+      node: 18 # Dùng phiên bản Node.js mới nhất tương thích với React Native
+      vars:
+        EXPO_TOKEN: $EXPO_TOKEN # Token Expo (xem mục dưới)
+    scripts:
+      - name: Install dependencies
+        script: npm install
+      - name: Install EAS CLI
+        script: npm install -g eas-cli
+      - name: Build unsigned iOS App
+        script: |
+          eas build --platform ios --non-interactive --profile preview
+    artifacts:
+      - eas-build/*.ipa

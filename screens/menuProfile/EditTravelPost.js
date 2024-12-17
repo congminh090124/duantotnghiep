@@ -1,12 +1,12 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  Image, 
-  ScrollView, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  StyleSheet,
   Alert,
   ActivityIndicator,
   SafeAreaView,
@@ -25,14 +25,14 @@ import debounce from 'lodash/debounce';
 
 const { width } = Dimensions.get('window');
 const inputWidth = width - 40;
-const RAPID_API_KEY = '057cd37262msh2a608699c67234ap104731jsn4fa717c7768d';
+const RAPID_API_KEY = '4d2ba14f7fmsh66b9c485a5f657bp141873jsn13ce867e117f';
 
 const EditTravelPost = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { _id, title: initialTitle, startDate: initialStartDate, endDate: initialEndDate, 
-          destination: initialDestination, destinationName: initialDestinationName, 
-          images: initialImages } = route.params.post;
+  const { _id, title: initialTitle, startDate: initialStartDate, endDate: initialEndDate,
+    destination: initialDestination, destinationName: initialDestinationName,
+    images: initialImages } = route.params.post;
 
   const [title, setTitle] = useState(initialTitle);
   const [startDate, setStartDate] = useState(new Date(initialStartDate));
@@ -67,7 +67,7 @@ const EditTravelPost = () => {
       };
 
       await editTravelPost(_id, postData);
-      
+
       Alert.alert('Thành công', 'Bài viết đã được cập nhật', [
         {
           text: 'OK',
@@ -98,16 +98,16 @@ const EditTravelPost = () => {
 
   const removeImage = useCallback((index) => {
     if (index < 0 || index >= images.length) return;
-    
+
     const imageToRemove = images[index];
-    
+
     Alert.alert(
       "Xác nhận xóa",
       "Bạn có chắc chắn muốn xóa hình ảnh này?",
       [
         { text: "Hủy", style: "cancel" },
-        { 
-          text: "Xóa", 
+        {
+          text: "Xóa",
           style: "destructive",
           onPress: async () => {
             try {
@@ -115,7 +115,7 @@ const EditTravelPost = () => {
                 images: images.filter((_, i) => i !== index),
                 imagesToDelete: [imageToRemove],
               });
-  
+
               if (response?.travelPost) {
                 setImages(response.travelPost.images);
                 Alert.alert('Thành công', 'Hình ảnh đã được xóa');
@@ -129,75 +129,7 @@ const EditTravelPost = () => {
     );
   }, [images, _id]);
 
-  const handleSearchInputChange = async (text) => {
-    setSearchQuery(text);
-    if (text.length > 2) {
-      try {
-        const url = `https://google-map-places.p.rapidapi.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(text)}&language=vi&region=vi`;
-        const options = {
-          method: 'GET',
-          headers: {
-            'x-rapidapi-key': RAPID_API_KEY,
-            'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
-          }
-        };
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const response = await axios.get(url, options);
-        setSearchResults(response.data.predictions);
-        setShowSuggestions(true);
-      } catch (error) {
-        if (error.response?.status === 429) {
-          console.log('Rate limit exceeded, waiting before next request');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-        } else {
-          console.error('Error fetching suggestions:', error);
-        }
-      }
-    } else {
-      setSearchResults([]);
-      setShowSuggestions(false);
-    }
-  };
-
-  const handleSelectSuggestion = async (placeId) => {
-    try {
-      const url = `https://google-map-places.p.rapidapi.com/maps/api/place/details/json?place_id=${placeId}&language=vi&region=vi`;
-      const options = {
-        method: 'GET',
-        headers: {
-          'x-rapidapi-key': RAPID_API_KEY,
-          'x-rapidapi-host': 'google-map-places.p.rapidapi.com'
-        }
-      };
-
-      const response = await axios.get(url, options);
-      const result = response.data.result;
-      const { lat, lng } = result.geometry.location;
-      const location = {
-        latitude: lat,
-        longitude: lng,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      };
-
-      setDestination({
-        type: 'Point',
-        coordinates: [lng, lat]
-      });
-      setDestinationName(result.formatted_address);
-      setSearchQuery(result.name);
-      setShowSuggestions(false);
-
-      mapRef.current?.animateToRegion(location);
-    } catch (error) {
-      console.error('Error fetching place details:', error);
-      Alert.alert('Lỗi', 'Không thể lấy thông tin địa điểm');
-    }
-  };
-
-  const debouncedMapSearch = useMemo(() => 
+  const debouncedMapSearch = useMemo(() =>
     debounce(async (text) => {
       if (text.length <= 2) {
         setMapSearchResults([]);
@@ -240,12 +172,12 @@ const EditTravelPost = () => {
 
       const result = response.data.result;
       const { lat, lng } = result.geometry.location;
-      
+
       const newLocation = {
         coordinates: [lng, lat],
         name: result.formatted_address
       };
-      
+
       setTempLocation(newLocation);
       setMapSearchQuery(result.name);
       setShowMapSearchResults(false);
@@ -316,19 +248,19 @@ const EditTravelPost = () => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.headerContainer}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons 
-              name="chevron-back" 
-              size={24} 
+            <Ionicons
+              name="chevron-back"
+              size={24}
               style={styles.backIcon}
             />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Sửa bài du lịch</Text>
         </View>
-        
+
         <View style={styles.scrollContainer}>
           <Text style={styles.label}>Tiêu đề</Text>
           <TextInput
@@ -407,6 +339,7 @@ const EditTravelPost = () => {
                     keyboardShouldPersistTaps="handled"
                     maxToRenderPerBatch={10}
                     windowSize={5}
+                    nestedScrollEnabled={true} // Thêm thuộc tính này
                   />
                 )}
               </View>
@@ -431,7 +364,7 @@ const EditTravelPost = () => {
                 >
                   <Text style={styles.closeMapButtonText}>Đóng bản đồ</Text>
                 </TouchableOpacity>
-                
+
                 {tempLocation && (
                   <TouchableOpacity
                     style={styles.selectLocationButton}
@@ -473,10 +406,10 @@ const EditTravelPost = () => {
           >
             {isLoading ? (
               <>
-                <ActivityIndicator 
-                  size="small" 
-                  color="#FFFFFF" 
-                  style={styles.updateButtonLoading} 
+                <ActivityIndicator
+                  size="small"
+                  color="#FFFFFF"
+                  style={styles.updateButtonLoading}
                 />
                 <Text style={styles.updateButtonText}>Đang cập nhật...</Text>
               </>
@@ -506,7 +439,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     paddingHorizontal: 4,
   },
-  
+
   inputContainer: {
     marginBottom: 24,
   },
@@ -626,8 +559,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 8,
     maxHeight: 200,
+
     borderWidth: 1,
     borderColor: '#DEE2E6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   searchResult: {
     padding: 12,
@@ -810,7 +748,20 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#1A1A1A',
-  
+
+  },
+  mapSearchResultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F3F5',
+    backgroundColor: '#FFFFFF',
+  },
+  mapSearchResultText: {
+    fontSize: 16,
+    color: '#495057',
+  },
+  mapSearchResultItemHovered: {
+    backgroundColor: '#E9ECEF',
   },
 });
 
